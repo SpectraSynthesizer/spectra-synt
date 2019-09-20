@@ -1,0 +1,2 @@
+# spectra-synt
+Spectra Synthesizer
