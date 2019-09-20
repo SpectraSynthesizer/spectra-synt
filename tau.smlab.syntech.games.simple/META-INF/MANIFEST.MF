@@ -1,0 +1,11 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Simple Games
+Bundle-SymbolicName: tau.smlab.syntech.games.simple
+Bundle-Version: 1.0.0.qualifier
+Require-Bundle: tau.smlab.syntech.gamemodel;bundle-version="1.0.0",
+ tau.smlab.syntech.jtlv;bundle-version="1.0.0",
+ tau.smlab.syntech.games;bundle-version="1.0.0",
+ tau.smlab.syntech.gameinput
+Export-Package: tau.smlab.syntech.games.simple
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8

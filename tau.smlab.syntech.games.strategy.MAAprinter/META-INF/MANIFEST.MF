@@ -1,0 +1,12 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: MAAprinter
+Bundle-SymbolicName: tau.smlab.syntech.games.strategy.MAAprinter
+Bundle-Version: 1.0.0.qualifier
+Require-Bundle: tau.smlab.syntech.games,
+ tau.smlab.syntech.gamemodel,
+ tau.smlab.syntech.jtlv
+Export-Package: tau.smlab.syntech.games.controller.enumerate.printers
+Bundle-ClassPath: automaton.jar,
+ .
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8

@@ -1,0 +1,14 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Checks
+Bundle-SymbolicName: tau.smlab.syntech.checks
+Bundle-Version: 1.0.0.qualifier
+Require-Bundle: tau.smlab.syntech.games;bundle-version="1.0.0",
+ tau.smlab.syntech.jtlv,
+ tau.smlab.syntech.gamemodel;bundle-version="1.0.0",
+ tau.smlab.syntech.games.gr1,
+ tau.smlab.syntech.gameinput;bundle-version="1.0.0",
+ tau.smlab.syntech.gameinputtrans;bundle-version="1.0.0",
+ tau.smlab.syntech.bddgenerator
+Export-Package: tau.smlab.syntech.checks
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8

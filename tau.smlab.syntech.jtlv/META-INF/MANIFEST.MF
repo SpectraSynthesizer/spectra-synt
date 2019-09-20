@@ -1,0 +1,13 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: JTLV4SYNTECH
+Bundle-SymbolicName: tau.smlab.syntech.jtlv
+Bundle-Version: 1.0.0.qualifier
+Bundle-ClassPath: .
+Export-Package: net.sf.javabdd,
+ tau.smlab.syntech.jtlv,
+ tau.smlab.syntech.jtlv.env.module,
+ tau.smlab.syntech.jtlv.lib
+Import-Package: org.eclipse.core.internal.resources,
+ org.eclipse.core.resources
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8

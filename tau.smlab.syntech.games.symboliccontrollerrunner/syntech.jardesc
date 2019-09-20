@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<jardesc>
+    <jar path="tau.smlab.syntech.games.symboliccontrollerrunner/jars/syntech.jar"/>
+    <options buildIfNeeded="true" compress="true" descriptionLocation="/tau.smlab.syntech.games.symboliccontrollerrunner/syntech.jardesc" exportErrors="true" exportWarnings="true" includeDirectoryEntries="true" overwrite="false" saveDescription="true" storeRefactorings="false" useSourceFolders="false"/>
+    <storedRefactorings deprecationInfo="true" structuralOnly="false"/>
+    <selectedProjects/>
+    <manifest generateManifest="true" manifestLocation="" manifestVersion="1.0" reuseManifest="false" saveManifest="false" usesManifest="true">
+        <sealing sealJar="false">
+            <packagesToSeal/>
+            <packagesToUnSeal/>
+        </sealing>
+    </manifest>
+    <selectedElements exportClassFiles="true" exportJavaFiles="true" exportOutputFolder="false">
+        <javaElement handleIdentifier="=tau.smlab.syntech.games/src"/>
+        <file path="/tau.smlab.syntech.jtlv/.project"/>
+        <file path="/tau.smlab.syntech.games/.classpath"/>
+        <javaElement handleIdentifier="=tau.smlab.syntech.logs/src"/>
+        <file path="/tau.smlab.syntech.jtlv/cudd.dll"/>
+        <javaElement handleIdentifier="=tau.smlab.syntech.jtlv/src"/>
+        <file path="/tau.smlab.syntech.games/build.properties"/>
+        <file path="/tau.smlab.syntech.jtlv/.classpath"/>
+        <file path="/tau.smlab.syntech.gamemodel/.project"/>
+        <file path="/tau.smlab.syntech.jtlv/build.properties"/>
+        <file path="/tau.smlab.syntech.jtlv/cudd3.dll"/>
+        <javaElement handleIdentifier="=tau.smlab.syntech.gamemodel/src"/>
+        <file path="/tau.smlab.syntech.gamemodel/.classpath"/>
+        <file path="/tau.smlab.syntech.games/.project"/>
+        <file path="/tau.smlab.syntech.gamemodel/build.properties"/>
+    </selectedElements>
+</jardesc>

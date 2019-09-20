@@ -1,0 +1,10 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: RabinGame
+Bundle-SymbolicName: tau.smlab.syntech.games.rabin
+Bundle-Version: 1.0.0.qualifier
+Require-Bundle: tau.smlab.syntech.games;bundle-version="1.0.0",
+ tau.smlab.syntech.gamemodel;bundle-version="1.0.0",
+ tau.smlab.syntech.jtlv
+Export-Package: tau.smlab.syntech.games.rabin
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8

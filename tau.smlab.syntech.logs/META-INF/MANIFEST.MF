@@ -1,0 +1,8 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Logs
+Bundle-SymbolicName: tau.smlab.syntech.logs
+Bundle-Version: 1.0.0.qualifier
+Require-Bundle: tau.smlab.syntech.jtlv
+Export-Package: tau.smlab.syntech.logs
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8

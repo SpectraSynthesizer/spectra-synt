@@ -1,0 +1,5 @@
+Content of this folder:
+cudd-v2.5-legacy.dll - v2.5 legacy version of CuDD library
+cudd-v3-old.dll - v3 version of CuDD library, old version
+cudd-v3-debug.dll - v3 version of CuDD library, new version, compiled for debug, will not work in environment without Visual Studio C++ installed.
+cudd-v3-release.dll - v3 version of CuDD library, new version, compiled with optimizations for release.

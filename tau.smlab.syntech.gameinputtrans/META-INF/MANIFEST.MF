@@ -1,0 +1,10 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: GameInputTrans
+Bundle-SymbolicName: tau.smlab.syntech.gameinputtrans
+Bundle-Version: 1.0.0.qualifier
+Require-Bundle: tau.smlab.syntech.gameinput;bundle-version="1.0.0",
+ tau.smlab.syntech.Brics;bundle-version="1.0.0"
+Export-Package: tau.smlab.syntech.gameinputtrans,
+ tau.smlab.syntech.gameinputtrans.translator
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8

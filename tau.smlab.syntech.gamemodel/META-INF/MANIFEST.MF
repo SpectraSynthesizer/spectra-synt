@@ -1,0 +1,9 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Gamemodel
+Bundle-SymbolicName: tau.smlab.syntech.gamemodel
+Bundle-Version: 1.0.0.qualifier
+Export-Package: tau.smlab.syntech.gamemodel,
+ tau.smlab.syntech.gamemodel.util
+Require-Bundle: tau.smlab.syntech.jtlv
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8

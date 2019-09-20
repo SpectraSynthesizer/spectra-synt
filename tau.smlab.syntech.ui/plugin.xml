@@ -1,0 +1,310 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+
+<extension 
+      point="org.eclipse.ui.views"> 
+   <view 
+         class="tau.smlab.syntech.ui.views.UnrealizableCoreView"
+         icon="icons/debug-zoom.gif" 
+         id="unrealizableCoreMarker" 
+         name="Unrealizable Core"> 
+   </view> 
+      <view 
+         class="tau.smlab.syntech.ui.views.NonWellSeparationCoreView"
+         icon="icons/separator.gif" 
+         id="wellSeparatedCoreMarker" 
+         name="Non-Well-Separation Core"> 
+   </view> 
+         <view 
+         class="tau.smlab.syntech.ui.views.SpecAnalysisView"
+         icon="icons/analyze_blue.gif" 
+         id="specAnalysisMarker" 
+         name="Specification Analysis"> 
+   </view> 
+</extension>
+
+<extension 
+      point="org.eclipse.ui.ide.markerSupport"> 
+   <markerContentGenerator 
+         id="markerGenerator" 
+         name="Marker Generator">    
+    <markerFieldConfiguration
+         enabled="true"
+         id="org.eclipse.ui.ide.errorsFilter"
+         name="%MarkerFilterGrouping.AllErrors"
+         scope="ON_ANY"
+         values="tau.smlab.syntech.ui.views.SyntechMarkerFilter">
+    </markerFieldConfiguration>
+                          
+   <markerTypeReference 
+         id="org.eclipse.core.resources.marker"/> 
+   <markerFieldReference 
+         id="org.eclipse.ui.ide.severityAndDescriptionField"/> 
+   <markerFieldReference 
+         id="org.eclipse.ui.ide.locationField"/>              
+   <markerFieldReference 
+         id="org.eclipse.ui.ide.resourceField"/>                    
+    </markerContentGenerator> 
+</extension>
+
+<!-- Spectra Menu -->
+ <extension point="org.eclipse.ui.menus">
+	  <menuContribution locationURI="popup:org.eclipse.ui.popup.any?before=additions">
+	  <menu
+	        label="Spectra"
+	        id="tau.smlab.syntech.ui.syntechmenu">
+             <separator
+                  name="group1"
+                  visible="true">
+            </separator>
+            <separator
+                  name="group2"
+                  visible="true">
+            </separator>
+            <separator
+                  name="group3"
+                  visible="true">
+            </separator>
+            <separator
+                  name="group4"
+                  visible="true">
+            </separator>           		        	        	     	   	  	
+	  </menu>
+	 </menuContribution>
+ </extension>
+ 
+<!-- Spectra Add-ons menu. Other plugins can contribute to it. -->
+ <extension point="org.eclipse.ui.menus">
+	  <menuContribution locationURI="popup:org.eclipse.ui.popup.any?before=additions">
+	  <menu
+	        label="Spectra Add-ons"
+	        id="tau.smlab.syntech.ui.syntechaddonsmenu">
+			<visibleWhen
+			   checkEnabled="false">
+			   <or>
+			     <!-- name filtering from editor view -->
+			     <with variable="activeEditorInput">
+			       <adapt type="org.eclipse.core.resources.IResource">
+			          <test
+			              property="org.eclipse.core.resources.name"
+			              value="*.spectra">
+			          </test>
+			       </adapt>
+			     </with>
+			     <with variable="activeEditorInput">
+             <adapt type="org.eclipse.core.resources.IResource">
+                <test
+                    property="org.eclipse.core.resources.name"
+                    value="*.slugsin">
+                </test>
+             </adapt>
+           </with>
+			     <!-- name filtering from explorer view -->
+			     <iterate
+			           ifEmpty="false"
+			           operator="or">
+			        <test
+			            property="org.eclipse.core.resources.name"
+			            value="*.spectra">
+			        </test>
+			     </iterate>
+			   </or>
+			 </visibleWhen>
+	  </menu>
+	 </menuContribution>
+ </extension>
+
+ <!-- Contribute actions from editor view -->
+<extension point="org.eclipse.ui.popupMenus"> 
+  <viewerContribution 
+    id="org.eclipse.ui.articles.action.contribution.popup.editor"
+    targetID="#TextEditorContext">         
+          <action
+               id="tau.smlab.syntech.checkRealAction" 
+               label="Check Realizability (Existence of Implementation)"
+               icon="icons/analyze-wheel.gif"        
+               menubarPath="tau.smlab.syntech.ui.syntechmenu/group1" 
+               class="tau.smlab.syntech.ui.action.SynthesisAction"> 
+          </action> 
+          <action
+               id="tau.smlab.syntech.checksAction" 
+               label="Analyze Specification"
+               icon="icons/analyze-wheel.gif"        
+               menubarPath="tau.smlab.syntech.ui.syntechmenu/group1" 
+               class="tau.smlab.syntech.ui.action.SynthesisAction"> 
+          </action>
+           <action
+               id="tau.smlab.syntech.syntCmpAction" 
+               label="Synthesize Concrete Controller"
+               icon="icons/controller.gif"
+               menubarPath="tau.smlab.syntech.ui.syntechmenu/group2"
+               class="tau.smlab.syntech.ui.action.SynthesisAction"> 
+          </action>      
+      
+            <action
+               id="tau.smlab.syntech.syntSymbAction" 
+               label="Synthesize Symbolic Controller"
+               icon="icons/controller.gif"
+               menubarPath="tau.smlab.syntech.ui.syntechmenu/group2"
+               class="tau.smlab.syntech.ui.action.SynthesisAction"> 
+          </action>         
+      
+            <action
+               id="tau.smlab.syntech.debugCmpAction" 
+               label="Synthesize Concrete Counter Strategy"
+               icon="icons/debug.gif"
+               menubarPath="tau.smlab.syntech.ui.syntechmenu/group3"
+               class="tau.smlab.syntech.ui.action.SynthesisAction"> 
+          </action>
+  </viewerContribution> 
+</extension> 
+
+ <!-- Contribute actions from explorer view -->
+<extension
+         point="org.eclipse.ui.popupMenus">
+      <objectContribution
+            id="tau.smlab.syntech"
+            nameFilter="*.spectra"
+            objectClass="org.eclipse.core.resources.IFile">
+         <action
+               class="tau.smlab.syntech.ui.action.SynthesisAction"
+               enablesFor="1"
+               icon="icons/analyze_blue.gif"
+               id="tau.smlab.syntech.checkRealAction"
+               label="Check Realizability (Existence of Implementation)"
+               menubarPath="tau.smlab.syntech.ui.syntechmenu/group1"
+               state="true"
+               style="push">
+         </action>
+         <action
+               id="tau.smlab.syntech.checksAction" 
+               label="Analyze specification"
+               icon="icons/analyze_blue.gif"        
+               menubarPath="tau.smlab.syntech.ui.syntechmenu/group1" 
+               class="tau.smlab.syntech.ui.action.SynthesisAction"> 
+          </action>
+          <action
+               class="tau.smlab.syntech.ui.action.SynthesisAction"
+               enablesFor="1"
+               icon="icons/controller.gif"
+               id="tau.smlab.syntech.syntCmpAction"
+               label="Synthesize Concrete Controller"
+               menubarPath="tau.smlab.syntech.ui.syntechmenu/group2"
+               state="true"
+               style="push">
+         </action>
+         <action
+               class="tau.smlab.syntech.ui.action.SynthesisAction"
+               enablesFor="1"
+               icon="icons/controller.gif"
+               id="tau.smlab.syntech.syntSymbAction"
+               label="Synthesize Symbolic Controller"
+               menubarPath="tau.smlab.syntech.ui.syntechmenu/group2"
+               style="push">
+         </action>
+         <action
+               class="tau.smlab.syntech.ui.action.SynthesisAction"
+               enablesFor="1"
+               icon="icons/debug.gif"
+               id="tau.smlab.syntech.debugCmpAction"
+               label="Synthesize Concrete Counter Strategy"
+               menubarPath="tau.smlab.syntech.ui.syntechmenu/group3"
+               style="push">
+         </action>
+      </objectContribution> 
+   </extension>
+      <extension
+         point="org.eclipse.ui.preferencePages">
+      <page
+            class="tau.smlab.syntech.ui.preferences.PreferencePage"
+            id="tau.smlab.syntech.ui.preferences.PreferencePage"
+            name="Spectra">
+      </page>
+   </extension>
+   <extension
+         point="org.eclipse.core.runtime.preferences">
+      <initializer
+            class="tau.smlab.syntech.ui.preferences.PreferenceInitializer">
+      </initializer>
+   </extension>
+   
+<!-- Markers -->
+  <extension
+      id="tau.smlab.syntech.ui.marker"
+      name="Spectra Marker"
+      point="org.eclipse.core.resources.markers">
+    <super type="tau.smlab.syntech.Spectra.ui.spectra.check.fast"></super>
+    <persistent value="false">
+    </persistent>
+  </extension>
+  <extension
+      id="tau.smlab.syntech.ui.error"
+      name="Spectra Error"
+      point="org.eclipse.core.resources.markers">
+    <super type="tau.smlab.syntech.Spectra.ui.spectra.check.fast"></super>
+    <persistent value="false">
+    </persistent>
+  </extension>
+  
+<!-- Annotations for markers  -->
+  <extension
+    point="org.eclipse.ui.editors.annotationTypes">
+    <type
+      markerType="tau.smlab.syntech.ui.marker"
+      name="tau.smlab.syntech.ui.marker.annotation">
+    </type>
+  </extension>
+  <extension
+    point="org.eclipse.ui.editors.annotationTypes">
+    <type
+      markerType="tau.smlab.syntech.ui.error"
+      name="tau.smlab.syntech.ui.error.annotation">
+    </type>
+  </extension>
+  
+<!-- Design of annotations for markers  -->
+  <extension
+    point="org.eclipse.ui.editors.markerAnnotationSpecification">
+    <specification
+      annotationType="tau.smlab.syntech.ui.marker.annotation"
+      colorPreferenceKey="tau.smlab.syntech.ui.marker.color"
+      colorPreferenceValue="192,255,192"
+      contributesToHeader="false"
+      highlightPreferenceKey="tau.smlab.syntech.ui.marker.highlight"
+      highlightPreferenceValue="true"
+      includeOnPreferencePage="true"
+      label="Spectra Marker"
+      overviewRulerPreferenceKey="tau.smlab.syntech.ui.marker.overview"
+      overviewRulerPreferenceValue="true"
+      presentationLayer="0"
+      textPreferenceKey="tau.smlab.syntech.ui.marker.text"
+      textPreferenceValue="false"
+      textStylePreferenceValue="BOX"
+      verticalRulerPreferenceKey="tau.smlab.syntech.ui.marker.ruler"
+      verticalRulerPreferenceValue="true">
+    </specification>
+  </extension>
+  <extension
+    point="org.eclipse.ui.editors.markerAnnotationSpecification">
+    <specification
+      annotationType="tau.smlab.syntech.ui.error.annotation"
+      colorPreferenceKey="tau.smlab.syntech.ui.error.color"
+      colorPreferenceValue="230,176,170"
+      contributesToHeader="false"
+      highlightPreferenceKey="tau.smlab.syntech.ui.error.highlight"
+      highlightPreferenceValue="true"
+      includeOnPreferencePage="true"
+      label="Spectra Error"
+      overviewRulerPreferenceKey="tau.smlab.syntech.ui.error.overview"
+      overviewRulerPreferenceValue="true"
+      presentationLayer="0"
+      textPreferenceKey="tau.smlab.syntech.ui.error.text"
+      textPreferenceValue="false"
+      textStylePreferenceValue="BOX"
+      verticalRulerPreferenceKey="tau.smlab.syntech.ui.error.ruler"
+      verticalRulerPreferenceValue="true">
+    </specification>
+  </extension>
+
+</plugin>
