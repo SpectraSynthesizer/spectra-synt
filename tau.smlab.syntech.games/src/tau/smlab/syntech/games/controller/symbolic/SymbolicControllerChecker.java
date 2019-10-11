@@ -34,14 +34,9 @@ import net.sf.javabdd.ADD;
 import net.sf.javabdd.BDD;
 import net.sf.javabdd.BDD.BDDIterator;
 import net.sf.javabdd.BDDFactory;
-import tau.smlab.syntech.gameinput.spec.Operator;
-import tau.smlab.syntech.gameinput.spec.Spec;
-import tau.smlab.syntech.gameinput.spec.SpecBDD;
-import tau.smlab.syntech.gameinput.spec.SpecExp;
 import tau.smlab.syntech.gamemodel.GameModel;
 import tau.smlab.syntech.gamemodel.PlayerModule;
 import tau.smlab.syntech.jtlv.Env;
-import tau.smlab.syntech.modelchecker.LTLModelChecker;
 
 public class SymbolicControllerChecker {
 
@@ -325,126 +320,126 @@ public class SymbolicControllerChecker {
         .forAll(env.modulePrimeVars()).isOne();
   }
 
-  public static boolean checkGR1Spec(SymbolicController ctrl, GameModel m) {
-    boolean res = false;
+//  public static boolean checkGR1Spec(SymbolicController ctrl, GameModel m) {
+//    boolean res = false;
+//
+//    PlayerModule sys = m.getSys();
+//    PlayerModule env = m.getEnv();
+//
+//    LTLModelChecker c = null;
+//    try {
+//      PlayerModule mod = new PlayerModule();
+//      mod.setName("symbolicGraph");
+//      mod.resetInitial();
+//      mod.conjunctInitial(ctrl.initial().id());
+//      mod.resetTrans();
+//      mod.conjunctTrans(ctrl.trans().id());
+//      c = new LTLModelChecker(mod);
+//    } catch (Exception e) {
+//      e.printStackTrace();
+//      return false;
+//    }
+//
+//    Spec sysJ = allJustice(sys);
+//    Spec envJ = allJustice(env);
+//
+//    Spec rhoS = new SpecBDD(sys.trans());
+//    Spec rhoE = new SpecBDD(env.trans());
+//
+//    Spec thetaS = new SpecBDD(sys.initial());
+//    Spec thetaE = new SpecBDD(env.initial());
+//
+//    Spec implI = new SpecExp(Operator.IMPLIES, thetaE, thetaS);
+//
+//    Spec HrhoE = null;
+//    // workaround of HISTORICALLY limitation in case of primes in rhoE
+//    if (Env.containPrimeVars(env.trans())) {
+//      HrhoE = new SpecExp(Operator.HISTORICALLY, new SpecExp(Operator.PRIME, new SpecExp(Operator.PREV, rhoE)));
+//    } else {
+//      HrhoE = new SpecExp(Operator.HISTORICALLY, rhoE);
+//    }
+//    Spec implS = new SpecExp(Operator.AND, thetaE,
+//        new SpecExp(Operator.GLOBALLY,
+//            new SpecExp(Operator.IMPLIES, HrhoE, rhoS)));
+//    Spec implJ = new SpecExp(Operator.IMPLIES, new SpecExp(Operator.AND,
+//        thetaE, new SpecExp(Operator.AND, new SpecExp(Operator.GLOBALLY, rhoE),
+//            envJ)),
+//        sysJ);
+//
+//    Spec strongRealizability = new SpecExp(Operator.AND, new SpecExp(
+//        Operator.AND, implS, implJ), implI);
+//
+//    //c.modelCheckStandardOutput(strongRealizability);
+//    res = c.modelCheckWithNoCounterExample(strongRealizability);
+//
+//    return res;
+//  }
 
-    PlayerModule sys = m.getSys();
-    PlayerModule env = m.getEnv();
+//  private static Spec allJustice(PlayerModule m) {
+//    Spec allSysJ = new SpecExp(Operator.GLOBALLY, new SpecExp(Operator.FINALLY,
+//        new SpecBDD(m.justiceAt(0))));
+//    for (int i = 1; i < m.justiceNum(); i++) {
+//      Spec spec = new SpecExp(Operator.GLOBALLY, new SpecExp(Operator.FINALLY,
+//          new SpecBDD(m.justiceAt(i))));
+//      allSysJ = new SpecExp(Operator.AND, allSysJ, spec);
+//    }
+//
+//    return allSysJ;
+//  }
 
-    LTLModelChecker c = null;
-    try {
-      PlayerModule mod = new PlayerModule();
-      mod.setName("symbolicGraph");
-      mod.resetInitial();
-      mod.conjunctInitial(ctrl.initial().id());
-      mod.resetTrans();
-      mod.conjunctTrans(ctrl.trans().id());
-      c = new LTLModelChecker(mod);
-    } catch (Exception e) {
-      e.printStackTrace();
-      return false;
-    }
-
-    Spec sysJ = allJustice(sys);
-    Spec envJ = allJustice(env);
-
-    Spec rhoS = new SpecBDD(sys.trans());
-    Spec rhoE = new SpecBDD(env.trans());
-
-    Spec thetaS = new SpecBDD(sys.initial());
-    Spec thetaE = new SpecBDD(env.initial());
-
-    Spec implI = new SpecExp(Operator.IMPLIES, thetaE, thetaS);
-
-    Spec HrhoE = null;
-    // workaround of HISTORICALLY limitation in case of primes in rhoE
-    if (Env.containPrimeVars(env.trans())) {
-      HrhoE = new SpecExp(Operator.HISTORICALLY, new SpecExp(Operator.PRIME, new SpecExp(Operator.PREV, rhoE)));
-    } else {
-      HrhoE = new SpecExp(Operator.HISTORICALLY, rhoE);
-    }
-    Spec implS = new SpecExp(Operator.AND, thetaE,
-        new SpecExp(Operator.GLOBALLY,
-            new SpecExp(Operator.IMPLIES, HrhoE, rhoS)));
-    Spec implJ = new SpecExp(Operator.IMPLIES, new SpecExp(Operator.AND,
-        thetaE, new SpecExp(Operator.AND, new SpecExp(Operator.GLOBALLY, rhoE),
-            envJ)),
-        sysJ);
-
-    Spec strongRealizability = new SpecExp(Operator.AND, new SpecExp(
-        Operator.AND, implS, implJ), implI);
-
-    //c.modelCheckStandardOutput(strongRealizability);
-    res = c.modelCheckWithNoCounterExample(strongRealizability);
-
-    return res;
-  }
-
-  private static Spec allJustice(PlayerModule m) {
-    Spec allSysJ = new SpecExp(Operator.GLOBALLY, new SpecExp(Operator.FINALLY,
-        new SpecBDD(m.justiceAt(0))));
-    for (int i = 1; i < m.justiceNum(); i++) {
-      Spec spec = new SpecExp(Operator.GLOBALLY, new SpecExp(Operator.FINALLY,
-          new SpecBDD(m.justiceAt(i))));
-      allSysJ = new SpecExp(Operator.AND, allSysJ, spec);
-    }
-
-    return allSysJ;
-  }
-
-  public static boolean checkRabinSpec(SymbolicController ctrl, GameModel m) {
-    boolean res = false;
-
-    PlayerModule sys = m.getSys();
-    PlayerModule env = m.getEnv();
-
-    LTLModelChecker c = null;
-    try {
-      PlayerModule mod = new PlayerModule();
-      mod.setName("symbolicGraph");
-      mod.resetInitial();
-      mod.conjunctInitial(ctrl.initial().id());
-      mod.resetTrans();
-      mod.conjunctTrans(ctrl.trans().id());
-      c = new LTLModelChecker(mod);
-    } catch (Exception e) {
-      e.printStackTrace();
-      return false;
-    }
-
-    Spec sysJ = allJustice(sys);
-    Spec envJ = allJustice(env);
-
-    Spec rhoS = new SpecBDD(sys.trans());
-    Spec rhoE = new SpecBDD(env.trans());
-
-    Spec thetaS = new SpecBDD(sys.initial());
-    Spec thetaE = new SpecBDD(env.initial());
-
-    Spec implI = new SpecExp(Operator.IMPLIES, thetaE, thetaS);
-
-    Spec HrhoE = null;
-    // workaround of HISTORICALLY limitation in case of primes in rhoE
-    if (Env.containPrimeVars(env.trans())) {
-      HrhoE = new SpecExp(Operator.HISTORICALLY, new SpecExp(Operator.PRIME, new SpecExp(Operator.PREV, rhoE)));
-    } else {
-      HrhoE = new SpecExp(Operator.HISTORICALLY, rhoE);
-    }
-    Spec implS = new SpecExp(Operator.AND, thetaE,
-        new SpecExp(Operator.GLOBALLY,
-            new SpecExp(Operator.IMPLIES, HrhoE, rhoS)));
-    Spec implJ = new SpecExp(Operator.IMPLIES, new SpecExp(Operator.AND,
-        thetaE, new SpecExp(Operator.AND, new SpecExp(Operator.GLOBALLY, rhoE),
-            envJ)),
-        sysJ);
-
-    Spec strongRealizability = new SpecExp(Operator.AND, new SpecExp(
-        Operator.AND, implS, implJ), implI);
-
-    Spec rabin = new SpecExp(Operator.NOT, strongRealizability);
-    
-    res = c.modelCheckWithNoCounterExample(rabin);
-
-    return res;
-  }
+//  public static boolean checkRabinSpec(SymbolicController ctrl, GameModel m) {
+//    boolean res = false;
+//
+//    PlayerModule sys = m.getSys();
+//    PlayerModule env = m.getEnv();
+//
+//    LTLModelChecker c = null;
+//    try {
+//      PlayerModule mod = new PlayerModule();
+//      mod.setName("symbolicGraph");
+//      mod.resetInitial();
+//      mod.conjunctInitial(ctrl.initial().id());
+//      mod.resetTrans();
+//      mod.conjunctTrans(ctrl.trans().id());
+//      c = new LTLModelChecker(mod);
+//    } catch (Exception e) {
+//      e.printStackTrace();
+//      return false;
+//    }
+//
+//    Spec sysJ = allJustice(sys);
+//    Spec envJ = allJustice(env);
+//
+//    Spec rhoS = new SpecBDD(sys.trans());
+//    Spec rhoE = new SpecBDD(env.trans());
+//
+//    Spec thetaS = new SpecBDD(sys.initial());
+//    Spec thetaE = new SpecBDD(env.initial());
+//
+//    Spec implI = new SpecExp(Operator.IMPLIES, thetaE, thetaS);
+//
+//    Spec HrhoE = null;
+//    // workaround of HISTORICALLY limitation in case of primes in rhoE
+//    if (Env.containPrimeVars(env.trans())) {
+//      HrhoE = new SpecExp(Operator.HISTORICALLY, new SpecExp(Operator.PRIME, new SpecExp(Operator.PREV, rhoE)));
+//    } else {
+//      HrhoE = new SpecExp(Operator.HISTORICALLY, rhoE);
+//    }
+//    Spec implS = new SpecExp(Operator.AND, thetaE,
+//        new SpecExp(Operator.GLOBALLY,
+//            new SpecExp(Operator.IMPLIES, HrhoE, rhoS)));
+//    Spec implJ = new SpecExp(Operator.IMPLIES, new SpecExp(Operator.AND,
+//        thetaE, new SpecExp(Operator.AND, new SpecExp(Operator.GLOBALLY, rhoE),
+//            envJ)),
+//        sysJ);
+//
+//    Spec strongRealizability = new SpecExp(Operator.AND, new SpecExp(
+//        Operator.AND, implS, implJ), implI);
+//
+//    Spec rabin = new SpecExp(Operator.NOT, strongRealizability);
+//    
+//    res = c.modelCheckWithNoCounterExample(rabin);
+//
+//    return res;
+//  }
 }

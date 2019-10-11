@@ -339,7 +339,7 @@ public class ControllerExecutor {
 			BDDPackage.setCurrPackage(BDDPackage.CUDD, BBDPackageVersion.CUDD_3_0);			
 		}
 
-		String path = "C:\\Users\\User\\eclipse\\eclipse-dsl-oxygen-1a-win32-x86_64\\runtime-New_configuration\\IliaSpecsProject\\out";
+		String path = "out";
 
 		try {
 			sysVarNames = Collections.unmodifiableSet(SymbolicControllerReaderWriter.readSysVarNames(path));

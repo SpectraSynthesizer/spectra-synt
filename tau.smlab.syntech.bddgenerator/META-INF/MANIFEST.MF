@@ -6,7 +6,6 @@ Bundle-Version: 1.0.0.qualifier
 Require-Bundle: tau.smlab.syntech.gameinput;bundle-version="1.0.0",
  tau.smlab.syntech.jtlv;bundle-version="1.0.0",
  tau.smlab.syntech.gamemodel;bundle-version="1.0.0",
- tau.smlab.syntech.sfa;bundle-version="1.0.0",
- tau.smlab.syntech.Brics;bundle-version="1.0.0"
+ tau.smlab.syntech.sfa;bundle-version="1.0.0"
 Export-Package: tau.smlab.syntech.bddgenerator
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8

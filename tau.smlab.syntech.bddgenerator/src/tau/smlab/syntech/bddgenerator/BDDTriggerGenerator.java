@@ -54,726 +54,764 @@ import tau.smlab.syntech.sfa.SFAs;
 
 public class BDDTriggerGenerator {
 
-  /** 
-   * this setting is related to triggers verification :
-   * when set to true - additional checks will be performed to verify that
-   * the SFAs are indeed equivalent to the Brics automata.
-   * note these checks require more time.
-   * 
-   * when false (Default) - no such checks will be performed.
-   * */
-  public static boolean verifySFAsAreEquivalentToBrics = false;
-
-
-  public static void addTriggerConstraints(PlayerModule m, Player p, boolean isAux, boolean trace,
-      List<BehaviorInfo> info) {
-    for (Trigger trigger : p.getTriggers()) {
-      //if naive translation is disabled, each trigger must have both init and effect (brics, non-det.) automatons
-      if(trigger.hasInitEffectAutomatons()) {
-
-        List<BehaviorInfo> infoList = createModuleTriggerConstraints(m, trigger, isAux);
-
-        if (trace) {
-          info.addAll(infoList);
-        }
-        else {
-          for (BehaviorInfo i : infoList) {
-            i.free();
-          }
-        }
-      }
-    }
-  }
-
-  /**
-   * translate a trigger expression to one or more constraints,
-   * add them to the player module, and return a new Behavior info.
-   * @param trigger trigger.hasInitEffectAutomatons() == true must hold
-   */
-  private static List<BehaviorInfo> createModuleTriggerConstraints(PlayerModule m, Trigger trigger,
-      boolean isAux) {
-	  
-	int traceId = trigger.getTraceId();
-
-    Automaton initAutomaton = trigger.getInitAutomaton(); 
-    Automaton effectAutomaton = trigger.getEffectAutomaton(); 
-    List<String> specSymbols = trigger.getSymbols();
-    List<Boolean> isBoolean = trigger.getBooleans();
-    List<Integer> fromList = trigger.getFrom();
-    List<Integer> toList = trigger.getTo();
-    
-    SFA initSFA, effectSFA, minSFA;
-    
-    initSFA   = translateBricksToSFA(initAutomaton, specSymbols,isBoolean, fromList, toList, traceId);
-    effectSFA = translateBricksToSFA(effectAutomaton, specSymbols, isBoolean, fromList, toList, traceId);
-
-    minSFA   = initSFA.minimize();
-    initSFA.free();
-    initSFA = minSFA;
-    
-    minSFA = effectSFA.minimize();
-    effectSFA.free();
-    effectSFA = minSFA;
-    
-    /*make the deterministic initiator automaton with a complete transition relation: this is critical to the correctness of
-     * of the construction because otherwise there might be new **deadlocks** because of the automaton!!*/
-    initSFA.completeTransitionFunction();
+	/**
+	 * this setting is related to triggers verification : when set to true -
+	 * additional checks will be performed to verify that the SFAs are indeed
+	 * equivalent to the Brics automata. note these checks require more time.
+	 * 
+	 * when false (Default) - no such checks will be performed.
+	 */
+	public static boolean verifySFAsAreEquivalentToBrics = false;
+
+	public static void addTriggerConstraints(PlayerModule m, Player p, boolean isAux, boolean trace,
+			List<BehaviorInfo> info) {
+		for (Trigger trigger : p.getTriggers()) {
+			// if naive translation is disabled, each trigger must have both init and effect
+			// (brics, non-det.) automatons
+			if (trigger.hasInitEffectAutomatons()) {
+
+				List<BehaviorInfo> infoList = createModuleTriggerConstraints(m, trigger, isAux);
+
+				if (trace) {
+					info.addAll(infoList);
+				} else {
+					for (BehaviorInfo i : infoList) {
+						i.free();
+					}
+				}
+			}
+		}
+	}
+
+	/**
+	 * translate a trigger expression to one or more constraints, add them to the
+	 * player module, and return a new Behavior info.
+	 * 
+	 * @param trigger
+	 *            trigger.hasInitEffectAutomatons() == true must hold
+	 */
+	private static List<BehaviorInfo> createModuleTriggerConstraints(PlayerModule m, Trigger trigger, boolean isAux) {
+
+		int traceId = trigger.getTraceId();
+
+		Automaton initAutomaton = trigger.getInitAutomaton();
+		Automaton effectAutomaton = trigger.getEffectAutomaton();
+		List<String> specSymbols = trigger.getSymbols();
+		List<Boolean> isBoolean = trigger.getBooleans();
+		List<Integer> fromList = trigger.getFrom();
+		List<Integer> toList = trigger.getTo();
+
+		SFA initSFA, effectSFA, minSFA;
+
+		initSFA = translateBricksToSFA(initAutomaton, specSymbols, isBoolean, fromList, toList, traceId);
+		effectSFA = translateBricksToSFA(effectAutomaton, specSymbols, isBoolean, fromList, toList, traceId);
+
+		minSFA = initSFA.minimize();
+		initSFA.free();
+		initSFA = minSFA;
+
+		minSFA = effectSFA.minimize();
+		effectSFA.free();
+		effectSFA = minSFA;
+
+		/*
+		 * make the deterministic initiator automaton with a complete transition
+		 * relation: this is critical to the correctness of of the construction because
+		 * otherwise there might be new **deadlocks** because of the automaton!!
+		 */
+		initSFA.completeTransitionFunction();
+
+		/* verification - see that the SFAs and bricks automata are really equivalent */
+		if (verifySFAsAreEquivalentToBrics == true) {
+
+			// verifySFAEquivalentToBricks("initator", initSFA, initAutomaton, true /*
+			// minimize*/,
+			// traceId, specSymbolsMap);
+			// verifySFAEquivalentToBricks("effect", effectSFA, effectAutomaton, true /*
+			// minimize*/,
+			// traceId, specSymbolsMap);
+		}
+
+		// Automaton effectSFAComplement = effectSFA.complement();
+
+		/*
+		 * if the initSFA never accepts, or the effect SFA always accepts, Changed: if
+		 * the effect SFA accepts the empty word then no need to add any constraints...
+		 */
+		if (initSFA.isEmptyLanguage() || effectSFA.getIni().isAccepting()) {
+			initSFA.free();
+			effectSFA.free();
+			return new ArrayList<BehaviorInfo>();
+		}
 
-
-    /* verification - see that the SFAs and bricks automata are really equivalent */
-    if (verifySFAsAreEquivalentToBrics == true) {
+		SFA triggerSFA = concatenateSFAs(initSFA, effectSFA, traceId);
 
-//      verifySFAEquivalentToBricks("initator", initSFA, initAutomaton, true /* minimize*/,
-//         traceId, specSymbolsMap);
-//      verifySFAEquivalentToBricks("effect", effectSFA, effectAutomaton, true /* minimize*/,
-//          traceId, specSymbolsMap);     
-    }
+		initSFA.free();
+		effectSFA.free();
 
-    //Automaton effectSFAComplement = effectSFA.complement();
+		if (verifySFAsAreEquivalentToBrics == true) {
 
-    /* if the initSFA never accepts, or the effect SFA always accepts,
-     * Changed: if the effect SFA accepts the empty word
-     * then no need to add any constraints... */
-    if (initSFA.isEmptyLanguage() || effectSFA.getIni().isAccepting()) {
-    	initSFA.free();
-    	effectSFA.free();
-    	return new ArrayList<BehaviorInfo>();
-    }
+			/*
+			 * determinize and minimize the Brics automata. note that this is the same as
+			 * the Naive implementation... - for comparison and validation.
+			 */
+			initAutomaton.determinize();
+			initAutomaton.minimize();
+			effectAutomaton.determinize();
+			effectAutomaton.minimize();
 
-    SFA triggerSFA = concatenateSFAs(initSFA, effectSFA, traceId);
+			// Set<String> alphabet = AutomatonTriggerHelper.createAlphabet(specSymbolsMap);
 
-   	initSFA.free();
-   	effectSFA.free();
+			// Automaton triggerAutomaton =
+			// AutomatonTriggerHelper.triggerConcatenate(initAutomaton, effectAutomaton,
+			// alphabet);
 
-    if (verifySFAsAreEquivalentToBrics == true) {
+			// verifySFAEquivalentToBricks("concatenated", triggerSFA, triggerAutomaton,
+			// false /* minimize*/,
+			// traceId, specSymbolsMap);
+		}
 
-      /* determinize and minimize the Brics automata.
-       * note that this is the same as the Naive implementation... - for comparison and validation. */
-      initAutomaton.determinize();
-      initAutomaton.minimize();
-      effectAutomaton.determinize();
-      effectAutomaton.minimize();
+		/* sort the states of the concatenated SFA so all initiator states come first */
 
-   //   Set<String> alphabet = AutomatonTriggerHelper.createAlphabet(specSymbolsMap);
+		List<? extends SFAState> triggerSFAStates = triggerSFA.reachableStates();
 
-   //   Automaton triggerAutomaton = AutomatonTriggerHelper.triggerConcatenate(initAutomaton, effectAutomaton, alphabet);
+		List<SFAState> initSFAStates = getAcceptingStates(triggerSFAStates, true, traceId);
+		List<SFAState> effectSFAStates = getAcceptingStates(triggerSFAStates, false, traceId);
 
-  //    verifySFAEquivalentToBricks("concatenated", triggerSFA, triggerAutomaton, false /* minimize*/,
-  //        traceId, specSymbolsMap);
-    }
+		List<SFAState> sortedTriggerSFAStates = new ArrayList<SFAState>();
 
-    /* sort the states of the concatenated SFA so all initiator states come first */
+		sortedTriggerSFAStates.addAll(initSFAStates);
+		sortedTriggerSFAStates.addAll(effectSFAStates);
 
-    List<? extends SFAState> triggerSFAStates = triggerSFA.reachableStates();
+		/* add SFA "aux" variable. (its value represents the current state) */
 
-    List<SFAState> initSFAStates    = getAcceptingStates(triggerSFAStates, true, traceId);
-    List<SFAState> effectSFAStates  = getAcceptingStates(triggerSFAStates, false, traceId);
+		String varName = "trigger_" + traceId + "_states";
 
-    List<SFAState> sortedTriggerSFAStates = new ArrayList<SFAState>();
+		int numSFAStates = sortedTriggerSFAStates.size();
+		int minSFAVarValue = 0;
+		int maxSAFVarValue = numSFAStates - 1;
 
-    sortedTriggerSFAStates.addAll(initSFAStates);
-    sortedTriggerSFAStates.addAll(effectSFAStates);
+		try {
 
-    /* add SFA "aux" variable. (its value represents the current state) */
+			m.addVar(varName, minSFAVarValue, maxSAFVarValue, true);
 
-    String varName      = "trigger_" + traceId + "_states";
+		} catch (Exception e) {
 
-    int numSFAStates    = sortedTriggerSFAStates.size();
-    int minSFAVarValue  = 0;
-    int maxSAFVarValue  = numSFAStates - 1;
+			throw new RuntimeException("Could not add Trigger aux variable " + varName + " : " + e.getMessage());
+		}
 
-    try {
+		/*
+		 * create two lists of BDDs. first list has at index "i" a BDD that says that
+		 * the trigger var is at state "i". second list says the same for the primed
+		 * version of the trigger.
+		 */
 
-      m.addVar(varName, minSFAVarValue, maxSAFVarValue, true);
+		Variable triggerVar = new Variable(varName, new TypeDef(minSFAVarValue, maxSAFVarValue));
+		VariableReference triggerVarRef = new VariableReference(triggerVar);
+		VariableReference triggerPrimeVarRef = new VariableReference(triggerVar);
 
-    } catch (Exception e) {
+		triggerPrimeVarRef.setReferenceName(triggerVarRef.getReferenceName() + "'");
 
-      throw new RuntimeException("Could not add Trigger aux variable " + varName + " : " + e.getMessage());
-    }
+		List<BDD> triggerInStateBDDs = new ArrayList<BDD>();
+		List<BDD> triggerInPrimeStateBDDs = new ArrayList<BDD>();
 
-    /* create two lists of BDDs. 
-     * first list has at index "i" a BDD that says that the trigger var is at state "i".
-     * second list says the same for the primed version of the trigger. */
+		for (int i = 0; i < sortedTriggerSFAStates.size(); i++) {
 
-    Variable triggerVar = new Variable(varName, new TypeDef(minSFAVarValue, maxSAFVarValue));
-    VariableReference triggerVarRef      = new VariableReference(triggerVar);
-    VariableReference triggerPrimeVarRef = new VariableReference(triggerVar);
+			SpecExp triggerInState = new SpecExp(Operator.EQUALS, triggerVarRef, new PrimitiveValue(i));
+			triggerInStateBDDs.add(i, BDDGenerator.createBdd(triggerInState, traceId));
 
-    triggerPrimeVarRef.setReferenceName(triggerVarRef.getReferenceName() + "'");
+			SpecExp triggerPrimeInState = new SpecExp(Operator.EQUALS, triggerPrimeVarRef, new PrimitiveValue(i));
+			triggerInPrimeStateBDDs.add(i, BDDGenerator.createBdd(triggerPrimeInState, traceId));
+		}
 
-    List<BDD> triggerInStateBDDs = new ArrayList<BDD>();
-    List<BDD> triggerInPrimeStateBDDs = new ArrayList<BDD>();
+		/*
+		 * add a constraint saying that we start at the initial state of the trigger
+		 * automaton
+		 */
+
+		List<BehaviorInfo> infoList = new ArrayList<BehaviorInfo>();
+
+		int initialSFAStateIndex = sortedTriggerSFAStates.indexOf(triggerSFA.getIni());
+		BDD initialStateBDD = triggerInStateBDDs.get(initialSFAStateIndex);
+
+		BehaviorInfo info = new BehaviorInfo();
+
+		info.aux = isAux;
+		info.traceId = traceId;
+		info.initial = initialStateBDD.id();
+
+		m.conjunctInitial(initialStateBDD.id());
+
+		infoList.add(info);
+
+		/*
+		 * add safety constraints (i.e. that Trigger variable changes follow the trigger
+		 * automaton's transitions). go over all state pairs (that have transitions)
+		 */
+		BDD AccumulatedOrBDD = generateAccumulatedOrTransitionsBDD(sortedTriggerSFAStates, triggerInStateBDDs,
+				triggerInPrimeStateBDDs);
+
+		info = new BehaviorInfo();
+		info.aux = isAux;
+		info.traceId = traceId;
+		info.safety = AccumulatedOrBDD.id();
+
+		m.conjunctTrans(AccumulatedOrBDD);
+
+		infoList.add(info);
+
+		/*
+		 * add justice constraint (we should be in the accepting states of the trigger
+		 * automaton infinitely often). note that we created sortedTriggerSFAStates such
+		 * that all accepting states come first. the following spec says that trigger
+		 * state index < number of accepting states
+		 */
+		int numInitiatorStates = initSFAStates.size();
+		SpecExp triggerInInitiatorStates = new SpecExp(Operator.RIGHT_BIGGER, triggerVarRef,
+				new PrimitiveValue(numInitiatorStates));
+
+		BDD result = BDDGenerator.createBdd(triggerInInitiatorStates, traceId);
+
+		info = new BehaviorInfo();
+		info.aux = isAux;
+		info.traceId = traceId;
+		info.justice = result.id();
+
+		m.addJustice(result, traceId);
+
+		infoList.add(info);
+
+		/* explicitly free BDDs */
+
+		Env.free(triggerInStateBDDs); // freeBDDList(triggerInStateBDDs);
+		Env.free(triggerInPrimeStateBDDs); // freeBDDList(triggerInPrimeStateBDDs);
+
+		triggerSFA.free();
+
+		return infoList;
+	}
+
+	// private static void verifySFAEquivalentToBricks(String automatonName, SFA
+	// sfaAutomaton,
+	// Automaton bricsAutomaton,
+	// boolean minimize, int traceId, Map<Spec, SpecSymbols> specSymbolsMap) {
+	//
+	// Automaton comparedBricsAutomaton = bricsAutomaton.clone();
+	//
+	// if (minimize) {
+	//
+	// comparedBricsAutomaton.determinize();
+	// comparedBricsAutomaton.minimize();
+	// }
+	//
+	// SFA comparedSFA = translateBricksToSFA(comparedBricsAutomaton,
+	// specSymbolsMap, traceId);
+	//
+	// if (!sfaAutomaton.isEquivalent(comparedSFA)) {
+	//
+	// throw new BDDTranslationException(automatonName + " SFA is not equivalent to
+	// Brics automaton",
+	// traceId);
+	// }
+	//
+	// FreeSFABDDs(comparedSFA);
+	// }
+	//
+	// public static BDD getBDDFromSymbols(Map<String, Set<String>> symbolStringMap,
+	// Set<String> symbols) {
+	// Map<Integer, Spec> variableByIndex = new LinkedHashMap<Integer, Spec>();
+	// for (SpecSymbols specSymbols : specSymbolsMap.values()) {
+	// variableByIndex.put(specSymbols.getIndex(), specSymbols.getSpec());
+	// }
+	//
+	// Env.getBDDValue("a", "true"); // true if 'a' is true
+	// BDD a = Env.getBDDValue("a", "false"); // true if 'a' is false
+	// String[] vars;
+	//
+	//
+	// int numOfSpecs = variableByIndex.size();
+	// List<String> symbolsList = new ArrayList<String>(symbols);
+	//
+	// Spec accumulatedOr = null;
+	// for (int i = 0; i < symbolsList.size(); i++) {
+	// Spec accumulatedAnd = null;
+	// Spec negatedSpec = null; // for "zeros"
+	// String symbol = symbolsList.get(i);
+	// for (int j = 0; j < numOfSpecs; j++) { // for each specs
+	// Spec spec = variableByIndex.get(j);
+	// negatedSpec = new SpecExp(Operator.NOT, spec);
+	// if (j == 0) {
+	// accumulatedAnd = isOneOnIndex(symbol, j)? // Env.getBDDValue(vars[j], "true")
+	// : Env.getBDDValue(vars[j], "false");
+	// spec : negatedSpec;
+	// } else if (isOneOnIndex(symbol, j)) {
+	// accumulatedAnd = new SpecExp(Operator.AND, accumulatedAnd, spec);
+	// } else {
+	// accumulatedAnd = new SpecExp(Operator.AND, accumulatedAnd, negatedSpec);
+	// }
+	// }
+	// if (i == 0) {
+	// accumulatedOr = accumulatedAnd;
+	// } else {
+	// accumulatedOr = new SpecExp(Operator.OR, accumulatedOr, accumulatedAnd);
+	// }
+	// }
+	// return accumulatedOr;
+	// }
+
+	private static SFA translateBricksToSFA(Automaton bricsAutomaton, List<String> specSymbols, List<Boolean> isBoolean,
+			List<Integer> fromList, List<Integer> toList, int traceId) {
+
+		SFA sfaAutomaton = SFAs.newSimpleSfa();
+
+		List<State> bricsStates = new ArrayList<State>(bricsAutomaton.getStates());
+
+		State bricksInitialState = bricsAutomaton.getInitialState();
+
+		/*
+		 * the following list will contain in index "i" the SFA state equivalent to the
+		 * Brics state "i" in the bricsStates list
+		 */
+		List<SFAState> sfaStates = new ArrayList<SFAState>();
+
+		/* first, create all states */
+
+		for (int i = 0; i < bricsStates.size(); i++) {
+
+			State bricsState = bricsStates.get(i);
+			SFAState sfaState = sfaAutomaton.getNewState(bricsState.isAccept());
+
+			sfaStates.add(i, sfaState);
+		}
+
+		/* now, set the init state to match the Brics init state */
+
+		sfaAutomaton.setIni(sfaStates.get(bricsStates.indexOf(bricksInitialState)));
+
+		// finally , add the transitions
+
+		for (State sourceBricsState : bricsStates) {
+
+			SFAState sourceSFAState = sfaStates.get(bricsStates.indexOf(sourceBricsState));
+
+			for (State targetBricsState : bricsStates) {
+
+				Set<Integer> allTransitions = AutomatonTriggerHelper.getAllTransitions(sourceBricsState,
+						targetBricsState, specSymbols.size()); // This set includes all transitions between
+																// sourceBricsState to targetBricsState
+
+				if (allTransitions.size() > 0) {
+
+					BDD transitionBDD = CreateTrantitionsBdd(specSymbols, isBoolean, fromList, toList, allTransitions);
+
+					SFAState targetSFAState = sfaStates.get(bricsStates.indexOf(targetBricsState));
+
+					if (transitionBDD.isZero()) {
+
+						/* FALSE transitions are ignored. */
+						transitionBDD.free();
+					} else {
+
+						sourceSFAState.addTrans(transitionBDD, targetSFAState);
+					}
+
+				}
+			}
+		}
+
+		/*
+		 * cleanup - if there are any unreachable states , free their BDDs. note that
+		 * this can occur here because FALSE transitions are ignored - if a Brics state
+		 * could only be reached by FALSE transitions, then the equivalent SFA state
+		 * would be unreachable.
+		 */
+
+		List<? extends SFAState> reachableStates = sfaAutomaton.reachableStates();
+
+		for (SFAState state : sfaStates) {
+
+			if (!reachableStates.contains(state)) {
+				state.free();
+			}
+		}
+
+		verifyValidSfa(sfaAutomaton);
+
+		return sfaAutomaton;
+	}
+
+	/**
+	 * Receives a set of transitions, represented as integers, and creates a BDD
+	 * that represents this transitions.<br>
+	 * Each transition (as integer) encodes an assignment. THe BDD returns 'true'
+	 * for any of these assignments.
+	 * 
+	 * @param specSymbols
+	 *            - A list that specifies which symbols appear in the automaton.
+	 * @param isBoolean
+	 *            - A list that specifies which symbols are boolean
+	 * @param fromList
+	 *            - Specifies the min value of each variable.
+	 * @param toList
+	 *            - Specifies the max value of each variable.
+	 * @param allTransitions
+	 *            - A list of integers, each encodes a transition (assignment).
+	 * @return
+	 */
+
+	private static BDD CreateTrantitionsBdd(List<String> specSymbols, List<Boolean> isBoolean, List<Integer> fromList,
+			List<Integer> toList, Set<Integer> allTransitions) {
+
+		BDD ansBDD = Env.FALSE();
+		for (int transition : allTransitions) {
+			int[] sequence = AutomatonTriggerHelper.createSequenceFromNum(transition, fromList, toList);
+			BDD transitionBDD = CreateBDDfromSequence(specSymbols, isBoolean, sequence);
+			ansBDD = ansBDD.or(transitionBDD); // we add the valuation represented by 'transition' to the BDD we
+												// construct
+		}
+		return ansBDD;
+	}
+
+	/**
+	 * Receives a sequence (assignment) and returns a BDD that accepts (only) this
+	 * assignment.
+	 * 
+	 * @param specSymbols
+	 *            - A list of all variables
+	 * @param isBoolean
+	 *            - A list that specifies which variables are boolean.
+	 * @param sequence
+	 *            - An assignment as a sequence of Integers.
+	 * @return BDD
+	 */
+
+	private static BDD CreateBDDfromSequence(List<String> specSymbols, List<Boolean> isBoolean, int[] sequence) {
+
+		BDD ansBDD = Env.TRUE();
+		for (int i = 0; i < specSymbols.size(); i++) {
+			BDD toAdd;
+			if (isBoolean.get(i)) { // case of a boolean variable
+				if (sequence[i] == 0)
+					toAdd = Env.getBDDValue(specSymbols.get(i), "false");
+				else
+					toAdd = Env.getBDDValue(specSymbols.get(i), "true");
+			} else // case of a non-boolean variable
+				toAdd = Env.getBDDValue(specSymbols.get(i), sequence[i]);
+			ansBDD = ansBDD.and(toAdd);
+		}
+		return ansBDD;
+	}
+
+	/**
+	 * create one SFA that represents a two way concatenation of two SFAs. that is -
+	 * the concatenated SFA would have equivalent states and transitions, however :
+	 * 1. transition from initiator states to accepting initiator states will be
+	 * replaced by transitions to the effect automaton's initial state. 2.
+	 * similarly, transition from effect states to accepting effect states will be
+	 * replaced by transitions to the initiator automaton's initial state.
+	 * 
+	 * note this means that any state that was accepting (in the initator/effect
+	 * automata) and was not an initial state (in the initator/effect automata) will
+	 * now become unreachable.
+	 * 
+	 * note that in the concatenated SFA, a state is accepting iff it came from the
+	 * initiator automaton.
+	 */
+	private static SFA concatenateSFAs(SFA initiator, SFA effect, int traceId) {
+
+		/* special case handling : initiator Automaton's initial state is accepting */
+
+		if (initiator.getIni().isAccepting()) {
+
+			return makeEffectSFATrigger(effect, traceId);
+		}
+
+		SFA sfaAutomaton = SFAs.newSimpleSfa();
+
+		/* create copies of initiator and effect automata's states */
+
+		List<? extends SFAState> initiatorStateList = initiator.reachableStates();
+		List<? extends SFAState> effectStateList = effect.reachableStates();
+
+		List<SFAState> initiatorStateListCopy = cloneStatesList(initiatorStateList);
+		List<SFAState> effectStateListCopy = cloneStatesList(effectStateList);
+
+		/* find initial state(s), and set it in the new automaton */
+
+		int oldInitStateIndex = initiatorStateList.indexOf(initiator.getIni());
+		SFAState newInitialState = initiatorStateListCopy.get(oldInitStateIndex);
+
+		int effectInitStateIndex = effectStateList.indexOf(effect.getIni());
+		SFAState newEffectInitialState = effectStateListCopy.get(effectInitStateIndex);
+
+		sfaAutomaton.setIni(newInitialState);
+
+		/*
+		 * copy transitions, replacing transitions to accepting states with transitions
+		 * to initial states (of the other automaton)
+		 */
+
+		copyAndRelinkTransitions(initiatorStateList, initiatorStateListCopy, newEffectInitialState,
+				true /* initiator */, traceId);
+
+		copyAndRelinkTransitions(effectStateList, effectStateListCopy, newInitialState, false /* effect */, traceId);
+
+		/* cleanup - if there are any unreachable states , free their BDDs */
+
+		List<SFAState> allStates = new ArrayList<SFAState>();
+
+		allStates.addAll(initiatorStateListCopy);
+		allStates.addAll(effectStateListCopy);
+
+		List<? extends SFAState> reachableStates = sfaAutomaton.reachableStates();
+
+		for (SFAState state : allStates) {
+
+			if (!reachableStates.contains(state)) {
+				state.free();
+			}
+		}
+
+		verifyValidSfa(sfaAutomaton);
+
+		return sfaAutomaton;
+	}
+
+	/*
+	 * verify that none of the SFA's BDDs (for reachable state) were freed()
+	 */
+	private static void verifyValidSfa(SFA sfaAutomaton) {
+
+		List<? extends SFAState> sfaStates = sfaAutomaton.reachableStates();
+
+		for (SFAState state : sfaStates) {
+
+			Map<? extends SFAState, BDD> transitions = state.getSucc();
+
+			for (BDD transitionGuard : transitions.values()) {
+
+				if (transitionGuard.isFree()) {
+
+					throw new RuntimeException("Trigger SFA contains freed BDDs " + transitionGuard.toString());
+				}
+			}
+		}
+	}
+
+	/**
+	 * Copies all the successors of the initial state to be also the successors of
+	 * the new (only) accepting state.
+	 * 
+	 * @param ini
+	 *            the initial state
+	 * @param acc
+	 *            the accepting state
+	 */
+	private static void copySuccOfIniToNewAcc(SFAState ini, SFAState acc) {
+		/* go over all transitions */
+		Map<? extends SFAState, BDD> transitions = ini.getSucc();
+		for (SFAState successor : transitions.keySet()) {
+
+			BDD transitionGuard = transitions.get(successor);
+			/* clone the original transition */
+			acc.addTrans(transitionGuard.id(), successor);
+		}
+	}
+
+	/**
+	 * this function does : 1. (deep) copies transition BDDs in stateList (when the
+	 * target state is non accepting), and adds them to the matching states in
+	 * stateListCopy
+	 * 
+	 * 2. however, for transitions to an accepting state, replace them with (deep
+	 * copied) transitions to targetAcceptingState (with the same BDD)
+	 * 
+	 * 3. in addition, if these are initiator states, make them all accepting (in
+	 * stateListCopy)
+	 * 
+	 */
+	private static void copyAndRelinkTransitions(List<? extends SFAState> stateList, List<SFAState> stateListCopy,
+			SFAState targetAcceptingState, boolean isInitiator, int traceId) {
+
+		if (stateList.size() != stateListCopy.size()) {
+
+			throw new RuntimeException("list sizes differ for " + (isInitiator ? "initiator" : "effect")
+					+ " lists for trigger with trace id " + traceId);
+		}
+
+		for (int i = 0; i < stateList.size(); i++) {
+
+			SFAState originalState = stateList.get(i);
+			SFAState clonedState = stateListCopy.get(i);
+
+			/* go over all transitions */
+			Map<? extends SFAState, BDD> transitions = originalState.getSucc();
+
+			for (SFAState originalSuccessor : transitions.keySet()) {
+
+				SFAState clonedSuccessor = stateListCopy.get(stateList.indexOf(originalSuccessor));
+				BDD transitionBDD = transitions.get(originalSuccessor);
+
+				if (!originalSuccessor.isAccepting()) {
+
+					/* clone the original transition */
+					clonedState.addTrans(transitionBDD.id(), clonedSuccessor);
+				} else {
+
+					/* replace the original transition with a transition to targetAcceptingState */
+					clonedState.addTrans(transitionBDD.id(), targetAcceptingState);
+				}
+			}
 
-    for (int i = 0; i < sortedTriggerSFAStates.size(); i++) {
+			/* mark all initiator states as accepting */
+			if (isInitiator) {
 
-      SpecExp triggerInState = new SpecExp(Operator.EQUALS, triggerVarRef, new PrimitiveValue(i));
-      triggerInStateBDDs.add(i, BDDGenerator.createBdd(triggerInState, traceId));
+				/* we assume that by default all states in stateListCopy are non accepting */
+				clonedState.flipAcceptance();
+			}
+		}
+	}
 
-      SpecExp triggerPrimeInState = new SpecExp(Operator.EQUALS, triggerPrimeVarRef, new PrimitiveValue(i));
-      triggerInPrimeStateBDDs.add(i, BDDGenerator.createBdd(triggerPrimeInState, traceId));
-    }
+	/*
+	 * create a trigger automaton for the special case where the initiator
+	 * automaton's initial state is accepting, i.e., the initiator accepts the empty
+	 * word.
+	 * 
+	 * In this case, we clone the effect automaton's states while replacing
+	 * transitions to accepting states with transitions to a NEW accepting state
+	 * ACC. ACC is the only accepting state and it has the same successors as of the
+	 * initial state.
+	 */
+	private static SFA makeEffectSFATrigger(SFA effect, int traceId) {
 
-    /* add a constraint saying that we start at the initial state of the
-     * trigger automaton */
+		SFA sfaAutomaton = SFAs.newSimpleSfa();
 
-    List<BehaviorInfo> infoList = new ArrayList<BehaviorInfo>();
+		/* create copies of the effect automata's states */
 
-    int initialSFAStateIndex = sortedTriggerSFAStates.indexOf(triggerSFA.getIni());
-    BDD initialStateBDD      = triggerInStateBDDs.get(initialSFAStateIndex);
-
-    BehaviorInfo info = new BehaviorInfo();
-
-    info.aux     = isAux;
-    info.traceId = traceId;
-    info.initial = initialStateBDD.id();
-
-    m.conjunctInitial(initialStateBDD.id());
-
-    infoList.add(info);
-
-    /* add safety constraints (i.e. that Trigger variable changes follow the trigger automaton's
-     * transitions). 
-     * go over all state pairs (that have transitions) */
-    BDD AccumulatedOrBDD = generateAccumulatedOrTransitionsBDD(sortedTriggerSFAStates,
-        triggerInStateBDDs,
-        triggerInPrimeStateBDDs);
-
-    info         = new BehaviorInfo();
-    info.aux     = isAux;
-    info.traceId = traceId;
-    info.safety  = AccumulatedOrBDD.id();
-
-    m.conjunctTrans(AccumulatedOrBDD);
-
-    infoList.add(info);
-
-    /* add justice constraint (we should be in the accepting states of the trigger automaton infinitely often). 
-     * note that we created sortedTriggerSFAStates such that all accepting states
-     * come first. 
-     * the following spec says that trigger state index < number of accepting states
-     */
-    int     numInitiatorStates       = initSFAStates.size();
-    SpecExp triggerInInitiatorStates = new SpecExp(Operator.RIGHT_BIGGER, triggerVarRef, 
-        new PrimitiveValue(numInitiatorStates));
-
-    BDD result = BDDGenerator.createBdd(triggerInInitiatorStates, traceId);
-
-    info         = new BehaviorInfo();
-    info.aux     = isAux;
-    info.traceId = traceId;
-    info.justice = result.id();
-
-    m.addJustice(result, traceId);
-
-    infoList.add(info);
-
-    /* explicitly free BDDs */
-
-    Env.free(triggerInStateBDDs); //freeBDDList(triggerInStateBDDs);
-    Env.free(triggerInPrimeStateBDDs); //freeBDDList(triggerInPrimeStateBDDs);
-
-    triggerSFA.free();
-    
-    return infoList;
-  }
+		List<? extends SFAState> effectStateList = effect.reachableStates();
+		List<SFAState> effectStateListCopy = cloneStatesList(effectStateList);
 
-//  private static void verifySFAEquivalentToBricks(String automatonName, SFA sfaAutomaton,
-//      Automaton bricsAutomaton,
-//      boolean minimize, int traceId, Map<Spec, SpecSymbols> specSymbolsMap) {
-//
-//    Automaton comparedBricsAutomaton = bricsAutomaton.clone();
-//
-//    if (minimize) {
-//
-//      comparedBricsAutomaton.determinize();
-//      comparedBricsAutomaton.minimize();
-//    }
-//
-//    SFA comparedSFA = translateBricksToSFA(comparedBricsAutomaton, 
-//        specSymbolsMap, traceId);
-//
-//    if (!sfaAutomaton.isEquivalent(comparedSFA)) {
-//
-//      throw new BDDTranslationException(automatonName + " SFA is not equivalent to Brics automaton", 
-//          traceId);
-//    }
-//
-//    FreeSFABDDs(comparedSFA);
-//  }
-//
-//	public static BDD getBDDFromSymbols(Map<String, Set<String>> symbolStringMap, Set<String> symbols) {
-//		Map<Integer, Spec> variableByIndex = new LinkedHashMap<Integer, Spec>();
-//		for (SpecSymbols specSymbols : specSymbolsMap.values()) {
-//			variableByIndex.put(specSymbols.getIndex(), specSymbols.getSpec());
-//		}
-//		
-//		Env.getBDDValue("a", "true"); // true if 'a' is true
-//		BDD a = Env.getBDDValue("a", "false"); // true if 'a' is false
-//		String[] vars;
-//		
-//		
-//		int numOfSpecs = variableByIndex.size();
-//		List<String> symbolsList = new ArrayList<String>(symbols);
-//
-//		Spec accumulatedOr = null;
-//		for (int i = 0; i < symbolsList.size(); i++) {
-//			Spec accumulatedAnd = null;
-//			Spec negatedSpec = null; // for "zeros"
-//			String symbol = symbolsList.get(i);
-//			for (int j = 0; j < numOfSpecs; j++) { // for each specs
-//				Spec spec = variableByIndex.get(j);
-//				negatedSpec = new SpecExp(Operator.NOT, spec);
-//				if (j == 0) {
-//					accumulatedAnd = isOneOnIndex(symbol, j)? // Env.getBDDValue(vars[j], "true") : Env.getBDDValue(vars[j], "false");
-//							spec : negatedSpec;
-//				} else if (isOneOnIndex(symbol, j)) {
-//					accumulatedAnd = new SpecExp(Operator.AND, accumulatedAnd, spec);
-//				} else {
-//					accumulatedAnd = new SpecExp(Operator.AND, accumulatedAnd, negatedSpec);
-//				}
-//			}
-//			if (i == 0) {
-//				accumulatedOr = accumulatedAnd;
-//			} else {
-//				accumulatedOr = new SpecExp(Operator.OR, accumulatedOr, accumulatedAnd);  
-//			}
-//		}
-//		return accumulatedOr;
-//	}
-  
-  private static SFA translateBricksToSFA(Automaton bricsAutomaton, List<String> specSymbols, 
-		  List<Boolean> isBoolean, List<Integer> fromList, List<Integer> toList, int traceId) {
-
-    SFA sfaAutomaton = SFAs.newSimpleSfa();
-
-    List<State> bricsStates = new ArrayList<State>(bricsAutomaton.getStates());
-
-    State bricksInitialState = bricsAutomaton.getInitialState();
-
-    /* the following list will contain in index "i" the SFA state equivalent to 
-     * the Brics state "i" in the bricsStates list */
-    List<SFAState> sfaStates = new ArrayList<SFAState>();
-
-    /* first, create all states */
-
-    for (int i = 0; i < bricsStates.size(); i++) {
-
-      State bricsState = bricsStates.get(i);
-      SFAState sfaState = sfaAutomaton.getNewState(bricsState.isAccept());
-
-      sfaStates.add(i, sfaState);			
-    }
-
-    /* now, set the init state to match the Brics init state */
-
-    sfaAutomaton.setIni(sfaStates.get(bricsStates.indexOf(bricksInitialState)));
-
-    // finally , add the transitions
-
-    for (State sourceBricsState : bricsStates) {
-
-      SFAState sourceSFAState = sfaStates.get(bricsStates.indexOf(sourceBricsState));
-
-      for (State targetBricsState : bricsStates) {
-
-        Set<Integer> allTransitions = AutomatonTriggerHelper.getAllTransitions(sourceBricsState, 
-            targetBricsState, specSymbols.size()); // This set includes all transitions between sourceBricsState to targetBricsState
-
-        if (allTransitions.size() > 0) {
-          
-          BDD transitionBDD = CreateTrantitionsBdd(specSymbols, isBoolean, fromList, toList, allTransitions);
-          
-          SFAState targetSFAState = sfaStates.get(bricsStates.indexOf(targetBricsState));
-
-          if (transitionBDD.isZero()) {
-
-            /* FALSE transitions are ignored. */
-            transitionBDD.free();
-          }
-          else {
-
-            sourceSFAState.addTrans(transitionBDD, targetSFAState);
-          }
-
-        }
-      }
-    }
-
-    /* cleanup - if there are any unreachable states , free their BDDs.
-     * note that this can occur here because FALSE transitions are ignored -
-     * if a Brics state could only be reached by FALSE transitions,
-     * then the equivalent SFA state would be unreachable. */
-
-    List<? extends SFAState> reachableStates = sfaAutomaton.reachableStates();
-
-    for (SFAState state : sfaStates) {
-
-      if (!reachableStates.contains(state)) {
-    	  state.free();
-      }
-    }
-
-    verifyValidSfa(sfaAutomaton);
-
-    return sfaAutomaton;
-  }
-
-  /**
-   * Receives a set of transitions, represented as integers, and creates a BDD that represents 
-   * this transitions.<br>
-   * Each transition (as integer) encodes an assignment. THe BDD returns 'true' for any of these assignments.
-   * @param specSymbols - A list that specifies which symbols appear in the automaton.
-   * @param isBoolean - A list that specifies which symbols are boolean
-   * @param fromList - Specifies the min value of each variable.
-   * @param toList - Specifies the max value of each variable.
-   * @param allTransitions - A list of integers, each encodes a transition (assignment).
-   * @return
-   */
-  
-  private static BDD CreateTrantitionsBdd(List<String> specSymbols, List<Boolean> isBoolean,
-		  List<Integer> fromList, List<Integer> toList, Set<Integer> allTransitions) {
-	  
-	  BDD ansBDD = Env.FALSE(); 
-	  for (int transition : allTransitions) {
-		  int[] sequence = AutomatonTriggerHelper.createSequenceFromNum(transition, fromList, toList);
-		  BDD transitionBDD = CreateBDDfromSequence(specSymbols, isBoolean, sequence);
-		ansBDD = ansBDD.or(transitionBDD); // we add the valuation represented by 'transition' to the BDD we construct 
-	  }
-	return ansBDD;
-}
-
- /**
-  * Receives a sequence (assignment) and returns a BDD that accepts (only) this assignment.
-  * @param specSymbols - A list of all variables
-  * @param isBoolean - A list that specifies which variables are boolean.
-  * @param sequence - An assignment as a sequence of Integers.
-  * @return BDD
-  */
- 
-  
- private static BDD CreateBDDfromSequence(List<String> specSymbols, List<Boolean> isBoolean, 
-		int[] sequence) {
-
-	 BDD ansBDD = Env.TRUE();
-	 for (int i = 0; i< specSymbols.size(); i++) {
-	 	 BDD toAdd;
-		 if (isBoolean.get(i)) { // case of a boolean variable
-			 if (sequence[i]==0) 
-				 toAdd = Env.getBDDValue(specSymbols.get(i),"false");
-			 else 
-				 toAdd = Env.getBDDValue(specSymbols.get(i),"true");		
-		 }
-		 else // case of a non-boolean variable
-			 toAdd = Env.getBDDValue(specSymbols.get(i), sequence[i]);
-		 ansBDD = ansBDD.and(toAdd); 
-	 }
-	 return ansBDD;
- }
-
-/** 
-   * create one SFA that represents a two way concatenation of two SFAs.
-   * that is - the concatenated SFA would have equivalent states and transitions,
-   * however :
-   * 1. transition from initiator states to accepting initiator states will be replaced
-   *    by transitions to the effect automaton's initial state.
-   * 2. similarly, transition from effect states to accepting effect states will be replaced
-   *    by transitions to the initiator automaton's initial state.
-   *    
-   * note this means that any state that was accepting (in the initator/effect automata)
-   * and was not an initial state (in the initator/effect automata) will now become unreachable.
-   * 
-   * note that in the concatenated SFA, a state is accepting iff it came from the initiator
-   * automaton.
-   * */
-  private static SFA concatenateSFAs(SFA initiator, SFA effect, int traceId) {
-
-    /* special case handling : initiator Automaton's initial state is accepting */
-
-    if (initiator.getIni().isAccepting()) {
-
-      return makeEffectSFATrigger(effect, traceId);
-    }
-
-    SFA sfaAutomaton = SFAs.newSimpleSfa();
-
-    /* create copies of initiator and effect automata's states */
-
-    List<? extends SFAState> initiatorStateList = initiator.reachableStates();
-    List<? extends SFAState> effectStateList    = effect.reachableStates();
-
-    List<SFAState> initiatorStateListCopy = cloneStatesList(initiatorStateList);
-    List<SFAState> effectStateListCopy    = cloneStatesList(effectStateList);
-
-
-    /* find initial state(s), and set it in the new automaton */
-
-    int oldInitStateIndex = initiatorStateList.indexOf(initiator.getIni());
-    SFAState newInitialState = initiatorStateListCopy.get(oldInitStateIndex);
-
-    int effectInitStateIndex    = effectStateList.indexOf(effect.getIni());
-    SFAState newEffectInitialState = effectStateListCopy.get(effectInitStateIndex);
-
-    sfaAutomaton.setIni(newInitialState);
-
-    /* copy transitions, replacing transitions to accepting states 
-     * with transitions to initial states (of the other automaton) */
-
-    copyAndRelinkTransitions(initiatorStateList, initiatorStateListCopy,
-        newEffectInitialState, true /* initiator */, traceId);
-
-    copyAndRelinkTransitions(effectStateList, effectStateListCopy,
-        newInitialState, false /* effect */, traceId);
-
-    /* cleanup - if there are any unreachable states , free their BDDs */
-
-    List<SFAState> allStates = new ArrayList<SFAState>();
-
-    allStates.addAll(initiatorStateListCopy);
-    allStates.addAll(effectStateListCopy);
-
-    List<? extends SFAState> reachableStates = sfaAutomaton.reachableStates();
-
-    for (SFAState state : allStates) {
-
-      if (!reachableStates.contains(state)) {
-    	  state.free();
-      }
-    }
-
-    verifyValidSfa(sfaAutomaton);
-
-    return sfaAutomaton;
-  }
-
-  /* verify that none of the SFA's BDDs (for reachable state)
-   * were freed() */
-  private static void verifyValidSfa(SFA sfaAutomaton) {
-
-    List<? extends SFAState> sfaStates = sfaAutomaton.reachableStates();
-
-    for (SFAState state : sfaStates) {
-
-      Map<? extends SFAState, BDD> transitions = state.getSucc();
-
-      for (BDD transitionGuard : transitions.values()) {
-
-        if (transitionGuard.isFree()) {
-
-          throw new RuntimeException("Trigger SFA contains freed BDDs " + 
-              transitionGuard.toString());
-        }
-      }
-    }
-  }
-
-
-  /**
-   * Copies all the successors of the initial state to be also the successors of the new (only) accepting
-	state.
-   * @param ini the initial state
-   * @param acc the accepting state
-   */
-  private static void copySuccOfIniToNewAcc(SFAState ini, SFAState acc) {
-    /* go over all transitions */
-    Map<? extends SFAState, BDD> transitions = ini.getSucc();
-    for (SFAState successor : transitions.keySet()) {
-
-      BDD transitionGuard   = transitions.get(successor);
-      /* clone the original transition */
-      acc.addTrans(transitionGuard.id(), successor);
-    }
-  }
+		SFAState newAccState = sfaAutomaton.getNewState(true); // the new accepting state of the automaton
 
-  /** 
-   * this function does :
-   * 1. (deep) copies transition BDDs in stateList (when the target state is non accepting), 
-   *    and adds them to the matching states in stateListCopy
-   *    
-   * 2. however, for transitions to an accepting state,
-   *    replace them with (deep copied) transitions to targetAcceptingState (with the same BDD)
-   *    
-   * 3. in addition, if these are initiator states, make them all accepting (in stateListCopy)  
-   * 
-   * */
-  private static void copyAndRelinkTransitions(List<? extends SFAState> stateList, 
-      List<SFAState> stateListCopy,
-      SFAState targetAcceptingState,
-      boolean isInitiator, int traceId) {
+		/* Set the initial state of the automaton */
+		int effectInitStateIndex = effectStateList.indexOf(effect.getIni());
+		SFAState newEffectInitialState = effectStateListCopy.get(effectInitStateIndex);
+		sfaAutomaton.setIni(newEffectInitialState);
 
-    if (stateList.size() != stateListCopy.size()) {
+		/*
+		 * copy transitions, replacing transitions to old accepting states with
+		 * transitions to the new accepting state
+		 */
 
-      throw new RuntimeException("list sizes differ for " + 
-          (isInitiator ? "initiator":"effect") + 
-          " lists for trigger with trace id " + traceId);
-    }
+		copyAndRelinkTransitions(effectStateList, effectStateListCopy, newAccState, false /* effect */, traceId);
 
-    for (int i = 0; i < stateList.size(); i++) {
+		/*
+		 * Copy successors of the initial state to be also successors of the new
+		 * accepting state
+		 */
+		copySuccOfIniToNewAcc(newEffectInitialState, newAccState);
 
-      SFAState originalState = stateList.get(i);
-      SFAState clonedState   = stateListCopy.get(i);
+		/* cleanup - if there are any unreachable states , free their BDDs */
 
-      /* go over all transitions */
-      Map<? extends SFAState, BDD> transitions = originalState.getSucc();
+		effectStateListCopy.add(newAccState);
 
-      for (SFAState originalSuccessor : transitions.keySet()) {
+		List<? extends SFAState> reachableStates = sfaAutomaton.reachableStates();
 
-        SFAState clonedSuccessor = stateListCopy.get(stateList.indexOf(originalSuccessor));
-        BDD   transitionBDD   = transitions.get(originalSuccessor);
+		for (SFAState state : effectStateListCopy) {
 
-        if (!originalSuccessor.isAccepting()) {
+			if (!reachableStates.contains(state)) {
+				state.free();
+			}
+		}
 
-          /* clone the original transition */
-          clonedState.addTrans(transitionBDD.id(), clonedSuccessor);
-        }
-        else {
+		verifyValidSfa(sfaAutomaton);
 
-          /* replace the original transition with a transition to targetAcceptingState */
-          clonedState.addTrans(transitionBDD.id(), targetAcceptingState);
-        }
-      }
+		return sfaAutomaton;
 
-      /* mark all initiator states as accepting */
-      if (isInitiator) {
+	}
 
-        /* we assume that by default all states in stateListCopy are non accepting */
-        clonedState.flipAcceptance();
-      }
-    }
-  }
+	/*
+	 * create a list of states of the same size as sourceStateList. note that all
+	 * cloned states are marked as non-accepting (this can be flipped later).
+	 */
+	private static List<SFAState> cloneStatesList(List<? extends SFAState> sourceStatesList) {
 
+		List<SFAState> ClonedStateList = new ArrayList<SFAState>();
 
-  /* create a trigger automaton for the special case where the initiator automaton's
-   * initial state is accepting, i.e., the initiator accepts the empty word. 
-   * 
-   * In this case, we clone the effect automaton's states 
-   * while replacing transitions to accepting states with transitions to a NEW accepting state ACC.
-   * ACC is the only accepting state and it has the same successors as of the initial state.
-   */
-  private static SFA makeEffectSFATrigger(SFA effect, int traceId) {
+		for (int i = 0; i < sourceStatesList.size(); i++) {
 
-    SFA sfaAutomaton = SFAs.newSimpleSfa();
+			ClonedStateList.add(SFAs.newSimpleSfaState(false));
+		}
 
-    /* create copies of the effect automata's states */
+		return ClonedStateList;
+	}
 
-    List<? extends SFAState> effectStateList    = effect.reachableStates();
-    List<SFAState> effectStateListCopy    = cloneStatesList(effectStateList);
+	// returns a list of all accepting/non-accepting states (depends on the value of
+	// 'accepting')
 
-    SFAState newAccState = sfaAutomaton.getNewState(true); //the new accepting state of the automaton
+	private static List<SFAState> getAcceptingStates(List<? extends SFAState> triggerSFAStates, boolean accepting,
+			int traceId) {
 
-    /*Set the initial state of the automaton*/
-    int effectInitStateIndex    = effectStateList.indexOf(effect.getIni());
-    SFAState newEffectInitialState = effectStateListCopy.get(effectInitStateIndex);
-    sfaAutomaton.setIni(newEffectInitialState);
+		List<SFAState> stateList = new ArrayList<SFAState>();
 
-    /* copy transitions, replacing transitions to old accepting states 
-     * with transitions to the new accepting state */
+		for (SFAState s : triggerSFAStates) {
 
-    copyAndRelinkTransitions(effectStateList, effectStateListCopy,
-        newAccState, false /* effect */, traceId);
+			if (s.isAccepting() == accepting) {
 
-    /*Copy successors of the initial state to be also successors of the new accepting state*/
-    copySuccOfIniToNewAcc(newEffectInitialState, newAccState);
+				stateList.add(s);
+			}
+		}
 
-    /* cleanup - if there are any unreachable states , free their BDDs */
+		if (stateList.size() == 0) {
 
+			throw new RuntimeException("got an unexpectedly empty " + (accepting ? "initiator" : "effect")
+					+ " list for trigger with trace id " + traceId);
+		}
 
-    effectStateListCopy.add(newAccState);
+		return stateList;
+	}
 
-    List<? extends SFAState> reachableStates = sfaAutomaton.reachableStates();
+	/**
+	 * create a BDD that represents the OR (disjunction) of all allowed transitions
+	 * (BDDs), where an individual transition is of the form : source state (index)
+	 * AND transition (BDD) AND NEXT target state (index)
+	 */
+	private static BDD generateAccumulatedOrTransitionsBDD(List<SFAState> sortedTriggerSFAStates,
+			List<BDD> triggerInStateBDDs, List<BDD> triggerInPrimeStateBDDs) {
 
-    for (SFAState state : effectStateListCopy) {
+		BDD AccumulatedOrBDD = Env.FALSE();
 
-      if (!reachableStates.contains(state)) {
-    	  state.free();
-      }
-    }
+		for (SFAState sourceState : sortedTriggerSFAStates) {
 
-    verifyValidSfa(sfaAutomaton);
+			Map<? extends SFAState, BDD> transitions = sourceState.getSucc();
 
-    return sfaAutomaton;
+			for (SFAState targetState : transitions.keySet()) {
 
-  }
+				int sourceStateIndex = sortedTriggerSFAStates.indexOf(sourceState);
+				int targetStateIndex = sortedTriggerSFAStates.indexOf(targetState);
 
+				BDD sourceStateBDD = triggerInStateBDDs.get(sourceStateIndex);
+				BDD targetStateBDD = triggerInPrimeStateBDDs.get(targetStateIndex);
 
+				BDD TransitionBDD = transitions.get(targetState);
 
-  /* create a list of states of the same size as sourceStateList.
-   * note that all cloned states are marked as non-accepting
-   * (this can be flipped later). */
-  private static List<SFAState> cloneStatesList(List<? extends SFAState> sourceStatesList) {
+				/*
+				 * the following BDD implies that being at the source state + encountering
+				 * "transition" leads to the target state.
+				 */
+				BDD result1 = TransitionBDD.and(targetStateBDD);
+				BDD result = sourceStateBDD.and(result1);
 
-    List<SFAState> ClonedStateList = new ArrayList<SFAState>();
+				result1.free();
 
-    for (int i = 0; i < sourceStatesList.size(); i++) {
+				BDD previousAccumulatedOrBDD = AccumulatedOrBDD;
+				AccumulatedOrBDD = result.or(previousAccumulatedOrBDD);
 
-      ClonedStateList.add(SFAs.newSimpleSfaState(false));		
-    }
+				result.free();
+				previousAccumulatedOrBDD.free();
+			}
+		}
 
-    return ClonedStateList;
-  }
-
-  // returns a list of all accepting/non-accepting states (depends on the value of 'accepting')
-
-  private static List<SFAState> getAcceptingStates(List<? extends SFAState> triggerSFAStates, boolean accepting, 
-      int traceId) {
-
-    List<SFAState> stateList = new ArrayList<SFAState>();
-
-    for (SFAState s : triggerSFAStates) {
-
-      if (s.isAccepting() == accepting) {
-
-        stateList.add(s);
-      }
-    }
-
-    if (stateList.size() == 0) {
-
-      throw new RuntimeException("got an unexpectedly empty " + 
-          (accepting ? "initiator":"effect") + 
-          " list for trigger with trace id " + traceId);
-    }
-
-    return stateList;
-  }
-
-  /** create a BDD that represents the OR (disjunction) of all allowed transitions (BDDs),
-   *  where an individual transition is of the form :
-   *  source state (index) AND transition (BDD) AND NEXT target state (index) */
-  private static BDD generateAccumulatedOrTransitionsBDD(List<SFAState> sortedTriggerSFAStates,
-      List<BDD> triggerInStateBDDs, 
-      List<BDD> triggerInPrimeStateBDDs) {
-
-    BDD AccumulatedOrBDD = Env.FALSE();
-
-    for (SFAState sourceState : sortedTriggerSFAStates) {
-
-      Map<? extends SFAState, BDD> transitions = sourceState.getSucc();
-
-      for (SFAState targetState : transitions.keySet()) {
-
-        int sourceStateIndex = sortedTriggerSFAStates.indexOf(sourceState);
-        int targetStateIndex = sortedTriggerSFAStates.indexOf(targetState);
-
-        BDD sourceStateBDD = triggerInStateBDDs.get(sourceStateIndex);
-        BDD targetStateBDD = triggerInPrimeStateBDDs.get(targetStateIndex);
-
-        BDD TransitionBDD = transitions.get(targetState);
-
-        /* the following BDD implies that being at the source state +
-         * encountering "transition" leads to the target state. */
-        BDD result1 = TransitionBDD.and(targetStateBDD);
-        BDD result  = sourceStateBDD.and(result1);
-
-        result1.free();
-
-        BDD previousAccumulatedOrBDD = AccumulatedOrBDD;
-        AccumulatedOrBDD = result.or(previousAccumulatedOrBDD);
-
-        result.free();
-        previousAccumulatedOrBDD.free();
-      }
-    }
-
-    return AccumulatedOrBDD;
-  }
+		return AccumulatedOrBDD;
+	}
 }

@@ -47,9 +47,9 @@ public class PreferenceInitializer extends AbstractPreferenceInitializer {
 	public void initializeDefaultPreferences() {
 		IPreferenceStore store = Activator.getDefault().getPreferenceStore();
 		store.setDefault(PreferenceConstants.REORDER_CHOICE, "reorder");
-		store.setDefault(PreferenceConstants.OPT_CHOICE, "none");
+		store.setDefault(PreferenceConstants.OPT_CHOICE, "all");
 		store.setDefault(PreferenceConstants.DETERMINIZE, false);
-		store.setDefault(PreferenceConstants.BDD_ENGINE_CHOICE, "JTLV");
+		store.setDefault(PreferenceConstants.BDD_ENGINE_CHOICE, "CUDD");
 		store.setDefault(PreferenceConstants.WELL_SEP_SYS, "NONE");
 		store.setDefault(PreferenceConstants.CONC_CONT_FORMAT, "CMP");		
 	}
