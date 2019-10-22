@@ -18,7 +18,7 @@ Information about Spectra language and tools can be found here: http://smlab.cs.
 A detailed user guide can be downloaded from here: http://smlab.cs.tau.ac.il/syntech/spectra/userguide.pdf.
 
 ## Licensing
-under construction
+Spectra project is licensed under BSD-3-Clause. It uses CUDD library which is also licensed under BSD-3-Clause, and whose modified code can be found in `spectra-cudd` repository. It also uses Brics automaton library, licensed under BSD-2-Clause and available here: https://www.brics.dk/automaton/.
 
 ## Contact
 under construction
