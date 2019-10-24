@@ -12,6 +12,7 @@ In order to compile Spectra synthesizer from source code:
 - Import all existing projects from both repositories into an Eclipse workspace.
 - Build Spectra lanugage auto generated code by right click on `src/tau.smlab.syntech.GenerateSpectra.mwe2` and then 'Run As -> MWE2 Workflow`.
 - Run project by creating a new `Eclipse Application` configuration in `Run Configurations` window.
+- On Linux additionally run `sudo apt install openjdk-8-jdk openjfx`.
 
 ## Documentation
 Information about Spectra language and tools can be found here: http://smlab.cs.tau.ac.il/syntech/.
