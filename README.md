@@ -10,7 +10,7 @@ We provide also an update site to install updates with the following link: `http
 In order to compile Spectra synthesizer from source code:
 - `git clone` this repository into your computer, along with `spectra-lang`.
 - Import all existing projects from both repositories into an Eclipse workspace.
-- Build Spectra lanugage auto generated code by right click on `src/tau.smlab.syntech.GenerateSpectra.mwe2` and then 'Run As -> MWE2 Workflow`.
+- Build Spectra language auto generated code by right clicking on `src/tau.smlab.syntech.GenerateSpectra.mwe2` and then 'Run As -> MWE2 Workflow`.
 - Run project by creating a new `Eclipse Application` configuration in `Run Configurations` window.
 - On Linux additionally run `sudo apt install openjdk-8-jdk openjfx`.
 
@@ -19,7 +19,4 @@ Information about Spectra language and tools can be found here: http://smlab.cs.
 A detailed user guide can be downloaded from here: http://smlab.cs.tau.ac.il/syntech/spectra/userguide.pdf.
 
 ## Licensing
-Spectra project is licensed under BSD-3-Clause. It uses CUDD library which is also licensed under BSD-3-Clause, and whose modified code can be found in `spectra-cudd` repository. It also uses Brics automaton library, licensed under BSD-2-Clause and available here: https://www.brics.dk/automaton/.
-
-## Contact
-under construction
+Spectra project is licensed under BSD-3-Clause. It uses CUDD library, which is also licensed under BSD-3-Clause, and whose modified code can be found in `spectra-cudd` repository. It also uses Brics automaton library, licensed under BSD-2-Clause and available here: https://www.brics.dk/automaton/.
