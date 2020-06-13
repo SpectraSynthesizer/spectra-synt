@@ -11,5 +11,6 @@ Export-Package: tau.smlab.syntech.games,
  tau.smlab.syntech.games.util
 Require-Bundle: tau.smlab.syntech.gamemodel,
  tau.smlab.syntech.jtlv;bundle-version="1.0.0",
- tau.smlab.syntech.gameinput;bundle-version="1.0.0"
+ tau.smlab.syntech.gameinput;bundle-version="1.0.0",
+ tau.smlab.syntech.modelchecker;bundle-version="1.0.0"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8

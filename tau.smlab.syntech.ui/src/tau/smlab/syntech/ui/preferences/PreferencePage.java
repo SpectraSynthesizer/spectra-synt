@@ -71,6 +71,7 @@ public class PreferencePage extends FieldEditorPreferencePage implements IWorkbe
 	private RadioGroupFieldEditor opts;
 	private RadioGroupFieldEditor reorder;
 	private BooleanFieldEditor determinize;
+	private BooleanFieldEditor reorderBeforeSave;
 
 	public void createFieldEditors() {
 		engine = new RadioGroupFieldEditor(PreferenceConstants.BDD_ENGINE_CHOICE, "BDD engine", 1,
@@ -93,6 +94,9 @@ public class PreferencePage extends FieldEditorPreferencePage implements IWorkbe
 
 		determinize = new BooleanFieldEditor(PreferenceConstants.DETERMINIZE,
 				"Determinize symbolic controllers (can be slow)", getFieldEditorParent());
+		
+		reorderBeforeSave = new BooleanFieldEditor(PreferenceConstants.REORDER_BEFORE_SAVE,
+				"Reorder BDD before save to reduce size", getFieldEditorParent());
 
 		concCont = new RadioGroupFieldEditor(PreferenceConstants.CONC_CONT_FORMAT, "Concrete Controller Format", 1,
 				new String[][] { { "CMP automaton (Mealy)", "CMP" }, { "JTLV text format", "JTLV" } },
@@ -102,6 +106,7 @@ public class PreferencePage extends FieldEditorPreferencePage implements IWorkbe
 		addField(opts);
 		addField(reorder);
 		addField(determinize);
+		addField(reorderBeforeSave);
 		addField(concCont);
 
 		// String engineChoice =
@@ -134,6 +139,10 @@ public class PreferencePage extends FieldEditorPreferencePage implements IWorkbe
 
 	public static boolean isDeterminize() {
 		return Activator.getDefault().getPreferenceStore().getBoolean(PreferenceConstants.DETERMINIZE);
+	}
+	
+	public static boolean isReorderBeforeSave() {
+		return Activator.getDefault().getPreferenceStore().getBoolean(PreferenceConstants.REORDER_BEFORE_SAVE);
 	}
 
 	public static BDDPackage getBDDPackageSelection() {

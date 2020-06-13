@@ -32,7 +32,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import tau.smlab.syntech.gameinput.model.Constraint;
+import tau.smlab.syntech.gameinput.model.Define;
 import tau.smlab.syntech.gameinput.model.GameInput;
+import tau.smlab.syntech.gameinput.model.Predicate;
 import tau.smlab.syntech.gameinput.model.TypeDef;
 import tau.smlab.syntech.gameinput.model.Variable;
 import tau.smlab.syntech.gameinput.spec.Operator;
@@ -62,6 +64,16 @@ public class QuantifierTranslator implements Translator {
 		// auxiliary constraints
 		for (Constraint c : input.getAux().getConstraints()) {
 			c.setSpec(replaceQuantifiers(c.getSpec(), c.getTraceId()));
+		}
+		
+		// predicates
+		for (Predicate pred : input.getPredicates()) {
+			pred.setSpec(replaceQuantifiers(pred.getExpression(), pred.getTraceId()));
+		}
+
+		// defines
+		for (Define define : input.getDefines()) {
+			define.setExpression(replaceQuantifiers(define.getExpression(), 0));
 		}
 
 		// Clear Domain variables list
@@ -102,7 +114,7 @@ public class QuantifierTranslator implements Translator {
 		Operator op = qSpec.getExprOperator(); // op=AND for FORALL and op=OR for EXISTS
 
 		// we get a list of all the values that the current domain var can get
-		List<PrimitiveValue> values = getPrimitivesList(qSpec.getDomainVar().getType());
+		List<PrimitiveValue> values = qSpec.getDomainVar().getType().getPrimitivesList();
 
 		Spec total = null;
 		try {
@@ -149,17 +161,7 @@ public class QuantifierTranslator implements Translator {
 						}
 						newVarRef.getIndexVars().remove(domainVar.getName());
 						
-						String refName = newVarRef.getVariable().getName();
-				        if (newVarRef.getIndexVars().isEmpty()) {
-							for (int i = 0; i < newVarRef.getIndexSpecs().size(); i++) {
-								Integer indexValue = SpecHelper.calculateSpec(newVarRef.getIndexSpecs().get(i));
-								if (indexValue < 0 || indexValue >= newVarRef.getIndexDimensions().get(i)) {
-									throw new TranslationException(String.format("Index %d out of bounds for variable %s", indexValue, newVarRef.getVariable().getName()), traceId);
-								}
-								refName += String.format("[%d]", indexValue);
-							}
-				        }
-				        newVarRef.setReferenceName(refName);
+						SpecHelper.updateRefName(newVarRef);
 				        return newVarRef;
 					}
 				} catch (Exception e) {
@@ -192,29 +194,5 @@ public class QuantifierTranslator implements Translator {
 		}
 		
 		return spec;
-	}
-
-	/**
-	 * @param varType
-	 * @return a list of all the primitive values that varType contains
-	 */
-	static public List<PrimitiveValue> getPrimitivesList(TypeDef varType) {
-		List<PrimitiveValue> lst = new ArrayList<PrimitiveValue>();
-		if (varType.isInteger()) {
-			int from = varType.getLower();
-			int to = varType.getUpper();
-			for (int i = from; i <= to; i++) {
-				lst.add(new PrimitiveValue(i));
-			}
-		} else if (varType.isBoolean()) {
-			lst.add(new PrimitiveValue("true"));
-			lst.add(new PrimitiveValue("false"));
-		} else {// a type with its own consts
-			for (String str : varType.getValues()) {
-				lst.add(new PrimitiveValue(str));
-			}
-		}
-
-		return lst;
 	}
 }

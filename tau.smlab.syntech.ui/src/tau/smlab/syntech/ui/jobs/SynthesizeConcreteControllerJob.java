@@ -33,7 +33,7 @@ import java.io.PrintStream;
 import org.eclipse.ui.console.IOConsoleOutputStream;
 
 import net.sf.javabdd.BDD;
-import tau.smlab.syntech.bddgenerator.BDDEnergyReduction;
+import tau.smlab.syntech.bddgenerator.energy.BDDEnergyReduction;
 import tau.smlab.syntech.games.controller.enumerate.ConcreteControllerConstruction;
 import tau.smlab.syntech.games.controller.enumerate.printers.MAAMinimizeAutomatonPrinter;
 import tau.smlab.syntech.games.controller.enumerate.printers.SimpleTextPrinter;

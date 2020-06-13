@@ -28,196 +28,220 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package tau.smlab.syntech.gameinput.model;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-//TODO name?
-public class TypeDef {
-  public List<Integer> getDimensions() {
-    return dimensions;
-  }
+import tau.smlab.syntech.gameinput.spec.PrimitiveValue;
 
-  public void setDimensions(List<Integer> dimensions) {
-    this.dimensions = dimensions;
-  }
+public class TypeDef implements Serializable {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 6580802000461578725L;
 
-  /**
-   * name is optional (in case of inline type definition)
-   */
-  private String name;
+	public List<Integer> getDimensions() {
+		return dimensions;
+	}
 
-  // either we have values or we have lower and upper bounds
+	public void setDimensions(List<Integer> dimensions) {
+		this.dimensions = dimensions;
+	}
 
-  private List<String> values;
-  private int lower, upper;
-  private boolean isInteger;
-  private boolean isBoolean;
-  private List<Integer> dimensions;
+	/**
+	 * name is optional (in case of inline type definition)
+	 */
+	private String name;
 
-  /**
-   * Copy constructor
-   */
-  public TypeDef(TypeDef other)
-  {
-    this.values = other.getValues();
-    this.lower = other.getLower();
-    this.upper = other.getUpper();
-    this.isInteger = other.isInteger();
-    this.isBoolean = other.isBoolean();
-    List<Integer> otherDimensions = other.getDimensions();
-    if (otherDimensions == null)
-    {
-      this.dimensions = null;
-    }
-    else
-    {
-      this.dimensions = new ArrayList<>(otherDimensions);
-    }
-    
-  }
-  /**
-   * Constructor for a boolean type
-   */
-  public TypeDef(List<Integer> dimensions) {
-    this.values = null;
-    this.isInteger = false;
-    this.isBoolean = true;
-    this.dimensions = dimensions;
-  }
+	// either we have values or we have lower and upper bounds
 
-  /**
-   * Constructor for a boolean type
-   */
-  public TypeDef() {
-    this(new ArrayList<>());
-  }
+	private List<String> values;
+	private int lower, upper;
+	private boolean isInteger;
+	private boolean isBoolean;
+	private List<Integer> dimensions;
 
-  /**
-   * Constructor for an integer type
-   * 
-   * @param lower
-   *          lower int bound
-   * @param upper
-   *          upper int bound
-   */
-  public TypeDef(int lower, int upper, List<Integer> dimensions) {
-    this.values = null;
-    this.lower = lower;
-    this.upper = upper;
-    this.isInteger = true;
-    this.isBoolean = false;
-    this.dimensions = dimensions;
-  }
+	/**
+	 * Copy constructor
+	 */
+	public TypeDef(TypeDef other) {
+		this.values = other.getValues();
+		this.lower = other.getLower();
+		this.upper = other.getUpper();
+		this.isInteger = other.isInteger();
+		this.isBoolean = other.isBoolean();
+		List<Integer> otherDimensions = other.getDimensions();
+		if (otherDimensions == null) {
+			this.dimensions = null;
+		} else {
+			this.dimensions = new ArrayList<>(otherDimensions);
+		}
 
-  /**
-   * Constructor for an integer type
-   * 
-   * @param lower
-   *          lower int bound
-   * @param upper
-   *          upper int bound
-   */
-  public TypeDef(int lower, int upper) {
-    this(lower, upper, new ArrayList<>());
-  }
+	}
 
-  /**
-   * Constructor for a general type (neither boolean nor integer)
-   */
-  public TypeDef(List<String> values, List<Integer> dimensions) {
-    this.values = values;
-    this.isInteger = false;
-    this.isBoolean = false;
-    this.dimensions = dimensions;
-  }
+	/**
+	 * Constructor for a boolean type
+	 */
+	public TypeDef(List<Integer> dimensions) {
+		this.values = null;
+		this.isInteger = false;
+		this.isBoolean = true;
+		this.dimensions = dimensions;
+	}
 
-  public String toString() {
-    return "TypeDef:[name: " + name + " , values: " + values + " ,lowerBound: " + lower + " ,upperBound: " + upper
-        + " ,isInteger: " + isInteger + " ,isBoolean: " + isBoolean + " , dimensions: " + dimensions + "]";
-  }
+	/**
+	 * Constructor for a boolean type
+	 */
+	public TypeDef() {
+		this(new ArrayList<>());
+	}
 
-  public String getName() {
-    return name;
-  }
+	/**
+	 * Constructor for an integer type
+	 * 
+	 * @param lower lower int bound
+	 * @param upper upper int bound
+	 */
+	public TypeDef(int lower, int upper, List<Integer> dimensions) {
+		this.values = null;
+		this.lower = lower;
+		this.upper = upper;
+		this.isInteger = true;
+		this.isBoolean = false;
+		this.dimensions = dimensions;
+	}
 
-  public void setName(String name) {
-    this.name = name;
-  }
+	/**
+	 * Constructor for an integer type
+	 * 
+	 * @param lower lower int bound
+	 * @param upper upper int bound
+	 */
+	public TypeDef(int lower, int upper) {
+		this(lower, upper, new ArrayList<>());
+	}
 
-  public List<String> getValues() {
-    return values;
-  }
+	/**
+	 * Constructor for a general type (neither boolean nor integer)
+	 */
+	public TypeDef(List<String> values, List<Integer> dimensions) {
+		this.values = values;
+		this.isInteger = false;
+		this.isBoolean = false;
+		this.dimensions = dimensions;
+	}
 
-  public void setValues(List<String> values) {
-    this.values = values;
-  }
+	public String toString() {
+		return "TypeDef:[name: " + name + " , values: " + values + " ,lowerBound: " + lower + " ,upperBound: " + upper
+				+ " ,isInteger: " + isInteger + " ,isBoolean: " + isBoolean + " , dimensions: " + dimensions + "]";
+	}
 
-  public int getLower() {
-    return lower;
-  }
+	public String getName() {
+		return name;
+	}
 
-  public void setLower(int lower) {
-    this.lower = lower;
-  }
+	public void setName(String name) {
+		this.name = name;
+	}
 
-  public int getUpper() {
-    return upper;
-  }
+	public List<String> getValues() {
+		return values;
+	}
 
-  public void setUpper(int upper) {
-    this.upper = upper;
-  }
+	public void setValues(List<String> values) {
+		this.values = values;
+	}
 
-  public boolean isInteger() {
-    return isInteger;
-  }
+	public int getLower() {
+		return lower;
+	}
 
-  public void setInteger(boolean isInteger) {
-    this.isInteger = isInteger;
-  }
+	public void setLower(int lower) {
+		this.lower = lower;
+	}
 
-  public boolean isBoolean() {
-    return isBoolean;
-  }
+	public int getUpper() {
+		return upper;
+	}
 
-  public void setBoolean(boolean isBoolean) {
-    this.isBoolean = isBoolean;
-  }
+	public void setUpper(int upper) {
+		this.upper = upper;
+	}
 
-  public boolean isArray() {
-    return (dimensions != null && dimensions.size() > 0);
-  }
+	public boolean isInteger() {
+		return isInteger;
+	}
 
-  /**
-   * check whether types are comparable
-   * 
-   * IMPORTANT does not check actual array comparison, e.g., for boolean arrays <code>boolean[3] x</code> and
-   * <code>boolean[2][2] y</code> result would be true because the elements are comparable
-   * 
-   * @param other
-   * @return
-   */
-  public boolean isComparable(TypeDef other) {
-    // both are boolean
-    if (isBoolean && other.isBoolean) {
-      return true;
-    }
-    // only one is boolean 
-    if (isBoolean || other.isBoolean) {
-      return false;
-    }
-    // both are integer
-    if (isInteger && other.isInteger) {
-      return true;
-    }
-    // only one is integer 
-    if (isInteger || other.isInteger) {
-      return false;
-    }
-    
-    // check if same values in same order
-    return values.equals(other.values);
-  }
-  
+	public void setInteger(boolean isInteger) {
+		this.isInteger = isInteger;
+	}
+
+	public boolean isBoolean() {
+		return isBoolean;
+	}
+
+	public void setBoolean(boolean isBoolean) {
+		this.isBoolean = isBoolean;
+	}
+
+	public boolean isArray() {
+		return (dimensions != null && dimensions.size() > 0);
+	}
+
+	/**
+	 * check whether types are comparable
+	 * 
+	 * IMPORTANT does not check actual array comparison, e.g., for boolean arrays
+	 * <code>boolean[3] x</code> and <code>boolean[2][2] y</code> result would be
+	 * true because the elements are comparable
+	 * 
+	 * @param other
+	 * @return
+	 */
+	public boolean isComparable(TypeDef other) {
+		// both are boolean
+		if (isBoolean && other.isBoolean) {
+			return true;
+		}
+		// only one is boolean
+		if (isBoolean || other.isBoolean) {
+			return false;
+		}
+		// both are integer
+		if (isInteger && other.isInteger) {
+			return true;
+		}
+		// only one is integer
+		if (isInteger || other.isInteger) {
+			return false;
+		}
+
+		// check if same values in same order
+		return values.equals(other.values);
+	}
+
+	/**
+	 * @param varType
+	 * @return a list of all the primitive values that varType contains
+	 */
+	public List<PrimitiveValue> getPrimitivesList() {
+		List<PrimitiveValue> lst = new ArrayList<PrimitiveValue>();
+		if (this.isInteger()) {
+			int from = this.getLower();
+			int to = this.getUpper();
+			for (int i = from; i <= to; i++) {
+				lst.add(new PrimitiveValue(i));
+			}
+		} else if (this.isBoolean()) {
+			lst.add(new PrimitiveValue("true"));
+			lst.add(new PrimitiveValue("false"));
+		} else {// a type with its own consts
+			for (String str : this.getValues()) {
+				lst.add(new PrimitiveValue(str));
+			}
+		}
+
+		return lst;
+	}
 
 }

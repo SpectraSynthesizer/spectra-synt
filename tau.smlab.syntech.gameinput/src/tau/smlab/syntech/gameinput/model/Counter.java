@@ -28,137 +28,144 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package tau.smlab.syntech.gameinput.model;
 
+import java.io.Serializable;
+
 import tau.smlab.syntech.gameinput.spec.SpecTraceable;
 
-public class Counter {
-  public enum OverFlowMethod {
-    FALSE, KEEP, MODULO
-  };
+public class Counter implements Serializable {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 2420031291078508480L;
 
-  // FALSE = Assumption to not exceed bounds.
-  // KEEP = Keep Min/ Max value when trying to exceed bounds.
-  // MODULO = Modulo(Max value)
+	public enum OverFlowMethod {
+		FALSE, KEEP, MODULO
+	};
 
-  private int traceId;
+	// FALSE = Assumption to not exceed bounds.
+	// KEEP = Keep Min/ Max value when trying to exceed bounds.
+	// MODULO = Modulo(Max value)
 
-  private String name;
-  private SpecTraceable iniPred;
-  private SpecTraceable incPred;
-  private SpecTraceable decPred;
-  private SpecTraceable resetPred;
-  private OverFlowMethod overFlowMethod;
-  private OverFlowMethod underFlowMethod;
-  private int lower;
-  private int upper;
+	private int traceId;
 
-  /**
-   * @param traceId
-   * @param name
-   * @param incPred
-   * @param decPred
-   * @param resetPred
-   * @param overFlowMethod
-   * @param range
-   * @param iniPred
-   */
-  public Counter(int traceId, String name, SpecTraceable incPred, SpecTraceable decPred,
-      SpecTraceable resetPred, OverFlowMethod overFlowMethod, OverFlowMethod underFlowMethod,
-      int lower, int upper, SpecTraceable iniPred) {
-    super();
-    this.traceId = traceId;
-    this.name = name;
-    this.iniPred = iniPred;
-    this.incPred = incPred;
-    this.decPred = decPred;
-    this.resetPred = resetPred;
-    this.overFlowMethod = overFlowMethod;
-    this.underFlowMethod = underFlowMethod;
-    this.lower = lower;
-    this.upper = upper;
-  }
+	private String name;
+	private SpecTraceable iniPred;
+	private SpecTraceable incPred;
+	private SpecTraceable decPred;
+	private SpecTraceable resetPred;
+	private OverFlowMethod overFlowMethod;
+	private OverFlowMethod underFlowMethod;
+	private int lower;
+	private int upper;
 
-  public Counter(int traceId, String name) {
-    this.name = name;
-    this.traceId = traceId;
-  }
+	/**
+	 * @param traceId
+	 * @param name
+	 * @param incPred
+	 * @param decPred
+	 * @param resetPred
+	 * @param overFlowMethod
+	 * @param range
+	 * @param iniPred
+	 */
+	public Counter(int traceId, String name, SpecTraceable incPred, SpecTraceable decPred,
+			SpecTraceable resetPred, OverFlowMethod overFlowMethod, OverFlowMethod underFlowMethod,
+			int lower, int upper, SpecTraceable iniPred) {
+		super();
+		this.traceId = traceId;
+		this.name = name;
+		this.iniPred = iniPred;
+		this.incPred = incPred;
+		this.decPred = decPred;
+		this.resetPred = resetPred;
+		this.overFlowMethod = overFlowMethod;
+		this.underFlowMethod = underFlowMethod;
+		this.lower = lower;
+		this.upper = upper;
+	}
 
-  public void setTraceId(int traceId) {
-    this.traceId = traceId;
-  }
+	public Counter(int traceId, String name) {
+		this.name = name;
+		this.traceId = traceId;
+	}
 
-  public void setName(String name) {
-    this.name = name;
-  }
+	public void setTraceId(int traceId) {
+		this.traceId = traceId;
+	}
 
-  public void setIncPred(SpecTraceable incPredicate) {
-    this.incPred = incPredicate;
-  }
+	public void setName(String name) {
+		this.name = name;
+	}
 
-  public void setDecPred(SpecTraceable decPredicate) {
-    this.decPred = decPredicate;
-  }
+	public void setIncPred(SpecTraceable incPredicate) {
+		this.incPred = incPredicate;
+	}
 
-  public void setResetPred(SpecTraceable resetPredicate) {
-    this.resetPred = resetPredicate;
-  }
+	public void setDecPred(SpecTraceable decPredicate) {
+		this.decPred = decPredicate;
+	}
 
-  public void setOverFlowMethod(OverFlowMethod overFlowMethod) {
-    this.overFlowMethod = overFlowMethod;
-  }
+	public void setResetPred(SpecTraceable resetPredicate) {
+		this.resetPred = resetPredicate;
+	}
 
-  public void setUnderFlowMethod(OverFlowMethod underFlowMethod) {
-    this.underFlowMethod = underFlowMethod;
-  }
+	public void setOverFlowMethod(OverFlowMethod overFlowMethod) {
+		this.overFlowMethod = overFlowMethod;
+	}
 
-  public void setLower(int lower) {
-    this.lower = lower;
-  }
+	public void setUnderFlowMethod(OverFlowMethod underFlowMethod) {
+		this.underFlowMethod = underFlowMethod;
+	}
 
-  public void setUpper(int upper) {
-    this.upper = upper;
-  }
+	public void setLower(int lower) {
+		this.lower = lower;
+	}
 
-  public void setIniPred(SpecTraceable initialConstraint) {
-    this.iniPred = initialConstraint;
-  }
+	public void setUpper(int upper) {
+		this.upper = upper;
+	}
 
-  public int getTraceId() {
-    return traceId;
-  }
+	public void setIniPred(SpecTraceable initialConstraint) {
+		this.iniPred = initialConstraint;
+	}
 
-  public String getName() {
-    return name;
-  }
+	public int getTraceId() {
+		return traceId;
+	}
 
-  public SpecTraceable getIncPred() {
-    return incPred;
-  }
+	public String getName() {
+		return name;
+	}
 
-  public SpecTraceable getResetPred() {
-    return resetPred;
-  }
+	public SpecTraceable getIncPred() {
+		return incPred;
+	}
 
-  public SpecTraceable getDecPred() {
-    return decPred;
-  }
+	public SpecTraceable getResetPred() {
+		return resetPred;
+	}
 
-  public int getLower() {
-    return lower;
-  }
+	public SpecTraceable getDecPred() {
+		return decPred;
+	}
 
-  public int getUpper() {
-    return upper;
-  }
+	public int getLower() {
+		return lower;
+	}
 
-  public OverFlowMethod getOverFlowMethod() {
-    return overFlowMethod;
-  }
+	public int getUpper() {
+		return upper;
+	}
 
-  public OverFlowMethod getUnderFlowMethod() {
-    return underFlowMethod;
-  }
+	public OverFlowMethod getOverFlowMethod() {
+		return overFlowMethod;
+	}
 
-  public SpecTraceable getIniPred() {
-    return iniPred;
-  }
+	public OverFlowMethod getUnderFlowMethod() {
+		return underFlowMethod;
+	}
+
+	public SpecTraceable getIniPred() {
+		return iniPred;
+	}
 }

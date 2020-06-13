@@ -38,6 +38,8 @@ public class PreferenceConstants {
 	public static final String OPT_CHOICE = "optChoice";
 		
 	public static final String DETERMINIZE = "determinize";
+	
+	public static final String REORDER_BEFORE_SAVE = "reorderBeforeSave";
 
 	public static final String BDD_ENGINE_CHOICE = "BDDEngine";
 	

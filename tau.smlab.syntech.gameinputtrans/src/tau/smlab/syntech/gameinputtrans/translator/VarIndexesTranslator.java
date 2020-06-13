@@ -26,16 +26,16 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
 */
 
-
 package tau.smlab.syntech.gameinputtrans.translator;
 
 import java.util.HashSet;
 import java.util.List;
-//import java.util.regex.Pattern;
 import java.util.Set;
 
 import tau.smlab.syntech.gameinput.model.Constraint;
+import tau.smlab.syntech.gameinput.model.ExistentialConstraint;
 import tau.smlab.syntech.gameinput.model.GameInput;
+import tau.smlab.syntech.gameinput.model.TriggerConstraint;
 import tau.smlab.syntech.gameinput.model.Variable;
 
 import tau.smlab.syntech.gameinput.spec.Operator;
@@ -43,6 +43,7 @@ import tau.smlab.syntech.gameinput.spec.PrimitiveValue;
 import tau.smlab.syntech.gameinput.spec.Spec;
 import tau.smlab.syntech.gameinput.spec.SpecExp;
 import tau.smlab.syntech.gameinput.spec.SpecHelper;
+import tau.smlab.syntech.gameinput.spec.SpecRegExp;
 import tau.smlab.syntech.gameinput.spec.VariableReference;
 import tau.smlab.syntech.gameinputtrans.TranslationException;
 import tau.smlab.syntech.gameinputtrans.translator.QuantifierTranslator;
@@ -59,8 +60,26 @@ public class VarIndexesTranslator implements Translator {
 			// then, replace all the var indexes inside next expression (true)
 			// and finaly, replace all the remain var indexes of the expression (false)
 			c.setSpec(replaceVarIndexes(replaceVarIndexes(c.getSpec(), true, c.getTraceId()), false, c.getTraceId()));
-
 		}
+		
+		// sys existential constraints
+		for (ExistentialConstraint exC : input.getSys().getExistentialConstraints()) {
+			if(exC.isRegExp()) {
+				SpecRegExp regExp = exC.getRegExp();
+				for(SpecRegExp predRegExp : regExp.getPredicateSubExps()) {  //we assume that there are no 'next' operators and no PastLTL operators
+					predRegExp.setPredicate(replaceVarIndexes(predRegExp.getPredicate(), false, exC.getTraceId()));
+				}
+			}
+			else {
+				for(int i = 0; i < exC.getSize() ; i++) {
+					exC.replaceSpec(i, replaceVarIndexesInsidePastLTL(exC.getSpec(i), exC.getTraceId()));
+					exC.replaceSpec(i, replaceVarIndexes(exC.getSpec(i), false, exC.getTraceId())); //we assume that there are no 'next' operators
+				}
+			}
+		}
+		
+		// sys triggers
+		replaceVarIndexesInTriggers(input.getSys().getTriggers());
 
 		// assumptions
 		for (Constraint c : input.getEnv().getConstraints()) {
@@ -68,12 +87,30 @@ public class VarIndexesTranslator implements Translator {
 			c.setSpec(replaceVarIndexes(replaceVarIndexes(c.getSpec(), true, c.getTraceId()), false, c.getTraceId()));
 
 		}
+		
+		// env triggers
+		replaceVarIndexesInTriggers(input.getEnv().getTriggers());
+		
 		// auxiliary constraints
 		for (Constraint c : input.getAux().getConstraints()) {
 			c.setSpec(replaceVarIndexesInsidePastLTL(c.getSpec(), c.getTraceId()));
 			c.setSpec(replaceVarIndexes(replaceVarIndexes(c.getSpec(), true, c.getTraceId()), false, c.getTraceId()));
 		}
 
+	}
+	
+	private void replaceVarIndexesInTriggers(List<TriggerConstraint> moduleTriggers) {
+		SpecRegExp initSpecRegExp, effectSpecRegExp;
+		for(TriggerConstraint trigger : moduleTriggers) {
+			initSpecRegExp = trigger.getInitSpecRegExp();
+			for(SpecRegExp predRegExp : initSpecRegExp.getPredicateSubExps()) {
+				predRegExp.setPredicate(replaceVarIndexes(predRegExp.getPredicate(), false, trigger.getTraceId()));
+			}
+			effectSpecRegExp = trigger.getEffectSpecRegExp();
+			for(SpecRegExp predRegExp : effectSpecRegExp.getPredicateSubExps()) {
+				predRegExp.setPredicate(replaceVarIndexes(predRegExp.getPredicate(), false, trigger.getTraceId()));
+			}
+		}
 	}
 
 	/**
@@ -93,7 +130,7 @@ public class VarIndexesTranslator implements Translator {
 
 		// for every var index we want to get a list of all the values that it can get
 		for (Variable var : vars) {
-			List<PrimitiveValue> values = QuantifierTranslator.getPrimitivesList(var.getType());
+			List<PrimitiveValue> values = var.getType().getPrimitivesList();
 
 			Spec total = null;
 			
@@ -165,17 +202,7 @@ public class VarIndexesTranslator implements Translator {
 							}
 							newVarRef.getIndexVars().remove(var.getName());
 							
-							String refName = newVarRef.getVariable().getName();
-					        if (newVarRef.getIndexVars().isEmpty()) {
-								for (int i = 0; i < newVarRef.getIndexSpecs().size(); i++) {
-									Integer indexValue = SpecHelper.calculateSpec(newVarRef.getIndexSpecs().get(i));
-									if (indexValue < 0 || indexValue >= newVarRef.getIndexDimensions().get(i)) {
-										throw new TranslationException(String.format("Index %d out of bounds for variable %s", indexValue, newVarRef.getVariable().getName()), traceId);
-									}
-									refName += String.format("[%d]", indexValue);
-								}
-					        }
-					        newVarRef.setReferenceName(refName);
+							SpecHelper.updateRefName(newVarRef);
 					        return newVarRef;
 						}
 					} catch (Exception e) {

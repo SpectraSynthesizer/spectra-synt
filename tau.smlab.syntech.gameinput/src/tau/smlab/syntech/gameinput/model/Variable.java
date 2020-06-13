@@ -28,7 +28,14 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package tau.smlab.syntech.gameinput.model;
 
-public class Variable {
+import java.io.Serializable;
+
+public class Variable implements Serializable {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -1555452952492538184L;
+	
 	private String name;
 	private TypeDef type;
 	private int traceId;

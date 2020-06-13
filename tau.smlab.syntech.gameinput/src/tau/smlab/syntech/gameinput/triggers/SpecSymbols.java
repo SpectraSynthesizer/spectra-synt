@@ -36,6 +36,7 @@ import tau.smlab.syntech.gameinput.spec.Spec;
  * in the trigger and their translation to a group of 
  * alphabet-characters needed in order to use Bricks.
  */
+@Deprecated
 public class SpecSymbols {
 	
 	private Spec spec;

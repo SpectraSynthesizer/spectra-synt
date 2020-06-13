@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import net.sf.javabdd.BDD;
+import net.sf.javabdd.BDDDomain;
 import tau.smlab.syntech.gamemodel.BehaviorInfo;
 import tau.smlab.syntech.jtlv.Env;
 
@@ -163,9 +164,8 @@ public class BDDBuilder {
 				result.andWith(b.initial.id());
 			}
 		}
-		return result;
+		return clear(result);
 	}
-	
 	/**
 	 * compute transitions of the prefix
 	 * @param pref
@@ -178,7 +178,7 @@ public class BDDBuilder {
 				result.andWith(b.safety.id());
 			}
 		}
-		return result;
+		return clear(result);
 	}
 
 	private static List<BehaviorInfo> allOfType(List<BehaviorInfo> pref, bType t) {
@@ -195,5 +195,18 @@ public class BDDBuilder {
 			}
 	    }
 		return all;
+	}
+	
+	/**
+	 * clear BDD from irrelevant domain values caused by domains which are not a power of 2
+	 * 
+	 * @param b
+	 * @return
+	 */
+	private static BDD clear(BDD b) {
+		for (BDDDomain d : b.support().getDomains()) {
+			b.andWith(d.domain());
+		}
+		return b;
 	}
 }

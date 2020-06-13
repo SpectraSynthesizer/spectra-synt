@@ -55,7 +55,8 @@ public class GR1SymbolicControllerConstruction extends SymbolicControllerConstru
 	/**
 	 * this is simply Fig. 3 of the GR(1) journal paper BJP+12
 	 */
-	public SymbolicController calculateSymbolicController() {
+	public SymbolicController calculateSymbolicController() {	
+		
 		BDD Z = mem.z_mem[mem.z_mem.length - 1];
 
 		BDD[] collectedZ = new BDD[sys.justiceNum()];
@@ -70,6 +71,7 @@ public class GR1SymbolicControllerConstruction extends SymbolicControllerConstru
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		
 
 		BDD tr12 = this.sys.trans().and(this.env.trans());
 
@@ -137,7 +139,7 @@ public class GR1SymbolicControllerConstruction extends SymbolicControllerConstru
 			int next_j = (j + 1) % sys.justiceNum();
 			BDD ZnVarNextJ = Zn.getDomain().ithVar(next_j);
 			BDD rho1 = Zn.getDomain().ithVar(j).andWith(sys.justiceAt(j).id()).andWith(tr12.id())
-					.andWith(Env.prime(collectedZ[next_j])).andWith(Env.prime(ZnVarNextJ));
+					.andWith(Env.prime(Z.id())).andWith(Env.prime(ZnVarNextJ));
 			ctrl.disjunctTrans(rho1);
 			rho1.free();
 			ZnVarNextJ.free();

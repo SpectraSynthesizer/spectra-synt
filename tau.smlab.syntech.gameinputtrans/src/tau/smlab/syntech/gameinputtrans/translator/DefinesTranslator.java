@@ -28,15 +28,20 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package tau.smlab.syntech.gameinputtrans.translator;
 
+import java.util.List;
+
 import tau.smlab.syntech.gameinput.model.Constraint;
+import tau.smlab.syntech.gameinput.model.Counter;
 import tau.smlab.syntech.gameinput.model.ExistentialConstraint;
 import tau.smlab.syntech.gameinput.model.GameInput;
 import tau.smlab.syntech.gameinput.model.Pattern;
 import tau.smlab.syntech.gameinput.model.Predicate;
+import tau.smlab.syntech.gameinput.model.TriggerConstraint;
 import tau.smlab.syntech.gameinput.model.WeightDefinition;
 import tau.smlab.syntech.gameinput.spec.DefineReference;
 import tau.smlab.syntech.gameinput.spec.Spec;
 import tau.smlab.syntech.gameinput.spec.SpecExp;
+import tau.smlab.syntech.gameinput.spec.SpecRegExp;
 
 /**
  * iterate over all specs (in guarantees, assumptions, auxiliary constraints,
@@ -63,15 +68,29 @@ public class DefinesTranslator implements Translator {
 
 		// sys existential constraints
 		for (ExistentialConstraint exC : input.getSys().getExistentialConstraints()) {
-			for(int i = 0; i < exC.getSize() ; i++) {
-				exC.replaceSpec(i, replaceDefines(exC.getSpec(i)));
+			if(exC.isRegExp()) {
+				SpecRegExp regExp = exC.getRegExp();
+				for(SpecRegExp predRegExp : regExp.getPredicateSubExps()) {
+					predRegExp.setPredicate(replaceDefines(predRegExp.getPredicate()));
+				}
+			}
+			else {
+				for(int i = 0; i < exC.getSize() ; i++) {
+					exC.replaceSpec(i, replaceDefines(exC.getSpec(i)));
+				}
 			}
 		}
+		
+		// sys triggers
+		replaceDefinesInTriggers(input.getSys().getTriggers());
 
 		// assumptions
 		for (Constraint c : input.getEnv().getConstraints()) {
 			c.setSpec(replaceDefines(c.getSpec()));
 		}
+		
+		// env triggers
+		replaceDefinesInTriggers(input.getEnv().getTriggers());
 
 		// auxiliary constraints
 		for (Constraint c : input.getAux().getConstraints()) {
@@ -96,9 +115,38 @@ public class DefinesTranslator implements Translator {
 			pred.setSpec(replaceDefines(pred.getExpression()));
 
 		}
+		
+		for (Counter counter : input.getCounters()) {
+			if (counter.getDecPred() != null) {
+				counter.getDecPred().setContent(replaceDefines(counter.getDecPred().getContent()));
+			}
+			if (counter.getIncPred() != null) {
+				counter.getIncPred().setContent(replaceDefines(counter.getIncPred().getContent()));
+			}
+			if (counter.getIniPred() != null) {
+				counter.getIniPred().setContent(replaceDefines(counter.getIniPred().getContent()));
+			}
+			if (counter.getResetPred() != null) {
+				counter.getResetPred().setContent(replaceDefines(counter.getResetPred().getContent()));
+			}
+		}
 
 		// clear the list of the defines
 		input.getDefines().clear();
+	}
+
+	private void replaceDefinesInTriggers(List<TriggerConstraint> moduleTriggers) {
+		SpecRegExp initSpecRegExp, effectSpecRegExp;
+		for(TriggerConstraint trigger : moduleTriggers) {
+			initSpecRegExp = trigger.getInitSpecRegExp();
+			for(SpecRegExp predRegExp : initSpecRegExp.getPredicateSubExps()) {
+				predRegExp.setPredicate(replaceDefines(predRegExp.getPredicate()));
+			}
+			effectSpecRegExp = trigger.getEffectSpecRegExp();
+			for(SpecRegExp predRegExp : effectSpecRegExp.getPredicateSubExps()) {
+				predRegExp.setPredicate(replaceDefines(predRegExp.getPredicate()));
+			}
+		}
 	}
 
 	private boolean noWorkToDo(GameInput input) {

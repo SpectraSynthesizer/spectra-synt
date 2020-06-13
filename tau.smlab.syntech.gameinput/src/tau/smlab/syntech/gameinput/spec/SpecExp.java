@@ -33,158 +33,162 @@ package tau.smlab.syntech.gameinput.spec;
  * Specification expression.
  * </p>
  * 
- * @version {@value edu.wis.jtlv.env.Env#version}
- * @author yaniv sa'ar.
+ * @author Yaniv Sa'ar.
  * 
  */
 public class SpecExp implements Spec {
-  private Operator theOp;
-  private Spec[] elements;
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -6833233099417793276L;
+	
+	private Operator theOp;
+	private Spec[] elements;
 
-  /**
-   * <p>
-   * Constructor for an unary specification.
-   * </p>
-   * 
-   * @param op
-   *          The operator.
-   * @param e1
-   *          The sub specification.
-   */
-  public SpecExp(Operator op, Spec e1) {
-    this.theOp = op;
-    this.elements = new Spec[] { e1 };
-  }
+	/**
+	 * <p>
+	 * Constructor for an unary specification.
+	 * </p>
+	 * 
+	 * @param op
+	 *          The operator.
+	 * @param e1
+	 *          The sub specification.
+	 */
+	public SpecExp(Operator op, Spec e1) {
+		this.theOp = op;
+		this.elements = new Spec[] { e1 };
+	}
 
-  public SpecExp(Operator op, SpecWrapper e1) {
-    this(op, e1.getSpec());
-  }
+	public SpecExp(Operator op, SpecWrapper e1) {
+		this(op, e1.getSpec());
+	}
 
-  /**
-   * <p>
-   * Constructor for a binary specification.
-   * </p>
-   * 
-   * @param op
-   *          The operator.
-   * @param e1
-   *          The first sub specification.
-   * @param e2
-   *          The second sub specification.
-   */
-  public SpecExp(Operator op, Spec e1, Spec e2) {
-    this.theOp = op;
-    this.elements = new Spec[] { e1, e2 };
-  }
+	/**
+	 * <p>
+	 * Constructor for a binary specification.
+	 * </p>
+	 * 
+	 * @param op
+	 *          The operator.
+	 * @param e1
+	 *          The first sub specification.
+	 * @param e2
+	 *          The second sub specification.
+	 */
+	public SpecExp(Operator op, Spec e1, Spec e2) {
+		this.theOp = op;
+		this.elements = new Spec[] { e1, e2 };
+	}
 
-  public SpecExp(Operator op, SpecWrapper e1, SpecWrapper e2) {
-    this(op, e1.getSpec(), e2.getSpec());
-  }
+	public SpecExp(Operator op, SpecWrapper e1, SpecWrapper e2) {
+		this(op, e1.getSpec(), e2.getSpec());
+	}
 
-  public String toString() {
-    if (this.theOp.isUnary()) {
-      return theOp.toString() + "(" + elements[0].toString() + ")";
-    } else {
-      return elements[0].toString() + " " + theOp.toString() + " " + elements[1].toString();
-    }
-  }
+	public String toString() {
+		if (this.theOp.isUnary()) {
+			return theOp.toString() + "(" + elements[0].toString() + ")";
+		} else {
+			return elements[0].toString() + " " + theOp.toString() + " " + elements[1].toString();
+		}
+	}
 
-  /**
-   * <p>
-   * The operator representing this node.
-   * </p>
-   * 
-   * @return An operator representing this node.
-   */
-  public Operator getOperator() {
-    return theOp;
-  };
+	/**
+	 * <p>
+	 * The operator representing this node.
+	 * </p>
+	 * 
+	 * @return An operator representing this node.
+	 */
+	public Operator getOperator() {
+		return theOp;
+	};
 
-  /**
-   * <p>
-   * Get the children specification of this node.
-   * <p>
-   * 
-   * @return The children specification.
-   */
-  public Spec[] getChildren() {
-    return this.elements;
-  }
+	/**
+	 * <p>
+	 * Get the children specification of this node.
+	 * <p>
+	 * 
+	 * @return The children specification.
+	 */
+	public Spec[] getChildren() {
+		return this.elements;
+	}
 
-  /*
-   * (non-Javadoc)
-   * 
-   * @see edu.wis.jtlv.env.spec.Spec#isPastLTLSpec()
-   */
-  public boolean isPastLTLSpec() {
-    // checking that all children are prop.
-    for (Spec s : this.getChildren()) {
-      if (s.isPastLTLSpec()) {
-        return true;
-      }
-    }
-    // checking that I'm prop or pastLTL
-    return this.getOperator().isPastLTLOp();
-  }
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see edu.wis.jtlv.env.spec.Spec#isPastLTLSpec()
+	 */
+	public boolean isPastLTLSpec() {
+		// checking that all children are prop.
+		for (Spec s : this.getChildren()) {
+			if (s.isPastLTLSpec()) {
+				return true;
+			}
+		}
+		// checking that I'm prop or pastLTL
+		return this.getOperator().isPastLTLOp();
+	}
 
-  /*
-   * (non-Javadoc)
-   * 
-   * @see edu.wis.jtlv.env.spec.Spec#isPropSpec()
-   */
-  public boolean isPropSpec() {
-    // checking that all children are prop.
-    for (Spec s : this.getChildren())
-      if (!s.isPropSpec())
-        return false;
-    // checking that I'm prop
-    return this.getOperator().isProp();
-  }
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see edu.wis.jtlv.env.spec.Spec#isPropSpec()
+	 */
+	public boolean isPropSpec() {
+		// checking that all children are prop.
+		for (Spec s : this.getChildren())
+			if (!s.isPropSpec())
+				return false;
+		// checking that I'm prop
+		return this.getOperator().isProp();
+	}
 
-  /*
-   * (non-Javadoc)
-   * 
-   * @see edu.wis.jtlv.env.spec.Spec#hasTemporalOperators()
-   */
-  public boolean hasTemporalOperators() {
-    // if one of my elements is temporal.
-    for (Spec s : this.getChildren())
-      if (s.hasTemporalOperators())
-        return true;
-    // or I'm temporal.
-    return this.theOp.isTemporalOp();
-  }
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see edu.wis.jtlv.env.spec.Spec#hasTemporalOperators()
+	 */
+	public boolean hasTemporalOperators() {
+		// if one of my elements is temporal.
+		for (Spec s : this.getChildren())
+			if (s.hasTemporalOperators())
+				return true;
+		// or I'm temporal.
+		return this.theOp.isTemporalOp();
+	}
 
-  /*
-   * (non-Javadoc)
-   * 
-   * @see java.lang.Object#equals(java.lang.Object)
-   */
-  public boolean equals(Object other) {
-    if (!(other instanceof SpecExp))
-      return false;
-    SpecExp otherExp = (SpecExp) other;
-    if (this.getOperator() != otherExp.getOperator())
-      return false;
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
+	public boolean equals(Object other) {
+		if (!(other instanceof SpecExp))
+			return false;
+		SpecExp otherExp = (SpecExp) other;
+		if (this.getOperator() != otherExp.getOperator())
+			return false;
 
-    Spec[] this_children = this.getChildren();
-    Spec[] other_children = otherExp.getChildren();
-    if (this_children.length != other_children.length)
-      return false;
+		Spec[] this_children = this.getChildren();
+		Spec[] other_children = otherExp.getChildren();
+		if (this_children.length != other_children.length)
+			return false;
 
-    for (int i = 0; i < this_children.length; i++)
-      if (!this_children[i].equals(other_children[i]))
-        return false;
+		for (int i = 0; i < this_children.length; i++)
+			if (!this_children[i].equals(other_children[i]))
+				return false;
 
-    return true;
-  }
+		return true;
+	}
 
-  public SpecExp clone() throws CloneNotSupportedException {
-    int elementsSize = this.elements.length;
-    if (elementsSize == 1) {
-      return new SpecExp(this.theOp, this.elements[0].clone());
-    } else {
-      return new SpecExp(this.theOp, this.elements[0].clone(), this.elements[1].clone());
-    }
-  }
+	public SpecExp clone() throws CloneNotSupportedException {
+		int elementsSize = this.elements.length;
+		if (elementsSize == 1) {
+			return new SpecExp(this.theOp, this.elements[0].clone());
+		} else {
+			return new SpecExp(this.theOp, this.elements[0].clone(), this.elements[1].clone());
+		}
+	}
 }

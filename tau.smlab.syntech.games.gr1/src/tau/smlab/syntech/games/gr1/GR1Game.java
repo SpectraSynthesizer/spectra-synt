@@ -111,6 +111,46 @@ public class GR1Game extends GameSolver {
 		mem.setComplete(true);
 		return sysWinAllInitial(z);
 	}
+	
+//	private BDD X_gfp(BDD top, BDD F, BDD start) {
+//		FixPoint iterX;
+//		BDD ret = top.id();
+//		for (iterX = new FixPoint(false); iterX.advance(ret);) {
+//
+//			ret = env.yieldStates(sys, ret).and(F).or(start);
+//		}
+//		return ret;
+//	}
+//	
+//	private BDD Y_lfp(BDD top, BDD F) {
+//		FixPoint iterY;
+//		BDD ret = Env.FALSE();
+//		for (iterY = new FixPoint(false); iterY.advance(ret);) {
+//			BDD start = F.orWith(env.yieldStates(sys, ret));
+//
+//			BDD tmpRet = Env.FALSE();
+//			for (int i = 0; i < env.justiceNum(); i++) {
+//				tmpRet = tmpRet.or(X_gfp(top, env.justiceAt(i).not(), start));
+//			}
+//			start.free();
+//			ret = tmpRet.id();
+//		}
+//		return ret;
+//	}
+//	
+//	private BDD Z_gfp() {
+//		FixPoint iterZ;
+//		BDD ret = Env.TRUE();
+//		
+//		for (iterZ = new FixPoint(false); iterZ.advance(ret);) {
+//
+//			for (int j = 0; j < sys.justiceNum(); j++) {
+//				BDD F = sys.justiceAt(j).id().andWith(env.yieldStates(sys, ret));
+//				ret = Y_lfp(ret, F);
+//			}
+//		}
+//		return ret;
+//	}
 
 	@Override
 	public void free() {

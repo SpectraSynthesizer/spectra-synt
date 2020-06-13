@@ -28,29 +28,35 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package tau.smlab.syntech.gameinput.model;
 
+import java.io.Serializable;
+
 import tau.smlab.syntech.gameinput.spec.Spec;
 
-public class Define {
-  private String name;
-  private Spec expression;
-  
-  public Define(String name, Spec expression)
-  {
-    this.name = name;
-    this.expression = expression;
-  }
-  
-  public String getName() {
-    return name;
-  }
+public class Define implements Serializable {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 6360168530185398381L;
+	
+	private String name;
+	private Spec expression;
 
-  public Spec getExpression() {
-    return expression;
-  }
-  
-  public void setExpression(Spec spec) {
-    this.expression = spec;
-  }
-  
+	public Define(String name, Spec expression)
+	{
+		this.name = name;
+		this.expression = expression;
+	}
 
+	public String getName() {
+		return name;
+	}
+
+	public Spec getExpression() {
+		return expression;
+	}
+
+	public void setExpression(Spec spec) {
+		this.expression = spec;
+	}
+	
 }

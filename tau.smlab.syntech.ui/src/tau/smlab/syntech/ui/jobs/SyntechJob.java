@@ -30,7 +30,9 @@ package tau.smlab.syntech.ui.jobs;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
@@ -51,6 +53,8 @@ import org.eclipse.ui.part.FileEditorInput;
 import org.eclipse.xtext.nodemodel.INode;
 import org.eclipse.xtext.nodemodel.util.NodeModelUtils;
 
+import net.sf.javabdd.BDD;
+import net.sf.javabdd.BDDVarSet;
 import tau.smlab.syntech.bddgenerator.BDDGenerator;
 import tau.smlab.syntech.bddgenerator.BDDGenerator.TraceInfo;
 import tau.smlab.syntech.bddgenerator.BDDTranslationException;
@@ -128,6 +132,101 @@ public abstract class SyntechJob extends Job {
 		printToConsole("Computation time: " + computationTime + "ms");
 		return Status.OK_STATUS;
 	}
+	
+	/**
+	 * determinize b
+	 * 
+	 * @param b
+	 * @param vars
+	 * @return
+	 */
+	protected BDD det(BDD b, BDDVarSet vars) {
+		// set new varorder where vars are at the end
+		Env.disableReorder();
+		int[] oldOrder = b.getFactory().getVarOrder();
+		List<Integer> newOrder = Arrays.stream(oldOrder).boxed().collect(Collectors.toList());
+		List<Integer> varsL = Arrays.stream(vars.toArray()).boxed().collect(Collectors.toList());
+		newOrder.removeAll(varsL);
+		newOrder.addAll(varsL);
+		b.getFactory().setVarOrder(newOrder.stream().mapToInt(i->i).toArray());
+
+		BDD det = b.id();
+		for (int var : vars.toArray()) {
+			BDD tmp = det;
+			det = det(tmp, var);
+			tmp.free();
+		}
+		//b.getFactory().setVarOrder(oldOrder);
+		return det;
+	}
+	
+	/**
+	 * determinizes b to a fresh BDD
+	 * @param b
+	 * @param var
+	 * @return
+	 */
+	private BDD det(BDD b, int var) {
+
+		if (b.isZero()) {
+			return b.id();
+		}
+
+		if (b.isOne()) {
+			return b.getFactory().nithVar(var).id();
+		}
+
+		// var appears so make decision one option
+		// this can only work because of varorder
+		if (b.var() == var) {
+			BDD blow = b.low();
+			if (!blow.isZero()) {
+				// take low branch regardless of high branch        
+				BDD res = b.getFactory().ithVar(var);
+				res = res.ite(Env.FALSE(), blow);
+				blow.free();
+				return res;
+			} else {
+				// there is only one choice for b so it is fine
+				return b.id();
+			}
+		}
+
+
+		// var did not appear
+		if (passedVar(b, var)) {
+			BDD res = b.getFactory().ithVar(var);
+			res = res.ite(Env.FALSE(), b);
+			return res;
+		} else {
+			// determinize children
+			BDD res = b.getFactory().ithVar(b.var());
+			BDD bhi = b.high();
+			BDD high = det(bhi, var);
+			bhi.free();
+			BDD blo = b.low();
+			BDD low = det(blo, var);
+			blo.free();
+			res = res.ite(high, low);
+			high.free();
+			low.free();
+			return res;
+		}
+	}
+	
+	/**
+	 * did var only appear above b?
+	 * 
+	 * @param b
+	 * @param var
+	 * @return
+	 */
+	private boolean passedVar(BDD b, int var) {
+		int lvlB = b.getFactory().var2Level(b.var());
+		int lvlVar = b.getFactory().var2Level(var);
+		return lvlB > lvlVar;
+	}
+	
 
 	/**
 	 * first translate GameInput into GameModel (this can already be expensive due

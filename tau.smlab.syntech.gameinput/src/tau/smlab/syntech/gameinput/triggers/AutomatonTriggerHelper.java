@@ -39,12 +39,10 @@ import dk.brics.automaton.Automaton;
 import dk.brics.automaton.RegExp;
 import dk.brics.automaton.State;
 import dk.brics.automaton.Transition;
-import tau.smlab.syntech.gameinput.model.SpecRegExp;
-import tau.smlab.syntech.gameinput.model.SpecRegExp.Quantifier;
-import tau.smlab.syntech.gameinput.model.SpecRegExpStep;
 import tau.smlab.syntech.gameinput.spec.Operator;
 import tau.smlab.syntech.gameinput.spec.Spec;
 import tau.smlab.syntech.gameinput.spec.SpecExp;
+import tau.smlab.syntech.gameinput.spec.SpecRegExp;
 
 /**
  * Provides helper functions for finite brics automaton trigger construction related operations.
@@ -52,6 +50,7 @@ import tau.smlab.syntech.gameinput.spec.SpecExp;
  * @author Gal Amram
  *
  */
+@Deprecated
 public class AutomatonTriggerHelper {
 
 
@@ -73,7 +72,7 @@ public class AutomatonTriggerHelper {
 
 		Automaton extended =  regExp.toAutomaton(); // This automaton matches the regular expression, but it might include
 											// too many symbols due to complementations. Thus, we intersect with an automaton that accept Sigma*
-		String allSymbols = CreateAllSymbols(fromList,toList); // Creates a regexp whose language is Sigma* 
+		String allSymbols = createAllSymbols(fromList,toList); // Creates a regexp whose language is Sigma* 
 		RegExp sigmaStar = new RegExp(allSymbols);
 		Automaton sigmaStarAutomaton = sigmaStar.toAutomaton();
 		Automaton reduced = sigmaStarAutomaton.intersection(extended);
@@ -87,7 +86,7 @@ public class AutomatonTriggerHelper {
 	 * @return
 	 */
 
-	private static String CreateAllSymbols(List<Integer> fromList, List<Integer> toList) {
+	private static String createAllSymbols(List<Integer> fromList, List<Integer> toList) {
 		
 		double numOfSeq =1;
 		for (int i=0; i<fromList.size(); i++)
@@ -390,82 +389,82 @@ public class AutomatonTriggerHelper {
 	}
 	
 	
-	// translates a spectra regular expression into a String that represents a brics regular expression
-
-	@SuppressWarnings("unused")
-	private static String translateRegExp(SpecRegExp regexp,List<String> symbols, String[] binaryWords) {
-		
-			if (regexp.getKind() == Quantifier.EMPTY ) {
-				return ( "()" );
-			}
-			
-			if (regexp.getKind() == Quantifier.VAR) {
-				String name =regexp.getName();
-				int index = symbols.indexOf(name);
-				return ( binaryWords[index] );
-			}
-			
-			
-			if (regexp.getKind() == Quantifier.NEGVAR) {
-				String name = regexp.getName();
-				int index = symbols.indexOf(name);
-				return ( binaryWords[2*index] );
-			}
-			
-			if (regexp.getKind() == Quantifier.VAL) {
-				if (regexp.getName().charAt(0) == 'T') { 
-				  return (binaryWords[symbols.size()]); }
-				if (regexp.getName().charAt(0) == 'F') {
-					return (binaryWords[symbols.size()+1]); }
-			}
-			
-			if (regexp.getKind() == Quantifier.ZERO_OR_MORE)   { 
-				return ("(" + translateRegExp(regexp.getLeft(), symbols, binaryWords) + ")*");
-			}
-			
-			if (regexp.getKind() == Quantifier.ZERO_OR_ONE)   { 
-				return ("(" + translateRegExp(regexp.getLeft(), symbols, binaryWords) + ")?");
-			}
-			
-			if (regexp.getKind() == Quantifier.ONE_OR_MORE)   { 
-				return ("(" + translateRegExp(regexp.getLeft(), symbols, binaryWords) + ")+");
-			}
-			
-			if (regexp.getKind() == Quantifier.EXACT_REPETITION)   { 
-				return ("(" + translateRegExp(regexp.getLeft(), symbols, binaryWords)  + "){" + 
-						regexp.getFrom() +"}");
-			}
-			
-			if (regexp.getKind() == Quantifier.AT_LEAST)   { 
-				return ("(" +  translateRegExp(regexp.getLeft(), symbols, binaryWords) + "){" +
-						regexp.getFrom() +",}");
-			}
-
-			if (regexp.getKind() == Quantifier.RANGE)   { 
-				return ("(" + translateRegExp(regexp.getLeft(), symbols, binaryWords) +
-						"){" + regexp.getFrom() + "," + regexp.getTo() +  "}");
-			}
-			
-			if (regexp.getKind() == Quantifier.COMPLEMENT )   { 
-				return ("~(" + translateRegExp(regexp.getLeft(), symbols, binaryWords) + ")");
-			}
-			
-			if(regexp.getKind() == Quantifier.CONCAT) {
-					return ("(" + translateRegExp(regexp.getLeft(), symbols, binaryWords) + ")" +
-						   "(" + translateRegExp(regexp.getRight(), symbols, binaryWords) + ")");
-			}
-			
-			if(regexp.getKind() == Quantifier.UNION) {
-				return ("(" + translateRegExp(regexp.getLeft(), symbols, binaryWords) + ")" + "|" +
-					   "(" + translateRegExp(regexp.getRight(), symbols, binaryWords) + ")");
-			}
-			
-			if(regexp.getKind() == Quantifier.INTERSECTION) {
-				return ("(" + translateRegExp(regexp.getLeft(), symbols, binaryWords) + ")" + "&" +
-					   "(" + translateRegExp(regexp.getRight(), symbols, binaryWords) + ")");
-			}
-			return null;
-	}
+//	// translates a spectra regular expression into a String that represents a brics regular expression
+//
+//	@SuppressWarnings("unused")
+//	private static String translateRegExp(SpecRegExp regexp,List<String> symbols, String[] binaryWords) {
+//		
+//			if (regexp.getRegExpKind() == Quantifier.EMPTY_STR ) {
+//				return ( "()" );
+//			}
+//			
+//			if (regexp.getRegExpKind() == Quantifier.VAR) {
+//				String name =regexp.getName();
+//				int index = symbols.indexOf(name);
+//				return ( binaryWords[index] );
+//			}
+//			
+//			
+//			if (regexp.getRegExpKind() == Quantifier.NEGVAR) {
+//				String name = regexp.getName();
+//				int index = symbols.indexOf(name);
+//				return ( binaryWords[2*index] );
+//			}
+//			
+//			if (regexp.getRegExpKind() == Quantifier.VAL) {
+//				if (regexp.getName().charAt(0) == 'T') { 
+//				  return (binaryWords[symbols.size()]); }
+//				if (regexp.getName().charAt(0) == 'F') {
+//					return (binaryWords[symbols.size()+1]); }
+//			}
+//			
+//			if (regexp.getRegExpKind() == Quantifier.ZERO_OR_MORE)   { 
+//				return ("(" + translateRegExp(regexp.getLeft(), symbols, binaryWords) + ")*");
+//			}
+//			
+//			if (regexp.getRegExpKind() == Quantifier.ZERO_OR_ONE)   { 
+//				return ("(" + translateRegExp(regexp.getLeft(), symbols, binaryWords) + ")?");
+//			}
+//			
+//			if (regexp.getRegExpKind() == Quantifier.ONE_OR_MORE)   { 
+//				return ("(" + translateRegExp(regexp.getLeft(), symbols, binaryWords) + ")+");
+//			}
+//			
+//			if (regexp.getRegExpKind() == Quantifier.EXACT_REPETITION)   { 
+//				return ("(" + translateRegExp(regexp.getLeft(), symbols, binaryWords)  + "){" + 
+//						regexp.getFrom() +"}");
+//			}
+//			
+//			if (regexp.getRegExpKind() == Quantifier.AT_LEAST)   { 
+//				return ("(" +  translateRegExp(regexp.getLeft(), symbols, binaryWords) + "){" +
+//						regexp.getFrom() +",}");
+//			}
+//
+//			if (regexp.getRegExpKind() == Quantifier.RANGE)   { 
+//				return ("(" + translateRegExp(regexp.getLeft(), symbols, binaryWords) +
+//						"){" + regexp.getFrom() + "," + regexp.getTo() +  "}");
+//			}
+//			
+//			if (regexp.getRegExpKind() == Quantifier.COMPLEMENT )   { 
+//				return ("~(" + translateRegExp(regexp.getLeft(), symbols, binaryWords) + ")");
+//			}
+//			
+//			if(regexp.getRegExpKind() == Quantifier.CONCAT) {
+//					return ("(" + translateRegExp(regexp.getLeft(), symbols, binaryWords) + ")" +
+//						   "(" + translateRegExp(regexp.getRight(), symbols, binaryWords) + ")");
+//			}
+//			
+//			if(regexp.getRegExpKind() == Quantifier.UNION) {
+//				return ("(" + translateRegExp(regexp.getLeft(), symbols, binaryWords) + ")" + "|" +
+//					   "(" + translateRegExp(regexp.getRight(), symbols, binaryWords) + ")");
+//			}
+//			
+//			if(regexp.getRegExpKind() == Quantifier.INTERSECTION) {
+//				return ("(" + translateRegExp(regexp.getLeft(), symbols, binaryWords) + ")" + "&" +
+//					   "(" + translateRegExp(regexp.getRight(), symbols, binaryWords) + ")");
+//			}
+//			return null;
+//	}
 	
 	
 	// translates a spectra regular expression into a String that represents a brics regular expression
@@ -475,14 +474,21 @@ public class AutomatonTriggerHelper {
 	private static String translateRegExp2(SpecRegExp regexp,List<String> symbols, 
 			List<Integer> fromList, List<Integer> toList) {
 		
+		return "";
+		
+	}
+	
+	/*private static String translateRegExp2(SpecRegExp regexp,List<String> symbols, 
+			List<Integer> fromList, List<Integer> toList) {
+		
 		Set<Integer> values;
 		
-		if (regexp.getKind() == Quantifier.EMPTY ) {
+		if (regexp.getRegExpKind() == Quantifier.EMPTY_STR ) {
 			return "()";
 		}
 		
 		
-		if ( (regexp.getKind() == Quantifier.VAR) || (regexp.getKind() == Quantifier.NEGVAR) ) {
+		if ( (regexp.getRegExpKind() == Quantifier.VAR) || (regexp.getRegExpKind() == Quantifier.NEGVAR) ) {
 			String name =regexp.getName();
 			int index = symbols.indexOf(name);
 			values = regexp.getValues();  
@@ -490,7 +496,7 @@ public class AutomatonTriggerHelper {
 		}
 
 		
-		if (regexp.getKind() == Quantifier.VAL) {
+		if (regexp.getRegExpKind() == Quantifier.VAL) {
 			if (regexp.getName().charAt(0) == 'T') { 
 			  return ( createNonZeroSequences(fromList,toList) ); }
 			if (regexp.getName().charAt(0) == 'F') {
@@ -499,65 +505,65 @@ public class AutomatonTriggerHelper {
 		}
 		
 		
-		if (regexp.getKind() == Quantifier.ZERO_OR_MORE)   { 
+		if (regexp.getRegExpKind() == Quantifier.ZERO_OR_MORE)   { 
 			return "(" + translateRegExp2(regexp.getLeft(), symbols, fromList, toList) + ")*";
 		}
 		
 		
-		if (regexp.getKind() == Quantifier.ZERO_OR_ONE)   { 
+		if (regexp.getRegExpKind() == Quantifier.ZERO_OR_ONE)   { 
 			return "(" + translateRegExp2(regexp.getLeft(), symbols, fromList, toList) + ")?";
 		}
 		
 		
-		if (regexp.getKind() == Quantifier.ONE_OR_MORE)   { 
+		if (regexp.getRegExpKind() == Quantifier.ONE_OR_MORE)   { 
 			return "(" + translateRegExp2(regexp.getLeft(), symbols, fromList, toList) + ")+";
 		}
 		
 		
-		if (regexp.getKind() == Quantifier.EXACT_REPETITION)   { 
+		if (regexp.getRegExpKind() == Quantifier.EXACT_REPETITION)   { 
 			return "(" + translateRegExp2(regexp.getLeft(), symbols, fromList, toList)  + "){" + 
 					regexp.getFrom() +"}";
 		}
 		
 		
-		if (regexp.getKind() == Quantifier.AT_LEAST)   { 
+		if (regexp.getRegExpKind() == Quantifier.AT_LEAST)   { 
 			return "(" +  translateRegExp2(regexp.getLeft(), symbols, fromList, toList) + "){" +
 					regexp.getFrom() +",}";
 		}
 
 		
-		if (regexp.getKind() == Quantifier.RANGE)   { 
+		if (regexp.getRegExpKind() == Quantifier.RANGE)   { 
 			return "(" + translateRegExp2(regexp.getLeft(), symbols, fromList, toList) +
 					"){" + regexp.getFrom() + "," + regexp.getTo() +  "}";
 		}
 		
 		
-		if (regexp.getKind() == Quantifier.COMPLEMENT )   { 
+		if (regexp.getRegExpKind() == Quantifier.COMPLEMENT )   { 
 			return "~(" + translateRegExp2(regexp.getLeft(), symbols, fromList, toList) + ")";
 		}
 		
 		
-		if(regexp.getKind() == Quantifier.CONCAT) {
+		if(regexp.getRegExpKind() == Quantifier.CONCAT) {
 			String left = translateRegExp2(regexp.getLeft(), symbols, fromList, toList);
 			String right = translateRegExp2(regexp.getRight(), symbols, fromList, toList);
 			return "(" + left + ")" + "(" + right + ")";
 		}
 		
 		
-		if(regexp.getKind() == Quantifier.UNION) {
+		if(regexp.getRegExpKind() == Quantifier.UNION) {
 			String left = translateRegExp2(regexp.getLeft(), symbols, fromList, toList);
 			String right = translateRegExp2(regexp.getRight(), symbols, fromList, toList);
 			return "(" + left + ")" + "|" + "(" + right + ")";
 		}
 		
 		
-		if(regexp.getKind() == Quantifier.INTERSECTION) {
+		if(regexp.getRegExpKind() == Quantifier.INTERSECTION) {
 			String left = translateRegExp2(regexp.getLeft(), symbols, fromList, toList);
 			String right = translateRegExp2(regexp.getRight(), symbols, fromList, toList);
 			return "(" + left + ")" + "&" + "(" + right + ")";
 		}
 		return null;
-}
+}*/
 	
 	/**
 	 * A method to construct a string that is a disjunction of all symbols representing non-zero sequences.
@@ -808,46 +814,6 @@ public class AutomatonTriggerHelper {
 		return res;
 	}
 
-	@SuppressWarnings("unused")
-	private static String getRegExpQuantifierSymbol(SpecRegExpStep currentRegExpStep) {
-
-		String res;
-
-		switch (currentRegExpStep.getQuantifier()) {
-
-		case ZERO_OR_MORE :
-			res = "*";
-			break;
-
-		case ZERO_OR_ONCE :
-			res = "?";
-			break;
-
-		case AT_LEAST_ONCE :
-			res = "+";
-			break;
-
-		case EXACT_REPETITION :
-			res = "{" + currentRegExpStep.getFrom() + "}";
-			break;
-
-		case AT_LEAST :
-			res = "{" + currentRegExpStep.getFrom() + ",}";
-			break;
-
-		case RANGE :
-			res = "{" + currentRegExpStep.getFrom() + "," + currentRegExpStep.getTo() + "}";	
-			break;
-
-		default :
-			throw new RuntimeException("unknown RegExp quantifier " + 
-					currentRegExpStep.getQuantifier()); 
-		}  
-
-		return res;
-	}
-
-	
 	private static char symbolToChar(String symbol) {
 		return (char) Integer.parseInt(symbol, 2);
 	}

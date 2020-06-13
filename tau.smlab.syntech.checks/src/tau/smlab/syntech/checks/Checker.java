@@ -268,7 +268,7 @@ public class Checker {
     if (Env.hasVars(env.initial(), sys.moduleUnprimeVars())) {
       // check whether BehaviorInfo was created
       if (model.getEnvBehaviorInfo().isEmpty()) {
-        infos.add(new BehaviorInfo(env.initial(), null, null, null, 0, false));
+        infos.add(new BehaviorInfo(env.initial(), null, null, null, null, 0, false));
       } else {
         for (BehaviorInfo bi : model.getEnvBehaviorInfo()) {
           if (bi.isInitial() && Env.hasVars(bi.initial, sys.moduleUnprimeVars())) {
@@ -298,7 +298,7 @@ public class Checker {
     if (Env.hasVars(env.initial(), primes)) {
       // check whether BehaviorInfo was created
       if (model.getEnvBehaviorInfo().isEmpty()) {
-        infos.add(new BehaviorInfo(env.initial(), null, null, null, 0, false));
+        infos.add(new BehaviorInfo(env.initial(), null, null, null, null, 0, false));
       } else {
         for (BehaviorInfo bi : model.getEnvBehaviorInfo()) {
           if (bi.isInitial() && Env.hasVars(bi.initial, primes)) {
@@ -327,7 +327,7 @@ public class Checker {
     if (Env.hasVars(env.trans(), sys.modulePrimeVars())) {
       // check whether BehaviorInfo was created
       if (model.getEnvBehaviorInfo().isEmpty()) {
-        infos.add(new BehaviorInfo(null, env.trans(), null, null, 0, false));
+        infos.add(new BehaviorInfo(null, env.trans(), null, null, null, 0, false));
       } else {
         for (BehaviorInfo bi : model.getEnvBehaviorInfo()) {
           if (bi.isSafety() && Env.hasVars(bi.safety, sys.modulePrimeVars())) {
@@ -348,7 +348,7 @@ public class Checker {
     if (Env.hasVars(sys.initial(), primes)) {
       // check whether BehaviorInfo was created
       if (model.getSysBehaviorInfo().isEmpty()) {
-        infos.add(new BehaviorInfo(sys.initial(), null, null, null, 0, false));
+        infos.add(new BehaviorInfo(sys.initial(), null, null, null, null, 0, false));
       } else {
         for (BehaviorInfo bi : model.getSysBehaviorInfo()) {
           if (bi.isInitial() && Env.hasVars(bi.initial, primes)) {

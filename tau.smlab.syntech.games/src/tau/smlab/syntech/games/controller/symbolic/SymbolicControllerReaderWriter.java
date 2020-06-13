@@ -28,101 +28,133 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package tau.smlab.syntech.games.controller.symbolic;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Set;
+import java.io.ObjectInputStream;
 
-import net.sf.javabdd.BDD;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 import tau.smlab.syntech.gamemodel.GameModel;
 import tau.smlab.syntech.games.util.SaveLoadWithDomains;
 import tau.smlab.syntech.jtlv.Env;
 
 public class SymbolicControllerReaderWriter {
+	
+	protected final static String CONTROLLER_INIT = "controller.init.bdd";
+	protected final static String CONTROLLER_TRANS = "controller.trans.bdd";
+	protected final static String VARS = "vars.doms";
+	
+	protected final static String SIZES = "sizes";
+	protected final static String EXT_SIZES = "existential_sizes";
+	protected final static String FIXPOINTS = "fixpoints.bdd";
+	protected final static String TRANS = "trans.bdd";
+	protected final static String JUSTICE = "justice.bdd";
+	
+	protected final static String FULFILL = "fulfill.bdd";
+	protected final static String TOWARDS = "towards.bdd";
+	protected final static String ENV_VIOLATION = "envviolation.bdd";
 
-  /**
-   * stores a symbolic controller to a file path
-   * 
-   * @param ctrl
-   * @param model
-   * @param path
-   *          needs to be a folder name (folder will be created if not exists)
-   * @throws IOException
-   */
-  public static void writeSymbolicController(SymbolicController ctrl, GameModel model, String path)
-      throws IOException {
-    File f = new File(path);
-    if (!f.exists()) {
-      f.mkdir();
-    }
-    Env.disableReorder();
-    SaveLoadWithDomains.saveStructureAndDomains(path + "/vars.doms", model);
-    Env.saveBDD(path + "/controller.init.bdd", ctrl.initial());
-    Env.saveBDD(path + "/controller.trans.bdd", ctrl.trans());
-  }
-  
+	/**
+	 * loads a symbolic controller from a file path
+	 * 
+	 * Also loads and creates all BDD variables needed for it!
+	 * 
+	 * @param path
+	 * @return
+	 * @throws IOException
+	 */
+	public static SymbolicController readSymbolicController(ObjectInputStream ois, BufferedReader initReader,
+			BufferedReader transReader) throws IOException {
 
-  /**
-   * writes only the BDDs of a symbolic controller to a file path
-   * 
-   * @param ctrl
-   * @param path
-   *          needs to be a folder name (folder will be created if not exists)
-   * @throws IOException
-   */
-  public static void writeSymbolicController(SymbolicController ctrl, String path)
-      throws IOException {
-    File f = new File(path);
-    if (!f.exists()) {
-      f.mkdir();
-    }
-    Env.disableReorder();
-    Env.saveBDD(path + "/controller.init.bdd", ctrl.initial());
-    Env.saveBDD(path + "/controller.trans.bdd", ctrl.trans());
-  }
+		// TODO: design
+		throw new NotImplementedException();
+	}
 
-  /**
-   * loads a symbolic controller from a file path
-   * 
-   * Also loads and creates all BDD variables needed for it!
-   * 
-   * @param path
-   * @return
-   * @throws IOException
-   */
-  public static SymbolicController readSymbolicController(String path)
-      throws IOException {
+	/**
+	 * stores a symbolic controller to a file path
+	 * 
+	 * @param ctrl
+	 * @param model
+	 * @param path  needs to be a folder name (folder will be created if not exists)
+	 */
+	public static void writeSymbolicController(SymbolicController ctrl, GameModel model, String path, boolean reorderBeforeSave) throws IOException {
 
-    SaveLoadWithDomains.loadStructureAndDomains(path + "/vars.doms");
-    BDD init = Env.loadBDD(path + "/controller.init.bdd");
-    init = init.exist(Env.globalPrimeVars());
-    BDD trans = Env.loadBDD(path + "/controller.trans.bdd");
+		// write the actual symbolic controller BDDs and doms
 
-    SymbolicController ctrl = new SymbolicController();
-    ctrl.setTrans(trans);
-    ctrl.setInit(init);
+		Env.disableReorder();
 
-    return ctrl;
-  }
+		File folder = new File(path);
+		if (!folder.exists()) {
+			folder.mkdir();
+		}
+		
+		String prefix = path + File.separator;
+		
+		SaveLoadWithDomains.saveStructureAndDomains(prefix + VARS, model);
 
-  /**
-   * load names of system variables from directory of symbolic controller
-   * 
-   * @param path
-   * @return
-   * @throws IOException
-   */
-  public static Set<String> readSysVarNames(String path) throws IOException {
-    return SaveLoadWithDomains.loadSysVarNames(path + "/vars.doms");
-  }
+		Env.saveBDD(prefix + CONTROLLER_INIT, ctrl.initial(), reorderBeforeSave);
+		Env.saveBDD(prefix + CONTROLLER_TRANS, ctrl.trans(), reorderBeforeSave);
+	}
+	
+	/**
+	 * stores a symbolic controller just in time info to a file path
+	 * 
+	 * @param jitInfo
+	 * @param model
+	 * @param path
+	 * @param reorderBeforeSave
+	 * @throws IOException
+	 */
+	public static void writeJitSymbolicController(SymbolicControllerJitInfo jitInfo, GameModel model, String path, boolean reorderBeforeSave) throws IOException {
+		
+		File folder = new File(path);
+		if (!folder.exists()) {
+			folder.mkdir();
+		}
+		
+		String prefix = path + File.separator;
+        
+        FileWriter sizesWriter = new FileWriter(prefix + SIZES);
+        sizesWriter.write(model.getSys().justiceNum() + System.lineSeparator() + model.getEnv().justiceNum() + System.lineSeparator());
+        
+        
+        for (int j = 0; j < model.getSys().justiceNum(); j++) {
+        	sizesWriter.write((jitInfo.ranks(j) - 1) + System.lineSeparator());
+        }
+        
+        sizesWriter.close();
+        
+        SaveLoadWithDomains.saveStructureAndDomains(prefix + VARS, model);
+        
+        Env.saveBDD(prefix + File.separator + FIXPOINTS, jitInfo.fixpoints(), reorderBeforeSave);
+        Env.saveBDD(prefix + File.separator + TRANS, jitInfo.safeties(), reorderBeforeSave);
+        Env.saveBDD(prefix + File.separator + JUSTICE, jitInfo.justices(), reorderBeforeSave);
+        
+        if (model.getSys().hasExistReqs()) {
+        	
+        	SymbolicControllerExistentialJitInfo extJitInfo = (SymbolicControllerExistentialJitInfo) jitInfo;
+        	
+            sizesWriter = new FileWriter(prefix + EXT_SIZES);
+            
+            sizesWriter.write(model.getSys().existReqNum() + System.lineSeparator());
+            
+            for (int exj = 0; exj < model.getSys().existReqNum(); exj++) {
+            	sizesWriter.write((extJitInfo.fulfillRanks(exj) - 1) + System.lineSeparator());
+            }
+            for (int exj = 0; exj < model.getSys().existReqNum(); exj++) {
+            	sizesWriter.write((extJitInfo.towardsRanks(exj) - 1) + System.lineSeparator());
+            }
+            
+            sizesWriter.write(extJitInfo.envViolationRank() + System.lineSeparator());
+            
+            sizesWriter.close();
+            
+            Env.saveBDD(prefix + File.separator + FULFILL, extJitInfo.fulfill(), reorderBeforeSave);
+            Env.saveBDD(prefix + File.separator + TOWARDS, extJitInfo.towards(), reorderBeforeSave);
+            Env.saveBDD(prefix + File.separator + ENV_VIOLATION, extJitInfo.envViolation(), reorderBeforeSave);
+        }
 
-  /**
-   * load names of environment variables from directory of symbolic controller
-   * 
-   * @param path
-   * @return
-   * @throws IOException
-   */
-  public static Set<String> readEnvVarNames(String path) throws IOException {
-    return SaveLoadWithDomains.loadEnvVarNames(path + "/vars.doms");
-  }
+	}
+	
 }

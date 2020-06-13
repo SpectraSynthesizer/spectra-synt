@@ -31,10 +31,10 @@ package tau.smlab.syntech.sfa;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Stack;
 
 import net.sf.javabdd.BDD;
-import tau.smlab.syntech.gameinput.model.SpecRegExp;
 import tau.smlab.syntech.jtlv.Env;
 import tau.smlab.syntech.sfa.SFA.Pair;
 import tau.smlab.syntech.sfa.SFA.SFAException;
@@ -262,60 +262,9 @@ public class SFAs {
 		 */
 		SFAState productAutomatonInitialState = newSfaState(productIsEpsSfa, sfaA.getIni().isAccepting() && sfaB.getIni().isAccepting());
 		statesPairsToProductAutomatonStatesMapping.put(initialStatesPair, productAutomatonInitialState);
-		/*
-		 * We use a stack to do a DFS search on the given SFA. It will contain the state
-		 * pairs of the product SFA that we create.
-		 */
-		List<Pair<SFAState, SFAState>> workStack = new Stack<>();
-		workStack.add(0, initialStatesPair);
-		BDD productTransGuard;
-		Pair<SFAState, SFAState> currStatesPair, targetStatesPair;
-		SFAState currentProductState, targetProductState;
-
-		while (!workStack.isEmpty()) {
-			currStatesPair = workStack.remove(0);
-
-			//First, iterate over non-epsilon transitions
-			Map<? extends SFAState, BDD> sfaASuccMap = currStatesPair.getLeft().getSucc();
-			Map<? extends SFAState, BDD> sfaBSuccMap = currStatesPair.getRight().getSucc();
-			for (SFAState sfaASuccState : sfaASuccMap.keySet()) {
-				for (SFAState sfaBSuccState : sfaBSuccMap.keySet()) {
-
-					productTransGuard = sfaASuccMap.get(sfaASuccState).and(sfaBSuccMap.get(sfaBSuccState));
-					// if the intersection transition is satisfiable
-					if (!productTransGuard.isZero()) {
-						targetStatesPair = new Pair<>(sfaASuccState, sfaBSuccState);
-
-						if (!statesPairsToProductAutomatonStatesMapping.containsKey(targetStatesPair)) {
-							statesPairsToProductAutomatonStatesMapping.put(targetStatesPair,
-									newSfaState(productIsEpsSfa, sfaASuccState.isAccepting() && sfaBSuccState.isAccepting()));
-							workStack.add(0, targetStatesPair);
-						}
-
-						currentProductState = statesPairsToProductAutomatonStatesMapping.get(currStatesPair);
-						targetProductState = statesPairsToProductAutomatonStatesMapping.get(targetStatesPair);
-						currentProductState.addTrans(productTransGuard, targetProductState);
-					}
-					else {
-						productTransGuard.free();
-					}
-				}
-			}
-
-			/*
-			 * Second, iterate over outgoing epsilon transitions in currStatesPair, if such transitions exist.
-			 * Each epsilon transition in sfaA (resp. sfaB) gives rise to an epsilon transition in the product automaton
-			 * whose successor state (pair) consists of a left (resp. right)
-			 * component that is the successor state of the corresponding epsilon transition in sfaA
-			 * while the right (resp. left) component remains the same. Intuitively, this is as if we applied
-			 * an elimination of epsilon moves in each of the input automatons (specifically, using the notion of "epsilon closure"),
-			 * and then constructed the product automaton.
-			 * 
-			 */
-			handleProductEpsTrans(currStatesPair, true, statesPairsToProductAutomatonStatesMapping, productIsEpsSfa, workStack);
-			handleProductEpsTrans(currStatesPair, false, statesPairsToProductAutomatonStatesMapping, productIsEpsSfa, workStack);
-		}
-
+		
+		buildProductSfa(productIsEpsSfa, statesPairsToProductAutomatonStatesMapping, initialStatesPair);
+		
 		SFA productAutomaton = newSfa(productIsEpsSfa, productAutomatonInitialState);
 
 		// remove states that cannot reach final states
@@ -323,8 +272,7 @@ public class SFAs {
 
 		return productAutomaton;
 	}
-
-
+	
 	/*
 	 * 
 	 * 
@@ -380,15 +328,58 @@ public class SFAs {
 	 * @return
 	 */
 	public static SFA predicateOFSfa(BDD predicate) {
-		if(predicate.isZero()) {
-			//The specified predicate is unsatisfiable so we return an OFSFA that accepts the empty language
-			predicate.free();
-			return emptyLanguageOFSfa();
-		}
 		SFAState initialState = newEpsSfaState(false);
 		SFAState finalState = newEpsSfaState(true);
-		initialState.addTrans(predicate, finalState);
+		initialState.addTrans(predicate, finalState); //Note: if the specified predicate is unsatisfiable, we return an OFSFA that accepts the empty language
 		return newOFSfa(initialState, finalState);
+	}
+	
+
+	/**
+	 * 
+	 * Returns an OFSFA whose language is the union of the languages of the two specified predicate OFSFAs.
+	 * Note that (1) the returned OFSFA is backed by the two given OFSFAs. That is, changes to either {@code oFSfaA} or {@code oFSfaB}
+	 * are also reflected in the returned OFSFA, and vice-versa. (2) The two given OFSFAs are modified and cannot be used anymore.
+	 * 
+	 * @param predOFSfaA predicate OFSFA constructed using {@link #predicateOFSfa}
+	 * @param predOFSfaB predicate OFSFA constructed using {@link #predicateOFSfa}
+	 * @return
+	 */
+	public static SFA unionPredicateOFSfa(SFA predOFSfaA, SFA predOFSfaB) {
+		if(predOFSfaA.isEmptyLanguage()) {
+			return predOFSfaB;
+		}
+		if(predOFSfaB.isEmptyLanguage()) {
+			return predOFSfaA;
+		}
+		
+		predOFSfaA.getIni().addTrans(predOFSfaB.getIni().getSucc().get(predOFSfaB.getFinalState()), predOFSfaA.getFinalState());
+	
+		return predOFSfaA;
+	}
+	
+	/**
+	 * 
+	 * Returns an OFSFA whose language is the intersection of the languages of the two specified predicate OFSFAs.
+	 * Note that (1) the returned OFSFA is backed by the two given OFSFAs. That is, changes to either {@code oFSfaA} or {@code oFSfaB}
+	 * are also reflected in the returned OFSFA, and vice-versa. (2) The two given OFSFAs are consumed (freed) and cannot be used anymore.
+	 * 
+	 * @param predOFSfaA predicate OFSFA constructed using {@link #predicateOFSfa}
+	 * @param predOFSfaB predicate OFSFA constructed using {@link #predicateOFSfa}
+	 * @return
+	 */
+	public static SFA productPredicateOFSfa(SFA predOFSfaA, SFA predOFSfaB) {
+		if(predOFSfaA.isEmptyLanguage() || predOFSfaB.isEmptyLanguage()) {
+			return emptyLanguageOFSfa();
+		}
+		
+		BDD productGuard = predOFSfaA.getIni().getSucc().get(predOFSfaA.getFinalState())
+				.and(predOFSfaB.getIni().getSucc().get(predOFSfaB.getFinalState()));
+		
+		predOFSfaA.free();
+		predOFSfaB.free();
+		
+		return SFAs.predicateOFSfa(productGuard);
 	}
 
 	/**
@@ -581,7 +572,7 @@ public class SFAs {
 			nOccOFSfa = concatNTimesOFSfa(oFSfa, n);			
 		}
 		
-		int extraMaxOccNum = n-m; //This is the maximal number of repetitions allowed beyond n
+		int extraMaxOccNum = m-n; //This is the maximal number of repetitions allowed beyond n
 		
 		nOccOFSfa.getFinalState().setAcceptance(false);
 		SFAState finalState = newEpsSfaState(true);
@@ -607,8 +598,8 @@ public class SFAs {
 
 	/**
 	 * 
-	 * Returns an OFSFA whose language consists of all words each of which is the concatenta one or more repetitions in the language of the specified OFSFA together with the empty word.
-	 * Note that (1) the returned OFSFA is backed by the two OFSFA. That is, changes to {@code oFSfa}
+	 * Returns an OFSFA whose language consists of all words in the language of the specified OFSFA together with the empty word.
+	 * Note that (1) the returned OFSFA is backed by {@code oFSfa}. That is, changes to {@code oFSfa}
 	 * are also reflected in the returned OFSFA, and vice-versa. (2) The given OFSFA, {@code oFSfa}, is modified.
 	 * 
 	 * @param oFSfa
@@ -625,6 +616,38 @@ public class SFAs {
 		oFSfa.getFinalState().addEpsTrans(finalState);
 		return newOFSfa(initialState, finalState);
 	}
+	
+	/**
+	 * Returns an OFSFA whose language is the complement of the language of the specified OFSFA.
+	 * 
+	 * <p>NOTE: this methods has an exponential time complexity as it constructs a deterministic
+	 * SFA equivalent to {@code oFSfa}.
+	 * 
+	 * 
+	 * @param oFSfa the BDDs of its transitions' guards are consumed (freed)
+	 * @return The complement of {@code oFSfa}
+	 */
+	public static SFA complementOFSfa(SFA oFSfa) {
+		assertOFSfaFieldsNotNull(oFSfa);
+		
+		SFA compSimpleSfa = oFSfa.complement();
+		
+		SFAState compOFSfaFinalState = newEpsSfaState(true);
+		SFA compOFSfa = newOFSfa(newEpsSfaState(false), compOFSfaFinalState);
+		compOFSfa.getIni().addEpsTrans(compSimpleSfa.getIni());
+		
+		Set<? extends SFAState> compSimpleSfaFinalStates = compSimpleSfa.finalStates();
+		
+		for(SFAState formerFinalState : compSimpleSfaFinalStates) {
+			formerFinalState.flipAcceptance();
+			formerFinalState.addEpsTrans(compOFSfaFinalState);
+		}
+		
+		//Free the transitions' BDDs of the input OFSFA
+		oFSfa.free();
+		
+		return compOFSfa;
+	}
 
 
 	/**
@@ -638,7 +661,7 @@ public class SFAs {
 	 */
 	public static SFA productOFSfa(SFA oFSfaA, SFA oFSfaB) {
 		assertOFSfaFieldsNotNull(oFSfaA, oFSfaB);	
-
+		
 		/*
 		 * Create a mapping between pairs of states from oFSfaA and oFSfaB, resp., to the new states in the
 		 * new product OFSFA that we build.
@@ -648,17 +671,53 @@ public class SFAs {
 		/*
 		 * The initial (resp. the final) state in the product OFSFA is a pair whose components are the initial (resp. the final) states of oFSfaA and oFSfaB.
 		 */
+		
 		Pair<SFAState, SFAState> initialStatesPair = new Pair<>(oFSfaA.getIni(), oFSfaB.getIni());
-		Pair<SFAState, SFAState> finalStatesPair = new Pair<>(oFSfaA.getFinalState(), oFSfaB.getFinalState());
 		SFAState productAutomatonInitialState = newEpsSfaState(oFSfaA.getIni().isAccepting() && oFSfaB.getIni().isAccepting());
-		SFAState productAutomatonFinalState = newEpsSfaState(true);
 		statesPairsToProductAutomatonStatesMapping.put(initialStatesPair, productAutomatonInitialState);
-		statesPairsToProductAutomatonStatesMapping.put(finalStatesPair, productAutomatonFinalState);
-		SFA productAutomaton = newOFSfa(productAutomatonInitialState, productAutomatonFinalState);
+		
+		SFAState productAutomatonFinalState;
+		if(oFSfaA.getIni() == oFSfaA.getFinalState() && oFSfaB.getIni() == oFSfaB.getFinalState()) {
+			productAutomatonFinalState = productAutomatonInitialState;
+		}
+		else {
+			productAutomatonFinalState = newEpsSfaState(true);
+			statesPairsToProductAutomatonStatesMapping.put(new Pair<>(oFSfaA.getFinalState(), oFSfaB.getFinalState()), productAutomatonFinalState);
+		}
+		
+		buildProductSfa(true, statesPairsToProductAutomatonStatesMapping, initialStatesPair);
+		
+		//Free the transitions' BDDs of both input OFSFAs
+		oFSfaA.free();
+		oFSfaB.free();
+
+		return newOFSfa(productAutomatonInitialState, productAutomatonFinalState);
+	}
+	
+	
+	/*
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * Private static methods
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 */
+	private static void buildProductSfa(boolean productIsEpsSfa,
+			Map<Pair<SFAState, SFAState>, SFAState> statesPairsToProductAutomatonStatesMapping,
+			Pair<SFAState, SFAState> initialStatesPair) {
+		
 		/*
-		 * We use a stack to do a DFS search on the given OFSFA. It will contain the state
-		 * pairs of the product OFSFA that we create.
+		 * We use a stack to do a DFS search on the given SFA. It will contain the state
+		 * pairs of the product SFA that we create.
 		 */
+		
 		List<Pair<SFAState, SFAState>> workStack = new Stack<>();
 		workStack.add(0, initialStatesPair);
 		BDD productTransGuard;
@@ -680,7 +739,8 @@ public class SFAs {
 						targetStatesPair = new Pair<>(sfaASuccState, sfaBSuccState);
 
 						if (!statesPairsToProductAutomatonStatesMapping.containsKey(targetStatesPair)) {
-							statesPairsToProductAutomatonStatesMapping.put(targetStatesPair, newEpsSfaState(false));
+							statesPairsToProductAutomatonStatesMapping.put(targetStatesPair,
+									newSfaState(productIsEpsSfa, sfaASuccState.isAccepting() && sfaBSuccState.isAccepting()));
 							workStack.add(0, targetStatesPair);
 						}
 
@@ -693,136 +753,24 @@ public class SFAs {
 					}
 				}
 			}
-
+			
 			/*
 			 * Second, iterate over outgoing epsilon transitions in currStatesPair, if such transitions exist.
-			 * Each epsilon transition in oFSfaA (resp. oFSfaB) gives rise to an epsilon transition in the product automaton
+			 * Each epsilon transition in sfaA (resp. sfaB) gives rise to an epsilon transition in the product automaton
 			 * whose successor state (pair) consists of a left (resp. right)
-			 * component that is the successor state of the corresponding epsilon transition in oFSfaA (resp. oFSfaB)
+			 * component that is the successor state of the corresponding epsilon transition in sfaA
 			 * while the right (resp. left) component remains the same. Intuitively, this is as if we applied
 			 * an elimination of epsilon moves in each of the input automatons (specifically, using the notion of "epsilon closure"),
 			 * and then constructed the product automaton.
 			 * 
 			 */
-			handleProductEpsTrans(currStatesPair, true, statesPairsToProductAutomatonStatesMapping, true, workStack);
-			handleProductEpsTrans(currStatesPair, false, statesPairsToProductAutomatonStatesMapping, true, workStack);
+			handleProductEpsTrans(currStatesPair, true, statesPairsToProductAutomatonStatesMapping, workStack);
+			handleProductEpsTrans(currStatesPair, false, statesPairsToProductAutomatonStatesMapping, workStack);
 		}
-		//Free the transitions' BDDs of both input OFSFAs
-		oFSfaA.free();
-		oFSfaB.free();
-
-		return productAutomaton;
 	}
-
-	/**
-	 * Returns an Epsilon-SFA whose language is that of the specified regular expression.
-	 * Note that the returned Epsilon-SFA may be non-deterministic.
-	 * 
-	 * @param regExp the regular expression
-	 * @param eliminateEpsTrans whether the resulting Epsilon-SFA should be without epsilon transitions
-	 * @return
-	 */
-	public static SFA regExpEpsSfa(SpecRegExp regExp, boolean eliminateEpsTrans) {
-		SFA oFSfa = regExpOFSfa(regExp), res;
-		if(eliminateEpsTrans) {
-			res = oFSfa.eliminateEpsTrans();
-			oFSfa.free();
-		}
-		else {
-			res = newEpsSfa(oFSfa.getIni());
-		}
-		return res;
-	}
-
-	/**
-	 * Returns an OFSFA whose language is that of the specified regular expression.
-	 * Note that the returned OFSFA may be non-deterministic.
-	 * 
-	 * @param regExp the regular expression
-	 * @return
-	 */
-	public static SFA regExpOFSfa(SpecRegExp regExp) {
-
-		SFA resOFSfa=null, leftOFSfa, rightOFSfa;
-
-		switch(regExp.getKind()) {
-		case EMPTY:
-			resOFSfa = emptyWordOFSfa();
-			break;
-		case VAR:
-			//TODO also treat an integer variable (not only Boolean)
-			resOFSfa = predicateOFSfa(Env.getBDDValue(regExp.getName(), "true").id());
-			break;
-		case NEGVAR:
-			resOFSfa = predicateOFSfa(Env.getBDDValue(regExp.getName(), "false").id());
-			break;
-		case VAL:
-			if("T".equals(regExp.getName())) {
-				resOFSfa = predicateOFSfa(Env.TRUE());
-			}
-			else if("F".equals(regExp.getName())) {
-				resOFSfa = predicateOFSfa(Env.FALSE());
-			}
-			else {
-				throw new SFAException("Unsupported constant value " + regExp.getName() + " in the specified regular expression.");
-			}
-			break;
-		case UNION:
-			leftOFSfa = regExpOFSfa(regExp.getLeft());
-			rightOFSfa = regExpOFSfa(regExp.getRight());
-			resOFSfa = unionOFSfa(leftOFSfa, rightOFSfa);
-			break;
-		case INTERSECTION:
-			leftOFSfa = regExpOFSfa(regExp.getLeft());
-			rightOFSfa = regExpOFSfa(regExp.getRight());
-			resOFSfa = productOFSfa(leftOFSfa, rightOFSfa);
-			break;
-		case CONCAT:
-			leftOFSfa = regExpOFSfa(regExp.getLeft());
-			rightOFSfa = regExpOFSfa(regExp.getRight());
-			resOFSfa = concatOFSfa(leftOFSfa, rightOFSfa);
-			break;
-		case ZERO_OR_MORE: //'*'
-			leftOFSfa = regExpOFSfa(regExp.getLeft());
-			resOFSfa = kleeneClosureOFSfa(leftOFSfa);
-			break;
-		case ZERO_OR_ONE: //'?'
-			leftOFSfa = regExpOFSfa(regExp.getLeft());
-			resOFSfa = zeroOrOneOFSfa(leftOFSfa);
-			break;
-		case AT_LEAST: //'{n,}'
-			leftOFSfa = regExpOFSfa(regExp.getLeft());
-			resOFSfa = nOrMoreOFSfa(leftOFSfa, regExp.getFrom());
-			break;
-		case ONE_OR_MORE: //'+'
-			leftOFSfa = regExpOFSfa(regExp.getLeft());
-			resOFSfa = oneOrMoreOFSfa(leftOFSfa);
-			break;
-		case EXACT_REPETITION: //'{n}'
-			leftOFSfa = regExpOFSfa(regExp.getLeft());
-			resOFSfa = exactNOFSfa(leftOFSfa, regExp.getFrom());
-			break;
-		case RANGE: //'{n,m}'
-			leftOFSfa = regExpOFSfa(regExp.getLeft());
-			resOFSfa = nToMOFSfa(leftOFSfa, regExp.getFrom(), regExp.getTo());
-		default:
-			throw new SFAException(regExp.getKind() + "is an unsupported kind of regular expressions.");
-		}
-		return resOFSfa;
-	}
-
-	/*
-	 * 
-	 * 
-	 * Private static methods.
-	 * 
-	 * 
-	 * 
-	 */
-
+	
 	private static void handleProductEpsTrans(Pair<SFAState, SFAState> currStatesPair, boolean epsSrcStateIsLeft,
-			Map<Pair<SFAState, SFAState>, SFAState> statesPairsToProductAutomatonStatesMapping,
-			boolean productIsEpsSfa, List<Pair<SFAState, SFAState>> workStack) {
+			Map<Pair<SFAState, SFAState>, SFAState> statesPairsToProductAutomatonStatesMapping, List<Pair<SFAState, SFAState>> workStack) {
 		SFAState epsSrcState = epsSrcStateIsLeft ? currStatesPair.getLeft() : currStatesPair.getRight();
 		SFAState otherSrcState = epsSrcStateIsLeft ? currStatesPair.getRight() : currStatesPair.getLeft();
 
@@ -834,7 +782,7 @@ public class SFAs {
 				targetStatesPair = epsSrcStateIsLeft ? new Pair<>(epsSuccState, otherSrcState) : new Pair<>(otherSrcState, epsSuccState);
 				if (!statesPairsToProductAutomatonStatesMapping.containsKey(targetStatesPair)) {
 					statesPairsToProductAutomatonStatesMapping.put(targetStatesPair,
-							newSfaState(productIsEpsSfa, epsSuccState.isAccepting() && otherSrcState.isAccepting()));
+							newEpsSfaState(epsSuccState.isAccepting() && otherSrcState.isAccepting()));
 					workStack.add(0, targetStatesPair);
 				}
 				currProductState = statesPairsToProductAutomatonStatesMapping.get(currStatesPair);

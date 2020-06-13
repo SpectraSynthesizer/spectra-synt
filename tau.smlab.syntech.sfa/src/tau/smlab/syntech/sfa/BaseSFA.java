@@ -42,12 +42,29 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.Stack;
 
+//imports for toString() method (returns a DOT representation of the SFA)
+import org.eclipse.gef.dot.internal.DotAttributes;
+import org.eclipse.gef.dot.internal.DotExport;
+import org.eclipse.gef.dot.internal.language.dot.GraphType;
+import org.eclipse.gef.graph.Graph;
+
 import net.sf.javabdd.BDD;
 import tau.smlab.syntech.jtlv.Env;
 import tau.smlab.syntech.sfa.PowerSetIterator.PowerSetIteratorType;
 
-public abstract class BaseSFA<T extends BaseSFAState<T>> implements SFA {
 
+/**
+ * 
+ * @author Maxim Finkel
+ * @author Or Pistiner
+ *
+ * @param <T> the type of the states the SFA has
+ */
+@SuppressWarnings("restriction")
+public abstract class BaseSFA<T extends BaseSFAState<T>> implements SFA {
+	
+	final public static String EPS_LABEL = "\u03B5"; //Unicode code point of 'Epsilon'
+	
 	protected T ini; // the initial state of this automaton
 	protected PowerSetIteratorType psIterType; // the type of the powerset (of outgoing transitions) iterator used for by the determinization algorithm
 	
@@ -68,9 +85,9 @@ public abstract class BaseSFA<T extends BaseSFAState<T>> implements SFA {
 		this(null, psIterType);
 	}
 
-	protected abstract BaseSFA<T> getNewSFAInstance();
+	protected abstract BaseSFA<T> newSfaInstance();
 
-	protected abstract BaseSFA<T> getNewSFAInstance(T ini);
+	protected abstract BaseSFA<T> newSfaInstance(T ini);
 
 	@Override
 	public T getIni() {
@@ -84,7 +101,7 @@ public abstract class BaseSFA<T extends BaseSFAState<T>> implements SFA {
 	
 	
 	@Override
-	public abstract T getNewState(boolean isAccepting);
+	public abstract T newSfaState(boolean isAccepting);
 	
 	/**
 	 * Returns the type information of the states this automaton has.
@@ -218,8 +235,19 @@ public abstract class BaseSFA<T extends BaseSFAState<T>> implements SFA {
 		return false;
 	}
 	
+	
 	@Override
 	public BaseSFA<T> determinize() {
+		return this.buildDetAutomaton();
+	}
+	
+	/**
+	 * Returns a deterministic SFA (DSFA) that is equivalent to this SFA,
+	 * which is assumed to be without epsilon transitions.
+	 * 
+	 * @return
+	 */
+	protected BaseSFA<T> buildDetAutomaton() {
 
 		// create a fresh copy of this automaton and remove all the dead states from the
 		// fresh copy
@@ -232,7 +260,7 @@ public abstract class BaseSFA<T extends BaseSFAState<T>> implements SFA {
 		}
 
 		// we have that copySfa is non-deterministic so we need to determinize it
-		BaseSFA<T> deterministicAutomaton = this.getNewSFAInstance();
+		BaseSFA<T> deterministicAutomaton = this.newSfaInstance();
 
 		/*
 		 * To distinguish between different states in the DSFA, we need to remember a
@@ -259,8 +287,7 @@ public abstract class BaseSFA<T extends BaseSFAState<T>> implements SFA {
 		workStack.add(0, iniSingletonSet);
 		while (!workStack.isEmpty()) {
 			Map<T, BDD> allTransitionsMap = new HashMap<>();
-			Set<Map.Entry<T, BDD>> tautologyTransitions = new HashSet<>();
-			Set<T> currentStateSet = workStack.remove(0), tautologySuccessors = new HashSet<>();
+			Set<T> currentStateSet = workStack.remove(0), tautologySuccs = new HashSet<>();
 			for (T state : currentStateSet) {
 				for (Map.Entry<T, BDD> transition : state.getSucc().entrySet()) {
 					/*
@@ -293,16 +320,13 @@ public abstract class BaseSFA<T extends BaseSFAState<T>> implements SFA {
 								// TRUE
 								allTransitionsMap.get(transition.getKey()).free();
 								allTransitionsMap.remove(transition.getKey());
-								tautologyTransitions.add(transition);
-								tautologySuccessors.add(transition.getKey());
+								tautologySuccs.add(transition.getKey());
 							}
-
-						} else if (!tautologySuccessors.contains(transition.getKey())) {
+						} else if (!tautologySuccs.contains(transition.getKey())) {
 							// this is the first time a transition to this target/successor state is seen
 							if (transition.getValue().isOne()) {
 								// tautology transition
-								tautologyTransitions.add(transition);
-								tautologySuccessors.add(transition.getKey());
+								tautologySuccs.add(transition.getKey());
 							} else {
 								allTransitionsMap.put(transition.getKey(), transition.getValue().id());
 							}
@@ -310,26 +334,62 @@ public abstract class BaseSFA<T extends BaseSFAState<T>> implements SFA {
 					}
 				}
 			}
-
+			
+			/*
+			 * Optimization 3: If delta_A(q) contains two transitions with semantically equivalent guards, psi_1 and psi_2, then a subset t that only contains
+			 * one of them would yield an unsatisfiable phi_t (since psi_1 and not(psi_2) is unsatisfiable).
+			 * Thus, we only consider subsets of delta_A(q) that either contain ALL the transitions in delta_A(q) that have 
+			 * equivalent guards or contain none of them. To achieve this, we only iterate over satisfiable subsets of delta_A(q) that contain
+			 * at most one (arbitrarily chosen) representative of each subset of equivalent transitions in delta_A(q).
+			 *
+			 */
+			
+			//Map each "representative" successor state to all other successor states that have semantically equivalent transitions' guards (BDDs)
+			//Note: this might be an empty set			
+			Map<T, Set<T>> reprSuccToSameGuardSuccs = new HashMap<>();
+			Set<T> sameGuardSuccs, seenSuccs = new HashSet<>();
+			BDD succGuard;
+			for(T succ : allTransitionsMap.keySet()) {
+				if(!seenSuccs.contains(succ)) {
+					seenSuccs.add(succ);
+					sameGuardSuccs = new HashSet<>();				
+					reprSuccToSameGuardSuccs.put(succ, sameGuardSuccs);
+					succGuard = allTransitionsMap.get(succ);
+					for(T otherSucc : allTransitionsMap.keySet()) {
+						if(succ != otherSucc && allTransitionsMap.get(otherSucc).equals(succGuard)) {
+							sameGuardSuccs.add(otherSucc);
+							seenSuccs.add(otherSucc);
+						}
+					}
+				}
+			}
+			
+			Map<T, BDD> reprTransitionsMap = new HashMap<>();
+			for(T repr : reprSuccToSameGuardSuccs.keySet()) {
+				reprTransitionsMap.put(repr, allTransitionsMap.get(repr));
+			}
+			
+			allTransitionsMap = reprTransitionsMap;
+			
 			Set<Map.Entry<T, BDD>> allTransitionsSet = allTransitionsMap.entrySet();
 			Iterator<Pair<Set<Map.Entry<T, BDD>>, BDD>> psIter = PowerSetIterator.getIterator(this.psIterType, allTransitionsSet);
 			Pair<Set<Map.Entry<T, BDD>>, BDD> nextPair;
 
 			Set<Map.Entry<T, BDD>> transitionsSubset, transitionsSubsetComplement;
 			boolean newDeterministicStateIsAccepting;
-			Set<T> successorStatesSet;
+			Set<T> allSuccStatesSet, missingSameGuardSuccs;
 			BDD transitionsGuardsConjunction;
 			T detCurrentState = stateSubsetsToDeterministicStatesMapping.get(currentStateSet), detSuccessorState;
 
 			while (psIter.hasNext()) {
 				nextPair = psIter.next();
 				transitionsSubset = nextPair.getLeft();
-				transitionsSubset.addAll(tautologyTransitions);
+				
 				/*
 				 * An empty transitions set is not interesting since its successor states set is
 				 * empty (this corresponds to taking no transitions at all).
 				 */
-				if (!transitionsSubset.isEmpty()) {
+				if (!transitionsSubset.isEmpty() || !tautologySuccs.isEmpty()) {
 					transitionsGuardsConjunction = nextPair.getRight();
 					transitionsSubsetComplement = SFAUtil.getComplementOfTransSet(allTransitionsSet, transitionsSubset);
 					for (Map.Entry<T, BDD> t : transitionsSubsetComplement) {
@@ -339,21 +399,32 @@ public abstract class BaseSFA<T extends BaseSFAState<T>> implements SFA {
 						transitionsGuardsConjunction.andWith(t.getValue().not());
 					}
 					if (!transitionsGuardsConjunction.isZero()) {
-						successorStatesSet = SFAUtil.getTransitionsTargetStates(transitionsSubset);
-
-						if (!stateSubsetsToDeterministicStatesMapping.containsKey(successorStatesSet)) {
+						allSuccStatesSet = SFAUtil.getTransitionsTargetStates(transitionsSubset);
+						
+						//Add successor states that we removed/omitted, each of which has a transition guard equivalent to that of
+						//a "representative" successor state in allSuccStatesSet (See Optimization 3 above)
+						missingSameGuardSuccs = new HashSet<>();
+						for(T repr : allSuccStatesSet) {
+							missingSameGuardSuccs.addAll(reprSuccToSameGuardSuccs.get(repr));
+						}						
+						allSuccStatesSet.addAll(missingSameGuardSuccs);
+						
+						//Add successor states with TRUE (tautology) guards (see Optimization 2 above)
+						allSuccStatesSet.addAll(tautologySuccs);
+						
+						if (!stateSubsetsToDeterministicStatesMapping.containsKey(allSuccStatesSet)) {
 							/*
 							 * If some state in successorStatesSet is an accepting SFA state, then the
 							 * corresponding new DFSA state should be an accepting state (as indicated by
 							 * 'newDeterministicStateIsAccepting').
 							 */
-							newDeterministicStateIsAccepting = SFAUtil.containsAcceptingState(successorStatesSet);
-							detSuccessorState = this.getNewState(newDeterministicStateIsAccepting);
+							newDeterministicStateIsAccepting = SFAUtil.containsAcceptingState(allSuccStatesSet);
+							detSuccessorState = this.newSfaState(newDeterministicStateIsAccepting);
 
-							stateSubsetsToDeterministicStatesMapping.put(successorStatesSet, detSuccessorState);
-							workStack.add(0, successorStatesSet);
+							stateSubsetsToDeterministicStatesMapping.put(allSuccStatesSet, detSuccessorState);
+							workStack.add(0, allSuccStatesSet);
 						} else {
-							detSuccessorState = stateSubsetsToDeterministicStatesMapping.get(successorStatesSet);
+							detSuccessorState = stateSubsetsToDeterministicStatesMapping.get(allSuccStatesSet);
 						}
 						detCurrentState.addTrans(transitionsGuardsConjunction, detSuccessorState);
 					} else {
@@ -370,7 +441,7 @@ public abstract class BaseSFA<T extends BaseSFAState<T>> implements SFA {
 	@Override
 	public void completeTransitionFunction() {
 		// Create a black hole, sink state, from where we are stuck forever.
-		T sinkState = this.getNewState(false);
+		T sinkState = this.newSfaState(false);
 		sinkState.addTrans(Env.TRUE(), sinkState);
 
 		Queue<T> worklist = new LinkedList<>();
@@ -403,14 +474,16 @@ public abstract class BaseSFA<T extends BaseSFAState<T>> implements SFA {
 	@Override
 	public BaseSFA<T> minimize() {
 		if (this.isEmptyLanguage()) {
-			T initialState = this.getNewState(false);
+			T initialState = this.newSfaState(false);
 			initialState.addTrans(Env.TRUE(), initialState);
-			return this.getNewSFAInstance(initialState);
+			return this.newSfaInstance(initialState);
 		}
 
 		BaseSFA<T> deterministicAutomaton = this.determinize();
 		deterministicAutomaton.completeTransitionFunction();
 
+		// Moore’s minimization algorithm (a.k.a. the standard algorithm) lifted to SFAs
+		
 		// find all reachable states
 		List<T> reachableStates = deterministicAutomaton.reachableStates();
 
@@ -419,15 +492,15 @@ public abstract class BaseSFA<T extends BaseSFAState<T>> implements SFA {
 		for (int i = 0; i < reachableStates.size(); ++i) {
 			seenStatesIndices.put(reachableStates.get(i), i);
 		}
-
-		// initialize equivalence class E
-		Set<Pair<T, T>> E = new HashSet<>();
+		
+		// initialize the equivalence relation E
+		Set<Pair<T, T>> e = new HashSet<>();
 		for (int i = 0; i < reachableStates.size(); ++i) {
 			for (int j = 0; j < i; ++j) {
 				T p = reachableStates.get(i);
 				T q = reachableStates.get(j);
 				if ((p.isAccepting() && q.isAccepting()) || (!p.isAccepting() && !q.isAccepting())) {
-					E.add(new Pair<T, T>(p, q));
+					e.add(new Pair<T, T>(p, q));
 				}
 			}
 		}
@@ -435,22 +508,23 @@ public abstract class BaseSFA<T extends BaseSFAState<T>> implements SFA {
 		// refine E
 		Set<Pair<T, T>> pairsToDelete = new HashSet<>();
 		while (true) {
-			for (Pair<T, T> pair : E) {
+			for (Pair<T, T> pair : e) {
 				T p = pair.getLeft();
 				T q = pair.getRight();
 				for (Map.Entry<T, BDD> pTransition : p.getSucc().entrySet()) {
 					for (Map.Entry<T, BDD> qTransition : q.getSucc().entrySet()) {
 						T p1 = pTransition.getKey();
 						T q1 = qTransition.getKey();
-						BDD pTransitionBDD = pTransition.getValue();
-						BDD qTransitionBDD = qTransition.getValue();
-						BDD conjunctionBDD = pTransitionBDD.and(qTransitionBDD);
-						if (!p1.equals(q1) && !E.contains(new Pair<T, T>(p1, q1))
-								&& !E.contains(new Pair<T, T>(q1, p1)) && !((conjunctionBDD).isZero())) {
-							pairsToDelete.add(pair);
+						if (!p1.equals(q1) && !e.contains(new Pair<T, T>(p1, q1))
+								&& !e.contains(new Pair<T, T>(q1, p1))) {	
+							BDD pTransitionBdd = pTransition.getValue();
+							BDD qTransitionBdd = qTransition.getValue();
+							BDD conjunctionBdd = pTransitionBdd.and(qTransitionBdd);
+							if(!conjunctionBdd.isZero()) {
+								pairsToDelete.add(pair);
+							}
+							conjunctionBdd.free();							
 						}
-
-						conjunctionBDD.free();
 					}
 				}
 			}
@@ -460,53 +534,43 @@ public abstract class BaseSFA<T extends BaseSFAState<T>> implements SFA {
 				break;
 			}
 
-			E.removeAll(pairsToDelete);
+			e.removeAll(pairsToDelete);
 			pairsToDelete.clear();
 		}
 
 		// compute E-equivalence classes using a union find data structure
 		QuickUnionPathCompressionUF unionFindDataStructure = new QuickUnionPathCompressionUF(reachableStates.size());
-		for (Pair<T, T> pair : E) {
+		for (Pair<T, T> pair : e) {
 			unionFindDataStructure.union(seenStatesIndices.get(pair.getLeft()), seenStatesIndices.get(pair.getRight()));
 		}
 
 		// build the minimal automaton
-		Map<T, T> EClassIdStateToMinimalAutomatonStateMap = new HashMap<>();
+		Map<T, T> eClassReprStateToMinimalSfaStateMap = new HashMap<>();
 		T initialStateRepresentative = reachableStates
 				.get(unionFindDataStructure.find(seenStatesIndices.get(deterministicAutomaton.ini)));
-		EClassIdStateToMinimalAutomatonStateMap.put(initialStateRepresentative,
+		eClassReprStateToMinimalSfaStateMap.put(initialStateRepresentative,
 				initialStateRepresentative.cloneWithoutSucc());
 
 		Queue<T> worklist = new LinkedList<>();
-		List<T> seen = new ArrayList<>();
-		worklist.add(deterministicAutomaton.ini);
-		seen.add(deterministicAutomaton.ini);
+		worklist.add(initialStateRepresentative);
 		while (!worklist.isEmpty()) {
 			T s = worklist.remove();
-
 			// add successors not checked yet
 			for (Map.Entry<T, BDD> transition : s.getSucc().entrySet()) {
-				if (!seen.contains(transition.getKey())) {
-					worklist.add(transition.getKey());
-					seen.add(transition.getKey());
-				}
-
-				T nextStateRepresentative = reachableStates
+				T succStateRepresentative = reachableStates
 						.get(unionFindDataStructure.find(seenStatesIndices.get(transition.getKey())));
-				if (!EClassIdStateToMinimalAutomatonStateMap.containsKey(nextStateRepresentative)) {
-					EClassIdStateToMinimalAutomatonStateMap.put(nextStateRepresentative,
-							nextStateRepresentative.cloneWithoutSucc());
+				if (!eClassReprStateToMinimalSfaStateMap.containsKey(succStateRepresentative)) {
+					eClassReprStateToMinimalSfaStateMap.put(succStateRepresentative,
+							succStateRepresentative.cloneWithoutSucc());
+					worklist.add(succStateRepresentative);
 				}
-
-				T currentStateRepresentative = reachableStates
-						.get(unionFindDataStructure.find(seenStatesIndices.get(s)));
-				EClassIdStateToMinimalAutomatonStateMap.get(currentStateRepresentative).addTrans(transition.getValue(),
-						EClassIdStateToMinimalAutomatonStateMap.get(nextStateRepresentative));
+				eClassReprStateToMinimalSfaStateMap.get(s).addTrans(transition.getValue().id(),
+						eClassReprStateToMinimalSfaStateMap.get(succStateRepresentative));
 			}
 		}
 
-		BaseSFA<T> minimalAutomaton = this.getNewSFAInstance();
-		minimalAutomaton.setIni(EClassIdStateToMinimalAutomatonStateMap.get(initialStateRepresentative));
+		BaseSFA<T> minimalAutomaton = this.newSfaInstance();
+		minimalAutomaton.setIni(eClassReprStateToMinimalSfaStateMap.get(initialStateRepresentative));
 		minimalAutomaton.removeDeadStates();
 		return minimalAutomaton;
 	}
@@ -712,49 +776,62 @@ public abstract class BaseSFA<T extends BaseSFAState<T>> implements SFA {
 	public boolean isEquivalent(SFA other) {
 		return this.isSubsetOf(other) && other.isSubsetOf(this);
 	}
-
-//	/**
-//	 * Returns a string representation of the automaton, which describes its states
-//	 * and transitions.
-//	 */
-//	@Override
-//	public String toString() {
-//		Queue<T> worklist = new LinkedList<>();
-//		List<T> seen = new ArrayList<>();
-//		worklist.add(ini);
-//		seen.add(ini);
-//		int numTransitions = 0;
-//		List<String> acceptingTransitionsList = new ArrayList<>();
-//		StringBuilder transitionsStr = new StringBuilder();
-//		while (!worklist.isEmpty()) {
-//			T s = worklist.remove();
-//			if (s.isAccepting()) {
-//				acceptingTransitionsList.add("s" + seen.indexOf(s));
-//			}
-//
-//			// add successors not checked yet
-//			for (Map.Entry<T, BDD> transition : s.getSucc().entrySet()) {
-//				if (!seen.contains(transition.getKey())) {
-//					worklist.add(transition.getKey());
-//					seen.add(transition.getKey());
-//				}
-//
-//				transitionsStr.append("s" + seen.indexOf(s) + " -> s" + seen.indexOf(transition.getKey()) + " : "
-//						+ transition.getValue().toString() + System.lineSeparator());
-//				++numTransitions;
-//			}
-//		}
-//
-//		StringBuilder prefix = new StringBuilder();
-//		prefix.append("Number of states: " + seen.size() + System.lineSeparator());
-//		prefix.append("Number of accepting states: " + acceptingTransitionsList.size() + System.lineSeparator());
-//		prefix.append("Accepting states:" + System.lineSeparator() + acceptingTransitionsList + System.lineSeparator());
-//		prefix.append("Number of transitions: " + numTransitions + System.lineSeparator());
-//		prefix.append("Transitions description:" + System.lineSeparator());
-//
-//		return prefix.append(transitionsStr).toString();
-//	}
-
+	
+	@Override
+	public boolean isTrueStarLanguage() {
+		SFA trueStarSfa = SFAs.trueStarSimpleSfa();
+		boolean thisIsTrueStar = trueStarSfa.isSubsetOf(this);
+		trueStarSfa.free();
+		return thisIsTrueStar;
+	}
+	
+	@Override
+	public boolean acceptsTheEmptyString() {
+		return this.ini.isAccepting();
+	}
+	
+	/*
+	 * Creates a string representation of this SFA in the DOT language.
+	 */
+	@Override
+	public String toString() {
+		if(ini == null) {return super.toString(); }
+		
+		Graph.Builder builder = new Graph.Builder().attr(DotAttributes::_setType, GraphType.DIGRAPH).attr(DotAttributes::setRankdir, "LR");
+		
+		Queue<T> worklist = new LinkedList<>();
+		List<T> seen = new ArrayList<>();
+		worklist.add(ini);
+		seen.add(ini);
+		addDotNode(builder, ini, 0);
+		
+		while (!worklist.isEmpty()) {
+			T s = worklist.remove();
+			
+			// add successors not checked yet
+			for (Map.Entry<T, BDD> transition : s.getSucc().entrySet()) {
+				if (!seen.contains(transition.getKey())) {
+					worklist.add(transition.getKey());
+					seen.add(transition.getKey());
+					addDotNode(builder, transition.getKey(), seen.size()-1);
+				}
+				builder.edge(s, transition.getKey()).attr(DotAttributes::setLabel, Env.toNiceString(transition.getValue()));
+			}
+			
+			if(s.hasEpsSuccessors()) {
+				for(T epsSucc : s.getEpsSucc()) {
+					if (!seen.contains(epsSucc)) {
+						worklist.add(epsSucc);
+						seen.add(epsSucc);
+						addDotNode(builder, epsSucc, seen.size()-1);
+					}
+					builder.edge(s, epsSucc).attr(DotAttributes::setLabel, BaseSFA.EPS_LABEL);
+				}
+			}
+		}
+		return new DotExport().exportDot(builder.build());
+	}
+	
 	/*
 	 * 
 	 * 
@@ -775,7 +852,21 @@ public abstract class BaseSFA<T extends BaseSFAState<T>> implements SFA {
 	 * 
 	 * 
 	 */
-
+	private void addDotNode(Graph.Builder builder, T sfaState, int stateIdx) {
+		if(sfaState.isAccepting()) {
+			builder.node(sfaState).attr(DotAttributes::_setName, "s" + stateIdx).attr(DotAttributes::setLabel, "s" + stateIdx).attr(DotAttributes::setShape, "doublecircle");
+		}
+		else {
+			builder.node(sfaState).attr(DotAttributes::_setName, "s" + stateIdx).attr(DotAttributes::setLabel, "s" + stateIdx).attr(DotAttributes::setShape, "circle"); 
+		}
+		if(sfaState == ini) {
+			T dummyState = this.newSfaState(false);
+			builder.node(dummyState).attr(DotAttributes::_setName, "start").attr(DotAttributes::setShape, "point");
+			builder.edge(dummyState, sfaState);
+		}
+	}
+	
+	
 	/**
 	 * Checks whether the given collection of BDDs has no overlap between any two.
 	 * 
@@ -940,7 +1031,7 @@ public abstract class BaseSFA<T extends BaseSFAState<T>> implements SFA {
 	 * 
 	 * 
 	 * 
-	 * Legacy code for documentation and validation
+	 * Deprecated code for documentation and validation
 	 *
 	 * 
 	 * 
@@ -952,826 +1043,46 @@ public abstract class BaseSFA<T extends BaseSFAState<T>> implements SFA {
 	 * 
 	 */
 	
-	
-	
-	 /*
-	 * public SFA intersectWith(SFA other) { 
-	 * 
-	 * SFA intersectionAutomaton = new SFA();
-	 * 
-	 * 
-	 * To distinguish between different states in the DSFA, we need to remember a
-	 * mapping between pairs of states in this SFA to the new states in the
-	 * intersection SFA that we create.
-	 * 
-	 * Map<Pair<SFAState, SFAState>, SFAState> statePairsToIntersectionStatesMapping
-	 * = new HashMap<>(); Pair<SFAState, SFAState> intersectionInitialState = new
-	 * Pair<>(this.ini, other.ini);
-	 * 
-	 * 
-	 * The initial state in the intersection SFA is a pair containing this and
-	 * other's initial states.
-	 * 
-	 * SFAState intersectionAutomatonInitialState = new
-	 * SFAState(this.ini.isAccepting() && other.ini.isAccepting());
-	 * statePairsToIntersectionStatesMapping.put(intersectionInitialState,
-	 * intersectionAutomatonInitialState);
-	 * intersectionAutomaton.setIni(intersectionAutomatonInitialState);
-	 * 
-	 * 
-	 * We use a stack to do a DFS search on the given SFA. It will contain the state
-	 * pairs of the intersection SFA that we create.
-	 * 
-	 * List<Pair<SFAState, SFAState>> workStack = new Stack<>(); workStack.add(0,
-	 * intersectionInitialState); while (!workStack.isEmpty()) { Pair<SFAState,
-	 * SFAState> currentPair = workStack.remove(0);
-	 * 
-	 * Set<Map.Entry<SFAState, BDD>> thistransitionsSet =
-	 * currentPair.left.getSucc().entrySet(); Set<Map.Entry<SFAState, BDD>>
-	 * othertransitionsSet = currentPair.right.getSucc().entrySet(); for
-	 * (Map.Entry<SFAState, BDD> leftTransition : thistransitionsSet) { for
-	 * (Map.Entry<SFAState, BDD> rightTransition : othertransitionsSet) {
-	 * 
-	 * BDD intersectionTransitionBDD =
-	 * leftTransition.getValue().and(rightTransition.getValue()); // if the
-	 * intersection transition is satisfiable if
-	 * (!intersectionTransitionBDD.isZero()) { Pair<SFAState, SFAState>
-	 * targetStatePair = new Pair<>(leftTransition.getKey(),
-	 * rightTransition.getKey());
-	 * 
-	 * if (!statePairsToIntersectionStatesMapping.containsKey(targetStatePair)) {
-	 * statePairsToIntersectionStatesMapping.put(targetStatePair, new SFAState(
-	 * leftTransition.getKey().isAccepting() &&
-	 * rightTransition.getKey().isAccepting())); workStack.add(0, targetStatePair);
-	 * }
-	 * 
-	 * SFAState currentState =
-	 * statePairsToIntersectionStatesMapping.get(currentPair); SFAState targetState
-	 * = statePairsToIntersectionStatesMapping.get(targetStatePair);
-	 * currentState.addTrans(intersectionTransitionBDD, targetState); } else {
-	 * 
-	 * intersectionTransitionBDD.free(); } } } }
-	 * 
-	 * // remove states that can't reach final states
-	 * intersectionAutomaton.removeDeadStates();
-	 * return intersectionAutomaton; }
-	 */
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	// /**
-	// * Returns a MINIMAL deterministic SFA (DSFA) that is equivalent to this SFA.
-	// *
-	// * This method is more efficient than the minimize() method since it uses the
-	// * EfficientPowerSetIterator class in the determinization process!
-	// *
-	// * This algorithm is inspired by Veanes et al. (2010).
-	// */
-	// public SFA efficientMinimize() {
-	// if (this.isEmptyLanguage()) {
-	// SFAState initialState = new SFAState(false);
-	// initialState.addTrans(Env.TRUE(), initialState);
-	// SFA minimalAutomaton = new SFA();
-	// minimalAutomaton.setIni(initialState);
-	// return minimalAutomaton;
-	// }
-	//
-	// SFA deterministicAutomaton = this.determinize();
-	// deterministicAutomaton.completeTransitionFunction();
-	//
-	// // find all reachable states
-	// List<SFAState> reachableStates = deterministicAutomaton.reachableStates();
-	//
-	// // remember each seen state's index in the seen list
-	// Map<SFAState, Integer> seenStatesIndices = new HashMap<>();
-	// for (int i = 0; i < reachableStates.size(); ++i) {
-	// seenStatesIndices.put(reachableStates.get(i), i);
-	// }
-	//
-	// // initialize equivalence class E
-	// Set<Pair<SFAState, SFAState>> E = new HashSet<>();
-	// for (int i = 0; i < reachableStates.size(); ++i) {
-	// for (int j = 0; j < i; ++j) {
-	// SFAState p = reachableStates.get(i);
-	// SFAState q = reachableStates.get(j);
-	// if ((p.isAccepting() && q.isAccepting()) || (!p.isAccepting() &&
-	// !q.isAccepting())) {
-	// E.add(new Pair<SFAState, SFAState>(p, q));
-	// }
-	// }
-	// }
-	//
-	// // refine E
-	// Set<Pair<SFAState, SFAState>> pairsToDelete = new HashSet<>();
-	// while (true) {
-	// for (Pair<SFAState, SFAState> pair : E) {
-	// SFAState p = pair.getLeft();
-	// SFAState q = pair.getRight();
-	// for (Map.Entry<SFAState, BDD> pTransition : p.getSucc().entrySet()) {
-	// for (Map.Entry<SFAState, BDD> qTransition : q.getSucc().entrySet()) {
-	// SFAState p1 = pTransition.getKey();
-	// SFAState q1 = qTransition.getKey();
-	// BDD pTransitionBDD = pTransition.getValue();
-	// BDD qTransitionBDD = qTransition.getValue();
-	// BDD conjunctionBDD = pTransitionBDD.and(qTransitionBDD);
-	//
-	// if (!p1.equals(q1) && !E.contains(new Pair<SFAState, SFAState>(p1, q1))
-	// && !E.contains(new Pair<SFAState, SFAState>(q1, p1))
-	// && !((conjunctionBDD).isZero())) {
-	// pairsToDelete.add(pair);
-	// }
-	//
-	// conjunctionBDD.free();
-	// }
-	// }
-	// }
-	//
-	// if (pairsToDelete.isEmpty()) {
-	// // reached a fixpoint!
-	// break;
-	// }
-	//
-	// E.removeAll(pairsToDelete);
-	// pairsToDelete.clear();
-	// }
-	//
-	// // compute E-equivalence classes using a union find data structure
-	// QuickUnionPathCompressionUF unionFindDataStructure = new
-	// QuickUnionPathCompressionUF(reachableStates.size());
-	// for (Pair<SFAState, SFAState> pair : E) {
-	// unionFindDataStructure.union(seenStatesIndices.get(pair.getLeft()),
-	// seenStatesIndices.get(pair.getRight()));
-	// }
-	//
-	// // build the minimal automaton
-	// Map<SFAState, SFAState> EClassIdStateToMinimalAutomatonStateMap = new
-	// HashMap<>();
-	// SFAState initialStateRepresentative = reachableStates
-	// .get(unionFindDataStructure.find(seenStatesIndices.get(deterministicAutomaton.ini)));
-	// EClassIdStateToMinimalAutomatonStateMap.put(initialStateRepresentative,
-	// new SFAState(initialStateRepresentative.isAccepting()));
-	//
-	// Queue<SFAState> worklist = new LinkedList<>();
-	// List<SFAState> seen = new ArrayList<>();
-	// worklist.add(deterministicAutomaton.ini);
-	// seen.add(deterministicAutomaton.ini);
-	// while (!worklist.isEmpty()) {
-	// SFAState s = worklist.remove();
-	//
-	// // add successors not checked yet
-	// for (Map.Entry<SFAState, BDD> transition : s.getSucc().entrySet()) {
-	// if (!seen.contains(transition.getKey())) {
-	// worklist.add(transition.getKey());
-	// seen.add(transition.getKey());
-	// }
-	//
-	// SFAState nextStateRepresentative = reachableStates
-	// .get(unionFindDataStructure.find(seenStatesIndices.get(transition.getKey())));
-	// if
-	// (!EClassIdStateToMinimalAutomatonStateMap.containsKey(nextStateRepresentative))
-	// {
-	// EClassIdStateToMinimalAutomatonStateMap.put(nextStateRepresentative,
-	// new SFAState(nextStateRepresentative.isAccepting()));
-	// }
-	//
-	// SFAState currentStateRepresentative = reachableStates
-	// .get(unionFindDataStructure.find(seenStatesIndices.get(s)));
-	// EClassIdStateToMinimalAutomatonStateMap.get(currentStateRepresentative).addTrans(transition.getValue(),
-	// EClassIdStateToMinimalAutomatonStateMap.get(nextStateRepresentative));
-	// }
-	// }
-	//
-	// SFA minimalAutomaton = new SFA();
-	// minimalAutomaton.setIni(EClassIdStateToMinimalAutomatonStateMap.get(initialStateRepresentative));
-	// minimalAutomaton.removeDeadStates();
-	// return minimalAutomaton;
-	// }
-
-	// /**
-	// * Returns a deterministic SFA (DSFA) that is equivalent to this SFA.
-	// *
-	// * This method is more efficient than the determinize() method since it uses
-	// the
-	// * EfficientPowerSetIterator class!
-	// *
-	// * The algorithm is inspired by Veanes et al. (2010).
-	// */
-	// public SFA efficientDeterminize() {
-	// this.removeDeadStates();
-	//
-	// if (this.isDeterministic()) {
-	// return this.copy();
-	// }
-	//
-	// SFA deterministicAutomaton = new SFA();
-	//
-	// /*
-	// * To distinguish between different states in the DSFA, we need to remember a
-	// * mapping between sets of states in this SFA to the new states in the DSFA
-	// that
-	// * we create.
-	// */
-	// Map<Set<SFAState>, SFAState> stateSubsetsToDetreministicStatesMapping = new
-	// HashMap<>();
-	// Set<SFAState> iniSingletonSet = new HashSet<>(Arrays.asList(ini));
-	//
-	// /*
-	// * The initial state in the DSFA is a singleton containing the SFA's initial
-	// * state.
-	// */
-	// SFAState detreminsticAutomatonInitialState = new SFAState(ini.isAccepting());
-	// stateSubsetsToDetreministicStatesMapping.put(iniSingletonSet,
-	// detreminsticAutomatonInitialState);
-	// deterministicAutomaton.setIni(detreminsticAutomatonInitialState);
-	//
-	// /*
-	// * We use a stack to do a DFS search on the given SFA. It will contain the
-	// state
-	// * sets of the DSFA that we create.
-	// */
-	// List<Set<SFAState>> workStack = new Stack<>();
-	// workStack.add(0, iniSingletonSet);
-	// while (!workStack.isEmpty()) {
-	// Set<Map.Entry<SFAState, BDD>> transitionsSet = new HashSet<>();
-	// Set<Map.Entry<SFAState, BDD>> tautologyTransitions = new HashSet<>();
-	// Set<SFAState> currentStateSet = workStack.remove(0);
-	// for (SFAState state : currentStateSet) {
-	// for (Map.Entry<SFAState, BDD> transition : state.getSucc().entrySet()) {
-	// /*
-	// * Optimization 1: We don't need to add to the transitions set (denoted by
-	// * delta_A(q) in the paper) unsatisfiable transitions, since each subset t of
-	// * delta_A(q) that contains that transition will result a unsatisfiable
-	// formula
-	// * phi_t, since the left conjunction will not be satisfiable.
-	// */
-	// if (!transition.getValue().isZero()) {
-	// transitionsSet.add(transition);
-	// if (transition.getValue().isOne()) {
-	// tautologyTransitions.add(transition);
-	// }
-	// }
-	// }
-	// }
-	//
-	// /*
-	// * Optimization 2: If a subset t of delta_A(q) DOESN'T contains a tautology
-	// * transition, then the resulting phi_t will be unsatisfiable, since the right
-	// * conjunction will be unsatisfiable. Thus, it suffice to go over delta_A(q)'s
-	// * subsets that contain all delta_A(q)'s tautology transitions, which is
-	// * equivalent to going over all the subsets of delta_A(q)\{tautologies} and
-	// * adding to each subset {tautologies} (the set of all tautology transitions).
-	// */
-	// transitionsSet.removeAll(tautologyTransitions);
-	// EfficientPowerSetIterator iterator = new
-	// EfficientPowerSetIterator(transitionsSet);
-	// //Iterator<Pair<Set<Map.Entry<SFAState, BDD>>, BDD>> iterator =
-	// PowerSetIteratorFactory.getPowerSetIterator(this.powerSetIteratorType,
-	// transitionsSet);
-	// Pair<Set<Map.Entry<SFAState, BDD>>, BDD> nextPair = iterator.next();
-	// while (nextPair != null) {
-	// Set<Map.Entry<SFAState, BDD>> transitionsSubset = nextPair.getLeft();
-	// transitionsSubset.addAll(tautologyTransitions);
-	//
-	// /*
-	// * Empty transitions set is not interesting since its target states set is
-	// * empty.
-	// */
-	// if (!transitionsSubset.isEmpty()) {
-	// Set<Map.Entry<SFAState, BDD>> transitionsSubsetComplement = new
-	// HashSet<>(transitionsSet);
-	// transitionsSubsetComplement.removeAll(transitionsSubset);
-	//
-	// Set<SFAState> targetStateSet = new HashSet<>();
-	// boolean isAcceptingNewDeterministicState = false;
-	// BDD transitionBDD = nextPair.getRight();
-	// for (Map.Entry<SFAState, BDD> t : transitionsSubset) {
-	// /* Add the transition's target state to the target state set. */
-	// targetStateSet.add(t.getKey());
-	// /*
-	// * If some target state is an accepting SFA state, then the corresponding new
-	// * DFSA state shall be accepting.
-	// */
-	// if (t.getKey().isAccepting()) {
-	// isAcceptingNewDeterministicState = true;
-	// }
-	// }
-	// for (Map.Entry<SFAState, BDD> t : transitionsSubsetComplement) {
-	// if (transitionBDD.isZero()) {
-	// break;
-	// }
-	// transitionBDD.andWith(t.getValue().not());
-	// }
-	//
-	// if (!transitionBDD.isZero()) {
-	// if (!stateSubsetsToDetreministicStatesMapping.containsKey(targetStateSet)) {
-	// stateSubsetsToDetreministicStatesMapping.put(targetStateSet,
-	// new SFAState(isAcceptingNewDeterministicState));
-	// workStack.add(0, targetStateSet);
-	// }
-	//
-	// SFAState currentState =
-	// stateSubsetsToDetreministicStatesMapping.get(currentStateSet);
-	// SFAState targetState =
-	// stateSubsetsToDetreministicStatesMapping.get(targetStateSet);
-	// currentState.addTrans(transitionBDD, targetState);
-	// }
-	// else {
-	//
-	// transitionBDD.free();
-	// }
-	// }
-	//
-	// nextPair = iterator.next();
-	// }
-	// }
-	//
-	// return deterministicAutomaton;
-	// }
-
-	// /**
-	// * Returns a deterministic SFA (DSFA) that is equivalent to this SFA.
-	// *
-	// * The algorithm follows the work by Veanes et al. (2010).
-	// *
-	// * The algorithm uses an iterator over subsets of outgoing transitions whose
-	// type can be
-	// * checked via {@link #getPowerSetIteratorType} and can be set via {@link
-	// #setPowerSetIteratorType}.
-	// *
-	// * @return
-	// */
-	// public SFA determinizeOldIter() {
-	//
-	// //create a fresh copy of this automaton and remove all the dead states from
-	// the fresh copy
-	// SFA copySfa = this.copy();
-	// copySfa.removeDeadStates();
-	//
-	// //check if the removal of dead states has resulted in a deterministic
-	// automaton
-	// if (copySfa.isDeterministic()) {
-	// return copySfa; //we have a deterministic automaton so we are done
-	// }
-	//
-	//
-	// //we have that copySfa is non-deterministic so we need to determinize it
-	//
-	// SFA deterministicAutomaton = new SFA();
-	//
-	// /*
-	// * To distinguish between different states in the DSFA, we need to remember a
-	// * mapping between sets of states in this SFA to the new states in the DSFA
-	// that
-	// * we create.
-	// */
-	// Map<Set<SFAState>, SFAState> stateSubsetsToDeterministicStatesMapping = new
-	// HashMap<>();
-	// Set<SFAState> iniSingletonSet = new HashSet<>(Arrays.asList(copySfa.ini));
-	//
-	// /*
-	// * The initial state in the DSFA is a singleton containing the SFA's initial
-	// * state.
-	// */
-	// SFAState determinsticAutomatonInitialState = copySfa.ini.copyWithoutSucc();
-	// stateSubsetsToDeterministicStatesMapping.put(iniSingletonSet,
-	// determinsticAutomatonInitialState);
-	// deterministicAutomaton.setIni(determinsticAutomatonInitialState);
-	//
-	// /*
-	// * We use a stack to do a DFS search on (the copy without dead states of) this
-	// SFA. It will contain the state
-	// * sets of the DSFA that we create.
-	// */
-	// List<Set<SFAState>> workStack = new Stack<>();
-	// workStack.add(0, iniSingletonSet);
-	// while (!workStack.isEmpty()) {
-	// Map<SFAState, BDD> allTransitionsMap = new HashMap<>();
-	// Set<Map.Entry<SFAState, BDD>> tautologyTransitions = new HashSet<>();
-	// Set<SFAState> currentStateSet = workStack.remove(0), tautologySuccessors =
-	// new HashSet<>();
-	// for (SFAState state : currentStateSet) {
-	// for (Map.Entry<SFAState, BDD> transition : state.getSucc().entrySet()) {
-	// /*
-	// * Optimization 1: We don't need to add to the transitions set (denoted by
-	// * delta_A(q) in the paper) unsatisfiable transitions, since each subset t of
-	// * delta_A(q) that contains that transition will result a unsatisfiable
-	// formula
-	// * phi_t, since the left conjunction will not be satisfiable.
-	// *
-	// * Optimization 2: If a subset t of delta_A(q) DOESN'T contains a tautology
-	// * transition, then the resulting phi_t will be unsatisfiable, since the right
-	// * conjunction will be unsatisfiable. Thus, it suffice to go over delta_A(q)'s
-	// * subsets that contain all delta_A(q)'s tautology transitions, which is
-	// * equivalent to going over all the subsets of delta_A(q)\{tautologies} and
-	// * adding to each subset {tautologies} (the set of all tautology transitions).
-	// *
-	// * Optimization 3: If there are multiple transitions to the SAME target state,
-	// then we can transform
-	// * them into a single transition by taking their disjunction. This may save
-	// (exponentially many but redundant) iterations over
-	// * subsets of delta_A(q) that contain different combinations of transitions to
-	// the SAME successor state. In case the disjunction
-	// * evaluates to a tautology (i.e., it is trivially true), then we treat the
-	// "new" transition as in Optimization 2.
-	// *
-	// */
-	// if (!transition.getValue().isZero()) {
-	// if(allTransitionsMap.containsKey(transition.getKey())) {
-	// allTransitionsMap.get(transition.getKey()).orWith(transition.getValue().id());
-	// if(allTransitionsMap.get(transition.getKey()).isOne()) {
-	// //the guard of the transition to the successor state transition.getKey() is
-	// TRUE
-	// allTransitionsMap.get(transition.getKey()).free();
-	// allTransitionsMap.remove(transition.getKey());
-	// tautologyTransitions.add(transition);
-	// tautologySuccessors.add(transition.getKey());
-	// }
-	//
-	// }
-	// else if(!tautologySuccessors.contains(transition.getKey())) {
-	// //this is the first time a transition to this target/successor state is seen
-	// if (transition.getValue().isOne()) {
-	// //tautology transition
-	// tautologyTransitions.add(transition);
-	// tautologySuccessors.add(transition.getKey());
-	// }
-	// else {
-	// allTransitionsMap.put(transition.getKey(), transition.getValue().id());
-	// }
-	// }
-	// }
-	// }
-	// }
-	//
-	// Set<Map.Entry<SFAState, BDD>> allTransitionsSet =
-	// allTransitionsMap.entrySet();
-	// //Iterator<Pair<Set<Map.Entry<SFAState, BDD>>, BDD>> psIter =
-	// PowerSetIteratorFactory.getPowerSetIterator(this.powerSetIteratorType,
-	// allTransitionsSet);
-	// EfficientPowerSetIterator psIter = new
-	// EfficientPowerSetIterator(allTransitionsSet);
-	// Pair<Set<Map.Entry<SFAState, BDD>>, BDD> nextPair;
-	//
-	// Set<Map.Entry<SFAState, BDD>> transitionsSubset, transitionsSubsetComplement;
-	// boolean newDeterministicStateIsAccepting;
-	// Set<SFAState> successorStatesSet;
-	// BDD transitionsGuardsConjunction;
-	// SFAState detCurrentState =
-	// stateSubsetsToDeterministicStatesMapping.get(currentStateSet),
-	// detSuccessorState;
-	//
-	// nextPair = psIter.next();
-	// while (nextPair!=null) {
-	// transitionsSubset = nextPair.getLeft();
-	// transitionsSubset.addAll(tautologyTransitions);
-	// /*
-	// * An empty transitions set is not interesting since its successor states set
-	// is
-	// * empty (this corresponds to taking no transitions at all).
-	// */
-	// if (!transitionsSubset.isEmpty()) {
-	// transitionsGuardsConjunction = nextPair.getRight();
-	// transitionsSubsetComplement = getComplementOfTransSet(allTransitionsSet,
-	// transitionsSubset);
-	// for (Map.Entry<SFAState, BDD> t : transitionsSubsetComplement) {
-	// if (transitionsGuardsConjunction.isZero()) {
-	// break;
-	// }
-	// transitionsGuardsConjunction.andWith(t.getValue().not());
-	// }
-	// if (!transitionsGuardsConjunction.isZero()) {
-	// successorStatesSet = SFAUtils.getTransitionsTargetStates(transitionsSubset);
-	// /*
-	// * If some successor state is an accepting SFA state, then the corresponding
-	// new
-	// * DFSA state should be an accepting state (as indicated by
-	// 'newDeterministicStateIsAccepting').
-	// */
-	// newDeterministicStateIsAccepting =
-	// SFAUtils.containsAcceptingState(successorStatesSet);
-	//
-	// if
-	// (!stateSubsetsToDeterministicStatesMapping.containsKey(successorStatesSet)) {
-	// stateSubsetsToDeterministicStatesMapping.put(successorStatesSet,
-	// new SFAState(newDeterministicStateIsAccepting));
-	// workStack.add(0, successorStatesSet);
-	// }
-	// detSuccessorState =
-	// stateSubsetsToDeterministicStatesMapping.get(successorStatesSet);
-	// detCurrentState.addTrans(transitionsGuardsConjunction, detSuccessorState);
-	// }
-	// else {
-	// transitionsGuardsConjunction.free();
-	// }
-	// }
-	// nextPair = psIter.next();
-	// }
-	// SFAUtils.freeTransitionsSet(allTransitionsSet);
-	// }
-	// copySfa.free();
-	// return deterministicAutomaton;
-	// }
-
-	// /**
-	// * A class for constructing a lazy, memory-efficient, power set iterator that
-	// * uses a binary counter.
-	// */
-	// public static class PowerSetIterator<T> implements Iterator<Set<T>>{
-	//
-	// private List<T> setList;
-	// private boolean[] nextSubSetBinaryList;
-	// private Set<T> nextSubSet = new HashSet<>();
-	// private Set<T> nextNextSubSet = new HashSet<>();
-	//
-	// public PowerSetIterator(Set<T> set) {
-	// this.setList = new ArrayList<T>(set);
-	// this.nextSubSetBinaryList = new boolean[set.size()];
-	// }
-	//
-	// @Override
-	// public boolean hasNext() {
-	// if (this.nextNextSubSet == null) {
-	// return false;
-	// }
-	//
-	// return true;
-	// }
-	//
-	// @Override
-	// public Set<T> next() {
-	// if (!this.hasNext()) {
-	// return null;
-	// }
-	//
-	// this.nextSubSet.clear();
-	// this.nextSubSet.addAll(this.nextNextSubSet);
-	//
-	// for (int i = 0; i < this.nextSubSetBinaryList.length; ++i) {
-	// this.nextSubSetBinaryList[i] = !this.nextSubSetBinaryList[i];
-	// if (this.nextSubSetBinaryList[i]) {
-	// break;
-	// }
-	// }
-	//
-	// this.nextNextSubSet.clear();
-	// for (int i = 0; i < this.setList.size(); ++i) {
-	// if (this.nextSubSetBinaryList[i]) {
-	// this.nextNextSubSet.add(this.setList.get(i));
-	// }
-	// }
-	//
-	// if (this.nextNextSubSet.isEmpty()) {
-	// this.nextNextSubSet = null;
-	// }
-	//
-	// return this.nextSubSet;
-	// }
-	// }
-
-	// /**
-	// * A class for constructing a lazy power set iterator over sets of SFA
-	// * transitions, which only generates subsets whose transition formulas
-	// * conjunction is satisfiable.
-	// */
-	// public static class EfficientPowerSetIterator {
-	//
-	// private List<Map.Entry<SFAState, BDD>> transitionsSetList;
-	// private Set<Map.Entry<SFAState, BDD>> nextSubset = new HashSet<>();
-	// private List<Integer> nextSubsetIndices = new ArrayList<>();
-	// private List<List<Integer>> prevSizeSubsetIndices = new ArrayList<>();
-	// private int currentPrevSizeSubsetIndicesListIndex = 0;
-	// private int nextTransitionsSetListIndex = 0;
-	// private List<List<Integer>> nextSizeSubsetIndices = new ArrayList<>();
-	// private List<BDD> prevSizeSubsetBDDs = new ArrayList<>();
-	// private List<BDD> nextSizeSubsetBDDs = new ArrayList<>();
-	//
-	// public EfficientPowerSetIterator(Set<Map.Entry<SFAState, BDD>>
-	// transitionsSet) {
-	// transitionsSetList = new ArrayList<>(transitionsSet);
-	// prevSizeSubsetIndices.add(new ArrayList<>());
-	// prevSizeSubsetBDDs.add(Env.TRUE());
-	// }
-	//
-	// /*
-	// * This method is basically a flat (iterative) version of a recursive method
-	// * that generates lazily all SATISFIABLE transition subsets of growing size,
-	// and
-	// * their formulas' BDD conjunction. Once there are no satisfiable subsets
-	// left,
-	// * null is returned.
-	// */
-	// public Pair<Set<Map.Entry<SFAState, BDD>>, BDD> next() {
-	// while (nextSubsetIndices != null) {
-	// if (nextSubsetIndices.isEmpty()) {
-	// if (transitionsSetList.isEmpty()) {
-	// nextSubsetIndices = null;
-	// } else {
-	// nextSubsetIndices.add(-1);
-	// }
-	//
-	// return new Pair<>(new HashSet<>(), Env.TRUE().id());
-	// }
-	//
-	// if (nextTransitionsSetListIndex < transitionsSetList.size()) {
-	// BDD nextSizeSubsetBDD =
-	// prevSizeSubsetBDDs.get(currentPrevSizeSubsetIndicesListIndex)
-	// .and(transitionsSetList.get(nextTransitionsSetListIndex).getValue());
-	//
-	// if (nextSizeSubsetBDD.isZero()) {
-	// ++nextTransitionsSetListIndex;
-	// continue;
-	// }
-	//
-	// nextSizeSubsetBDDs.add(nextSizeSubsetBDD);
-	//
-	// nextSubsetIndices = new ArrayList<>();
-	// nextSubsetIndices.addAll(prevSizeSubsetIndices.get(currentPrevSizeSubsetIndicesListIndex));
-	// nextSubsetIndices.add(nextTransitionsSetListIndex);
-	//
-	// nextSizeSubsetIndices.add(nextSubsetIndices);
-	//
-	// nextSubset.clear();
-	// for (int i : nextSubsetIndices) {
-	// nextSubset.add(transitionsSetList.get(i));
-	// }
-	//
-	// ++nextTransitionsSetListIndex;
-	// return new Pair<>(nextSubset, nextSizeSubsetBDD.id());
-	// }
-	//
-	// while (nextTransitionsSetListIndex == transitionsSetList.size()) {
-	// ++currentPrevSizeSubsetIndicesListIndex;
-	// if (currentPrevSizeSubsetIndicesListIndex == prevSizeSubsetIndices.size()) {
-	// if (nextSizeSubsetIndices.isEmpty()) {
-	// nextSubsetIndices = null;
-	// break;
-	// }
-	//
-	// prevSizeSubsetIndices.clear();
-	// prevSizeSubsetIndices.addAll(nextSizeSubsetIndices);
-	// currentPrevSizeSubsetIndicesListIndex = 0;
-	// prevSizeSubsetBDDs.clear();
-	// prevSizeSubsetBDDs.addAll(nextSizeSubsetBDDs);
-	// nextSizeSubsetIndices.clear();
-	// nextSizeSubsetBDDs.clear();
-	// }
-	//
-	// List<Integer> currentPrevSizeSubsetIndicesList = prevSizeSubsetIndices
-	// .get(currentPrevSizeSubsetIndicesListIndex);
-	// nextTransitionsSetListIndex = currentPrevSizeSubsetIndicesList
-	// .get(currentPrevSizeSubsetIndicesList.size() - 1) + 1;
-	// }
-	// }
-	//
-	// return null;
-	// }
-	//
-	// }
-
-	// /**
-	// * Returns a deterministic SFA (DSFA) that is equivalent to this SFA.
-	// *
-	// * This algorithm is inspired by Veanes et al. (2010).
-	// *
-	// */
-	// public SFA determinizeOrg() {
-	// this.removeDeadStates();
-	//
-	// if (this.isDeterministic()) {
-	// return this.copy();
-	// }
-	//
-	// SFA deterministicAutomaton = new SFA();
-	//
-	// /*
-	// * To distinguish between different states in the DSFA, we need to remember a
-	// * mapping between sets of states in this SFA to the new states in the DSFA
-	// that
-	// * we create.
-	// */
-	// Map<Set<SFAState>, SFAState> stateSubsetsToDetreministicStatesMapping = new
-	// HashMap<>();
-	// Set<SFAState> iniSingletonSet = new HashSet<>(Arrays.asList(ini));
-	//
-	// /*
-	// * The initial state in the DSFA is a singleton containing the SFA's initial
-	// * state.
-	// */
-	// SFAState detreminsticAutomatonInitialState = new SFAState(ini.isAccepting());
-	// stateSubsetsToDetreministicStatesMapping.put(iniSingletonSet,
-	// detreminsticAutomatonInitialState);
-	// deterministicAutomaton.setIni(detreminsticAutomatonInitialState);
-	//
-	// /*
-	// * We use a stack to do a DFS search on the given SFA. It will contain the
-	// state
-	// * sets of the DSFA that we create.
-	// */
-	// List<Set<SFAState>> workStack = new Stack<>();
-	// workStack.add(0, iniSingletonSet);
-	// while (!workStack.isEmpty()) {
-	// Set<Map.Entry<SFAState, BDD>> transitionsSet = new HashSet<>();
-	// Set<Map.Entry<SFAState, BDD>> tautologyTransitions = new HashSet<>();
-	// Set<SFAState> currentStateSet = workStack.remove(0);
-	// for (SFAState state : currentStateSet) {
-	// for (Map.Entry<SFAState, BDD> transition : state.getSucc().entrySet()) {
-	// /*
-	// * Optimization 1: We don't need to add to the transitions set (denoted by
-	// * delta_A(q) in the paper) unsatisfiable transitions, since each subset t of
-	// * delta_A(q) that contains that transition will result a unsatisfiable
-	// formula
-	// * phi_t, since the left conjunction will not be satisfiable.
-	// */
-	// if (!transition.getValue().isZero()) {
-	// transitionsSet.add(transition);
-	// if (transition.getValue().isOne()) {
-	// tautologyTransitions.add(transition);
-	// }
-	// }
-	// }
-	// }
-	//
-	// /*
-	// * Optimization 2: If a subset t of delta_A(q) DOESN'T contains a tautology
-	// * transition, then the resulting phi_t will be unsatisfiable, since the right
-	// * conjunction will be unsatisfiable. Thus, it suffice to go over delta_A(q)'s
-	// * subsets that contain all delta_A(q)'s tautology transitions, which is
-	// * equivalent to going over all the subsets of delta_A(q)\{tautologies} and
-	// * adding to each subset {tautologies} (the set of all tautology transitions).
-	// */
-	// transitionsSet.removeAll(tautologyTransitions);
-	// PowerSetIterator<Map.Entry<SFAState, BDD>> iterator = new
-	// PowerSetIterator<>(transitionsSet);
-	// while (iterator.hasNext()) {
-	// Set<Map.Entry<SFAState, BDD>> transitionsSubset = iterator.next();
-	// transitionsSubset.addAll(tautologyTransitions);
-	//
-	// /*
-	// * Empty transitions set is not interesting since its target states set is
-	// * empty.
-	// */
-	// if (!transitionsSubset.isEmpty()) {
-	// Set<Map.Entry<SFAState, BDD>> transitionsSubsetComplement = new
-	// HashSet<>(transitionsSet);
-	// transitionsSubsetComplement.removeAll(transitionsSubset);
-	//
-	// Set<SFAState> targetStateSet = new HashSet<>();
-	// boolean isAcceptingNewDeterministicState = false;
-	// BDD transitionBDD = Env.TRUE();
-	// for (Map.Entry<SFAState, BDD> t : transitionsSubset) {
-	// if (transitionBDD.isZero()) {
-	// break;
-	// }
-	//
-	// transitionBDD.andWith(t.getValue().id());
-	//
-	// /* Add the transition's target state to the target state set. */
-	// targetStateSet.add(t.getKey());
-	// /*
-	// * If some target state is an accepting SFA state, then the corresponding new
-	// * DFSA state shall be accepting.
-	// */
-	// if (t.getKey().isAccepting()) {
-	// isAcceptingNewDeterministicState = true;
-	// }
-	// }
-	// for (Map.Entry<SFAState, BDD> t : transitionsSubsetComplement) {
-	// if (transitionBDD.isZero()) {
-	// break;
-	// }
-	// transitionBDD.andWith(t.getValue().not());
-	// }
-	//
-	// if (!transitionBDD.isZero()) {
-	// if (!stateSubsetsToDetreministicStatesMapping.containsKey(targetStateSet)) {
-	// stateSubsetsToDetreministicStatesMapping.put(targetStateSet,
-	// new SFAState(isAcceptingNewDeterministicState));
-	// workStack.add(0, targetStateSet);
-	// }
-	//
-	// SFAState currentState =
-	// stateSubsetsToDetreministicStatesMapping.get(currentStateSet);
-	// SFAState targetState =
-	// stateSubsetsToDetreministicStatesMapping.get(targetStateSet);
-	// currentState.addTrans(transitionBDD, targetState);
-	// }
-	// else {
-	//
-	// transitionBDD.free();
-	// }
-	// }
-	// }
-	// }
-	//
-	// return deterministicAutomaton;
-	// }
+//	/**
+//	 * Returns a string representation of the automaton, which describes its states
+//	 * and transitions.
+//	 */
+//	@Override
+//	public String toString() {
+//		Queue<T> worklist = new LinkedList<>();
+//		List<T> seen = new ArrayList<>();
+//		worklist.add(ini);
+//		seen.add(ini);
+//		int numTransitions = 0;
+//		List<String> acceptingTransitionsList = new ArrayList<>();
+//		StringBuilder transitionsStr = new StringBuilder();
+//		while (!worklist.isEmpty()) {
+//			T s = worklist.remove();
+//			if (s.isAccepting()) {
+//				acceptingTransitionsList.add("s" + seen.indexOf(s));
+//			}
+//
+//			// add successors not checked yet
+//			for (Map.Entry<T, BDD> transition : s.getSucc().entrySet()) {
+//				if (!seen.contains(transition.getKey())) {
+//					worklist.add(transition.getKey());
+//					seen.add(transition.getKey());
+//				}
+//
+//				transitionsStr.append("s" + seen.indexOf(s) + " -> s" + seen.indexOf(transition.getKey()) + " : "
+//						+ transition.getValue().toString() + System.lineSeparator());
+//				++numTransitions;
+//			}
+//		}
+//
+//		StringBuilder prefix = new StringBuilder();
+//		prefix.append("Number of states: " + seen.size() + System.lineSeparator());
+//		prefix.append("Number of accepting states: " + acceptingTransitionsList.size() + System.lineSeparator());
+//		prefix.append("Accepting states:" + System.lineSeparator() + acceptingTransitionsList + System.lineSeparator());
+//		prefix.append("Number of transitions: " + numTransitions + System.lineSeparator());
+//		prefix.append("Transitions description:" + System.lineSeparator());
+//
+//		return prefix.append(transitionsStr).toString();
+//	}
 
 }

@@ -86,14 +86,16 @@ public class PastLTLTranslator implements Translator {
 		// sys existential constraints
 		for (ExistentialConstraint exC : input.getSys().getExistentialConstraints()) {
 			Spec currSpec;
-			for(int i = 0; i < exC.getSize() ; i++) {
-				currSpec = exC.getSpec(i);
-				if (currSpec.isPastLTLSpec()) {
-					try {
-						exC.replaceSpec(i, replacePastOperators(currSpec, exC.getTraceId()));
-					} catch (CloneNotSupportedException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
+			if(!exC.isRegExp()) {
+				for(int i = 0; i < exC.getSize() ; i++) {
+					currSpec = exC.getSpec(i);
+					if (currSpec.isPastLTLSpec()) {
+						try {
+							exC.replaceSpec(i, replacePastOperators(currSpec, exC.getTraceId()));
+						} catch (CloneNotSupportedException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
 					}
 				}
 			}

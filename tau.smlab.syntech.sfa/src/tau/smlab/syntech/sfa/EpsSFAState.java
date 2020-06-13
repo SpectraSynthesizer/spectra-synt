@@ -42,7 +42,7 @@ import java.util.Set;
 public class EpsSFAState extends BaseSFAState<EpsSFAState> {
 
 	/**
-	 * Epsilon successors. Each successor is reachable from this state by an epsilon move.
+	 * Epsilon successors. Each such successor is reachable from this state by an epsilon move.
 	 */
 	private Set<EpsSFAState> epsSucc;
 
@@ -55,22 +55,25 @@ public class EpsSFAState extends BaseSFAState<EpsSFAState> {
 
 	@Override
 	public boolean hasEpsSuccessors() {
-		return (epsSucc != null) && !(this.epsSucc.isEmpty());
+		return this.epsSucc != null;
 	}
 
 	@Override
 	public void removeTrans(SFAState tgt) {
 		super.removeTrans(tgt);
 
-		//handle the case of an epsilon transition
 		if(this.isEpsSuccessor(tgt)) {
-			epsSucc.remove(tgt);
+			//Handle the case of an epsilon transition
+			this.epsSucc.remove(tgt);
+			if(epsSucc.isEmpty()) { //Mark that no epsilon successors are left
+				this.epsSucc = null;
+			}
 		}
 	}
 
 	@Override
 	public boolean isEpsSuccessor(SFAState succ) {
-		return epsSucc != null && epsSucc.contains(succ);
+		return this.hasEpsSuccessors() && this.epsSucc.contains(succ);
 	}
 
 	@Override
@@ -80,12 +83,12 @@ public class EpsSFAState extends BaseSFAState<EpsSFAState> {
 
 	@Override
 	public Set<EpsSFAState> getEpsSucc() {
-		if (this.epsSucc == null) {
+		if (!this.hasEpsSuccessors()) {
 			return super.getEpsSucc();
 		}
 		return this.epsSucc;
 	}
-	
+
 	@Override
 	public boolean enablesEpsTrans() {
 		return true;
@@ -94,10 +97,10 @@ public class EpsSFAState extends BaseSFAState<EpsSFAState> {
 	@Override
 	public void addEpsTrans(SFAState tgt) {
 		if(!(tgt instanceof EpsSFAState)) {
-			throw new SFAStateException("EpsSFAState can only have successor states which are instances of EpsSFAState.");
+			throw new SFAStateException("EpsSFAState can only have successor states that are instances of EpsSFAState");
 		}
-		
-		if(this.epsSucc == null) {
+
+		if(!this.hasEpsSuccessors()) {
 			this.epsSucc = new LinkedHashSet<EpsSFAState>();
 		}
 		this.epsSucc.add((EpsSFAState)tgt);
@@ -112,7 +115,7 @@ public class EpsSFAState extends BaseSFAState<EpsSFAState> {
 	public Set<EpsSFAState> getSuccessors() {
 		Set<EpsSFAState> allSuccessors;
 		if(this.hasEpsSuccessors()) {
-			allSuccessors = new LinkedHashSet<EpsSFAState>(epsSucc);
+			allSuccessors = new LinkedHashSet<EpsSFAState>(this.epsSucc);
 		}
 		else {
 			allSuccessors = new LinkedHashSet<EpsSFAState>();
@@ -122,29 +125,30 @@ public class EpsSFAState extends BaseSFAState<EpsSFAState> {
 	}
 
 	/**
-	 * Computes the epsilon closure of this state. The epsilon closure is the set of all states reachable from this state by an epsilon labeled path.
+	 * Computes the epsilon closure of this state.
+	 * The epsilon closure is the set of all states reachable from this state by an epsilon labeled path.
 	 * 
 	 * @return the epsilon closure of this state
 	 */
-	public Set<SFAState> getEpsilonClosure() {
-		Queue<SFAState> worklist = new LinkedList<>();
-		Set<SFAState> seen = new LinkedHashSet<>();
-		worklist.add(this);
-		seen.add(this);
+	public Set<EpsSFAState> getEpsClosure() {
+		Queue<EpsSFAState> worklist = new LinkedList<>();
+		Set<EpsSFAState> epsClosure = new LinkedHashSet<>();
+		epsClosure.add(this);
+		if(this.hasEpsSuccessors()) {
+			worklist.add(this);		
+		}
 		while (!worklist.isEmpty()) {
-			SFAState s = worklist.remove();
-			if(s.hasEpsSuccessors()) { // add epsilon successors not checked yet
-				for (SFAState epsSucc : s.getEpsSucc()) {
-					if (!seen.contains(epsSucc)) {
-						seen.add(epsSucc);
-						if(epsSucc.hasEpsSuccessors()) {
-							worklist.add(epsSucc);							
-						}
+			EpsSFAState s = worklist.remove();
+			for (EpsSFAState epsSucc : s.getEpsSucc()) { //Add epsilon successors not checked yet
+				if (!epsClosure.contains(epsSucc)) {
+					epsClosure.add(epsSucc);
+					if(epsSucc.hasEpsSuccessors()) {
+						worklist.add(epsSucc);							
 					}
 				}
 			}
 		}
-		return seen;
+		return epsClosure;
 	}
 
 	@Override

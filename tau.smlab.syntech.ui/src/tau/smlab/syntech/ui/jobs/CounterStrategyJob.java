@@ -32,7 +32,7 @@ import java.io.PrintStream;
 
 import org.eclipse.ui.console.IOConsoleOutputStream;
 
-import tau.smlab.syntech.bddgenerator.BDDEnergyReduction;
+import tau.smlab.syntech.bddgenerator.energy.BDDEnergyReduction;
 import tau.smlab.syntech.games.controller.enumerate.ConcreteControllerConstruction;
 import tau.smlab.syntech.games.controller.enumerate.printers.MAAMinimizeAutomatonPrinter;
 import tau.smlab.syntech.games.controller.enumerate.printers.SimpleTextPrinter;
@@ -49,7 +49,7 @@ public class CounterStrategyJob extends SyntechJob {
 	protected void doWork() {
 
 		if (PreferencePage.getBDDPackageSelection().equals(BDDPackage.CUDD_ADD) && model.getWeights() != null) {
-			BDDEnergyReduction.reduce(model.getSys(), model.getWeights(), gi.getEnergyBound());
+			BDDEnergyReduction.reduce(model.getSys(), model.getWeights(), gi.getEnergyBound(), PreferencePage.isGroupVarSelection());
 		}
 
 		// play actual game

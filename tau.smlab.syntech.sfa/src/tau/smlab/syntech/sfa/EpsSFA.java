@@ -28,7 +28,6 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package tau.smlab.syntech.sfa;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
@@ -47,34 +46,47 @@ import tau.smlab.syntech.sfa.PowerSetIterator.PowerSetIteratorType;
  */
 public class EpsSFA extends BaseSFA<EpsSFAState> {
 
-	final public static String EPS_LABEL = "Epsilon";
-	
-	public EpsSFA() {
+	/**
+	 * 
+	 * Use an instance of {@link EpsClosure} to obtain the epsilon closure of each state in this {@link EpsSFA}.
+	 *
+	 */
+	class EpsClosure {
+
+		private Map<EpsSFAState, Set<EpsSFAState>> epsClosures;
+
+		EpsClosure() {
+			this.epsClosures = new HashMap<>();
+		}
+		
+		/**
+		 * Returns the epsilon closure of the specified state.
+		 * 
+		 * @param state
+		 * @return
+		 */
+		Set<EpsSFAState> getClosureOf(EpsSFAState state) {
+			if(!this.epsClosures.containsKey(state)) {
+				this.epsClosures.put(state, state.getEpsClosure());			
+			}
+			return this.epsClosures.get(state);
+		}
+	}
+
+	protected EpsSFA() {
 		super();
 	}
-	
-	public EpsSFA(SFAState ini) {
+
+	protected EpsSFA(SFAState ini) {
 		super(ini);
 	}
-	
-	public EpsSFA(PowerSetIteratorType psIterType) {
+
+	protected EpsSFA(PowerSetIteratorType psIterType) {
 		super(psIterType);
 	}
-	
-	public EpsSFA(SFAState ini, PowerSetIteratorType psIterType) {
+
+	protected EpsSFA(SFAState ini, PowerSetIteratorType psIterType) {
 		super(ini, psIterType);
-	}
-	
-	/**
-	 * Computes the epsilon closure sets of all reachable states (from the initial state) in this epsilon SFA.
-	 * The epsilon closure of a state S is the set of all states reachable from S by an epsilon labeled path. 
-	 * 
-	 * @return mapping of each reachable state to its epsilon closure
-	 */
-	public Map<EpsSFAState, Set<EpsSFAState>> computeEpsClosures() {
-		Map<EpsSFAState, Set<EpsSFAState>> epsClosures = new HashMap<>();
-		computeEpsClosuresRec(this.getIni(), epsClosures);
-		return epsClosures;
 	}
 
 	@Override
@@ -104,7 +116,7 @@ public class EpsSFA extends BaseSFA<EpsSFAState> {
 		//no reachable epsilon transition has been found
 		return false;
 	}
-	
+
 	@Override
 	public boolean enablesEpsTrans() {
 		return true;
@@ -118,12 +130,12 @@ public class EpsSFA extends BaseSFA<EpsSFAState> {
 	 */
 	@Override
 	public EpsSFA eliminateEpsTrans() {
-		
-		Map<EpsSFAState, Set<EpsSFAState>> epsClosures = computeEpsClosures();
+
+		EpsClosure epsClosures = new EpsClosure();
 		Map<EpsSFAState, EpsSFAState> origStateToCopyState = new HashMap<>();
 
 		//create a fresh copy of the initial state and determine whether it is a final state in the new automaton
-		origStateToCopyState.put(this.getIni(), new EpsSFAState(SFAUtil.containsAcceptingState(epsClosures.get(this.getIni()))));
+		origStateToCopyState.put(this.getIni(), new EpsSFAState(SFAUtil.containsAcceptingState(epsClosures.getClosureOf(this.getIni()))));
 
 		//initialize the resulting new automaton
 		EpsSFA epsFreeSfa = new EpsSFA();
@@ -142,24 +154,24 @@ public class EpsSFA extends BaseSFA<EpsSFAState> {
 			origState = worklist.remove();
 			copyState = origStateToCopyState.get(origState);
 
-			//compute all outgoing transitions of the copy state in the new automaton
-			epsClosure = epsClosures.get(origState);
+			//Compute all outgoing transitions of the copy state in the new automaton
+			epsClosure = epsClosures.getClosureOf(origState);
 			nonEpsSuccs = SFAUtil.getSucc(epsClosure);
 
 			for(EpsSFAState nonEpsSucc : nonEpsSuccs.keySet()) {
-				//obtain the copy of nonEpsSucc (i.e., the successor in the new automaton)
+				//Obtain the copy of nonEpsSucc (i.e., the successor in the new automaton)
 				if(origStateToCopyState.containsKey(nonEpsSucc)) {
 					copySucc = origStateToCopyState.get(nonEpsSucc);
 				}
 				else {
-					//we have not seen the state nonEpsSucc before; create a fresh copy and add nonEpsSucc to the BFS queue 
-					succEpsClosure = epsClosures.get(nonEpsSucc);
+					//We have not seen the state nonEpsSucc before; create a fresh copy and add nonEpsSucc to the BFS queue 
+					succEpsClosure = epsClosures.getClosureOf(nonEpsSucc);
 					copySuccIsFinal = SFAUtil.containsAcceptingState(succEpsClosure);
 					copySucc = new EpsSFAState(copySuccIsFinal);
 					origStateToCopyState.put(nonEpsSucc, copySucc);
 					worklist.add(nonEpsSucc);
 				}
-				//add a new transition (move) that goes into the copy of nonEpsSucc
+				//Add a new transition (move) that goes into the copy of nonEpsSucc
 				copyState.addTrans(nonEpsSuccs.get(nonEpsSucc), copySucc);
 			}
 		}
@@ -167,12 +179,12 @@ public class EpsSFA extends BaseSFA<EpsSFAState> {
 	}
 
 	@Override
-	public EpsSFA determinize() {
+	public BaseSFA<EpsSFAState> determinize() {
 		//create an equivalent automaton without epsilon moves
 		EpsSFA noEpsAutomaton = this.eliminateEpsTrans();
 
 		//determinize the epsilon-free automaton
-		EpsSFA detAutomaton = noEpsAutomaton.determinize();
+		BaseSFA<EpsSFAState> detAutomaton = noEpsAutomaton.buildDetAutomaton();
 
 		//free the BDDs of the epsilon-free automaton 
 		noEpsAutomaton.free();
@@ -190,7 +202,7 @@ public class EpsSFA extends BaseSFA<EpsSFAState> {
 
 		Queue<EpsSFAState> worklist = new LinkedList<>();
 		worklist.add(this.getIni());
-		
+
 		while (!worklist.isEmpty()) {
 			EpsSFAState s = worklist.remove();
 
@@ -218,73 +230,54 @@ public class EpsSFA extends BaseSFA<EpsSFAState> {
 		}
 		return copy;
 	}
-	
+
 	@Override
-	protected EpsSFA getNewSFAInstance() {
+	protected EpsSFA newSfaInstance() {
 		return new EpsSFA();
 	}
-	
+
 	@Override
-	protected EpsSFA getNewSFAInstance(EpsSFAState ini) {
+	protected EpsSFA newSfaInstance(EpsSFAState ini) {
 		return new EpsSFA(ini);
 	}
-	
+
 	@Override
-	public EpsSFAState getNewState(boolean isAccepting) {
+	public EpsSFAState newSfaState(boolean isAccepting) {
 		return new EpsSFAState(isAccepting);
 	}
-	
+
 	@Override
 	protected Class<EpsSFAState> getStatesType() {
 		return EpsSFAState.class;
 	}
 	
 	@Override
-	public String toString() {
-		//TODO implement me
-		return "";
-	}
-
-	/*
-	 * 
-	 * 
-	 * 
-	 * 
-	 * 
-	 * 
-	 * 
-	 **************************************************************
-	 * Private methods*********************************************
-	 **************************************************************
-	 * 
-	 * 
-	 * 
-	 * 
-	 * 
-	 * 
-	 * 
-	 * 
-	 */
-
-	/**
-	 * Traverses through the underlying directed graph of this epsilon SFA in a DFS fashion to compute
-	 * the epsilon closure of each reachable state.
-	 * 
-	 * @param state
-	 * @param epsClosures
-	 */
-	private void computeEpsClosuresRec(EpsSFAState state,
-			Map<EpsSFAState,Set<EpsSFAState>> epsClosures) {
-		epsClosures.put(state, new LinkedHashSet<EpsSFAState>(Arrays.asList(state)));
-
-		for(EpsSFAState succ : state.getSuccessors()) {
-			if(!epsClosures.containsKey(succ)) {
-				computeEpsClosuresRec(succ, epsClosures);
-			}
-			if(succ != state && state.isEpsSuccessor(succ)) {
-				epsClosures.get(state).addAll(epsClosures.get(succ));
-			}	
+	public boolean acceptsTheEmptyString() {
+		Queue<EpsSFAState> worklist = new LinkedList<>();
+		if(this.ini.isAccepting()) {
+			return true;
 		}
+		Set<EpsSFAState> seen = new LinkedHashSet<>();
+		seen.add(this.ini);
+		if(this.ini.hasEpsSuccessors()) {
+			worklist.add(this.ini);		
+		}
+		//Search for a final state reachable only via epsilon transitions
+		while (!worklist.isEmpty()) {
+			EpsSFAState s = worklist.remove();
+			for (EpsSFAState epsSucc : s.getEpsSucc()) { //Add epsilon successors not checked yet
+				if(epsSucc.isAccepting()) {
+					return true;
+				}
+				if (!seen.contains(epsSucc)) {
+					seen.add(epsSucc);
+					if(epsSucc.hasEpsSuccessors()) {
+						worklist.add(epsSucc);							
+					}
+				}
+			}
+		}
+		return false;
 	}
 
 }

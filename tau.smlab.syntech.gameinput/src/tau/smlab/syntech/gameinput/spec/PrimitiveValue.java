@@ -29,62 +29,66 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package tau.smlab.syntech.gameinput.spec;
 
 public class PrimitiveValue implements Spec {
-  
-  private String value;
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 8011682341776162911L;
+	
+	private String value;
 
-  public PrimitiveValue(int value)
-  {
-    this.value = Integer.toString(value);
-  }
-  
-  public PrimitiveValue(String value)
-  {
-    this.value = value;
-  }
-  
-  public String toString()
-  {
-    return "<PrimitiveValue: " + this.value +">";
-  }
-  
-  @Override
-  public boolean isPastLTLSpec() {
-    return false;
-  }
+	public PrimitiveValue(int value)
+	{
+		this.value = Integer.toString(value);
+	}
 
-  @Override
-  public boolean isPropSpec() {
-    switch (value) {
-    case "true":
-      return true;
-    case "false":
-      return true;
-    case "TRUE":
-      return true;
-    case "FALSE":
-      return true;
-    default:
-      break;
-    }
-      
-    return false;
-  }
+	public PrimitiveValue(String value)
+	{
+		this.value = value;
+	}
 
-  @Override
-  public boolean hasTemporalOperators() {
-    return false;
-  }
+	public String toString()
+	{
+		return "<PrimitiveValue: " + this.value +">";
+	}
 
-  public String getValue() {
-    return value;
-  }
+	@Override
+	public boolean isPastLTLSpec() {
+		return false;
+	}
 
-  public void setValue(String value) {
-    this.value = value;
-  }
+	@Override
+	public boolean isPropSpec() {
+		switch (value) {
+		case "true":
+			return true;
+		case "false":
+			return true;
+		case "TRUE":
+			return true;
+		case "FALSE":
+			return true;
+		default:
+			break;
+		}
 
-  @Override
-  public PrimitiveValue clone() throws CloneNotSupportedException {
-    return new PrimitiveValue(this.value);
-  }
+		return false;
+	}
+
+	@Override
+	public boolean hasTemporalOperators() {
+		return false;
+	}
+
+	public String getValue() {
+		return value;
+	}
+
+	public void setValue(String value) {
+		this.value = value;
+	}
+
+	@Override
+	public PrimitiveValue clone() throws CloneNotSupportedException {
+		return new PrimitiveValue(this.value);
+	}
 }

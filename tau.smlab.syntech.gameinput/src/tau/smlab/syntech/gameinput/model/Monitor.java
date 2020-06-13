@@ -28,47 +28,52 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package tau.smlab.syntech.gameinput.model;
 
+import java.io.Serializable;
 import java.util.List;
 
-public class Monitor {
-  
-  private int traceId;
-  private String name;
-  private TypeDef type;
-  private List<Constraint> expressions;
+public class Monitor implements Serializable {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 6681607472181997841L;
+	
+	private int traceId;
+	private String name;
+	private TypeDef type;
+	private List<Constraint> expressions;
 
-  /**
-   * 
-   * @param name
-   * @param expressions
-   * @param traceId
-   */
-  public Monitor(String name, TypeDef type, List<Constraint> expressions, int traceId)
-  {
-    this.name = name;
-    this.expressions = expressions;
-    this.traceId = traceId;
-    this.type = type;
-  }
+	/**
+	 * 
+	 * @param name
+	 * @param expressions
+	 * @param traceId
+	 */
+	public Monitor(String name, TypeDef type, List<Constraint> expressions, int traceId)
+	{
+		this.name = name;
+		this.expressions = expressions;
+		this.traceId = traceId;
+		this.type = type;
+	}
 
-  public int getTraceId() {
-    return traceId;
-  }
+	public int getTraceId() {
+		return traceId;
+	}
 
-  public String getName() {
-    return name;
-  }
-  
-  public TypeDef getType() {
-    return type;
-  }
+	public String getName() {
+		return name;
+	}
 
-  public List<Constraint> getExpressions() {
-    return expressions;
-  }
+	public TypeDef getType() {
+		return type;
+	}
 
-  public void addExpressions(List<Constraint> exps) {
-    this.expressions.addAll(exps);
-  }
+	public List<Constraint> getExpressions() {
+		return expressions;
+	}
+
+	public void addExpressions(List<Constraint> exps) {
+		this.expressions.addAll(exps);
+	}
 
 }

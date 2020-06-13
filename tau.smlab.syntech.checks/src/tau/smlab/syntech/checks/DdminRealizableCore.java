@@ -32,24 +32,28 @@ import java.util.List;
 import tau.smlab.syntech.gamemodel.BehaviorInfo;
 import tau.smlab.syntech.gamemodel.GameModel;
 import tau.smlab.syntech.gamemodel.util.GameBuilderUtil;
-import tau.smlab.syntech.games.gr1.GR1Game;
-import tau.smlab.syntech.games.gr1.GR1GameMemoryless;
 import tau.smlab.syntech.games.util.AbstractDdmin;
 
-public class DdminRealizableCore extends AbstractDdmin<BehaviorInfo> {
+public abstract class DdminRealizableCore extends AbstractDdmin<BehaviorInfo> {
   protected GameModel model;
 
   public DdminRealizableCore(GameModel model) {
     this.model = model;
   }
 
+	/**
+	 * This has to be filled by the caller in order to make realizability checks standard and menu opt. sensitive.
+	 * See CoreMenu class
+	 * 
+	 * @param gm
+	 * @return
+	 */
+	public abstract boolean realizable(GameModel gm);
+	
   @Override
   protected boolean check(List<BehaviorInfo> part) {
     GameBuilderUtil.buildEnv(model, part);
-    GR1Game rg = new GR1GameMemoryless(model);
-    boolean isRealizable = rg.checkRealizability();
-    rg.free();
-    return isRealizable;
+    return realizable(model);
   }
 
 }

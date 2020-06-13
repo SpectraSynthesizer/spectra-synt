@@ -33,11 +33,8 @@ import tau.smlab.syntech.games.util.AbstractDdmin;
 import java.util.ArrayList;
 import java.util.List;
 
-import tau.smlab.syntech.gamemodel.BehaviorInfo;
 import tau.smlab.syntech.gamemodel.GameModel;
 import tau.smlab.syntech.gamemodel.util.GameBuilderUtil;
-import tau.smlab.syntech.games.gr1.GR1Game;
-import tau.smlab.syntech.games.gr1.GR1GameMemoryless;
 import tau.smlab.syntech.jtlv.env.module.ModuleBDDField;
 
 /**
@@ -48,12 +45,18 @@ import tau.smlab.syntech.jtlv.env.module.ModuleBDDField;
  * 
  */
 
-public class DdminUnrealizableVarsCore extends AbstractDdmin<ModuleBDDField> {
+public abstract class DdminUnrealizableVarsCore extends AbstractDdmin<ModuleBDDField> {
 
 	private GameModel model;
-	private List<BehaviorInfo> garCore;
 	private List<ModuleBDDField> sysVars;
 
+	/**
+	 * This has to be filled by the caller in order to make realizability checks standard and menu opt. sensitive.
+	 * @param gm
+	 * @return
+	 */
+	public abstract boolean realizable(GameModel gm);
+	
 	/**
 	 * auxiliaries are always added to the system module
 	 * 
@@ -63,9 +66,8 @@ public class DdminUnrealizableVarsCore extends AbstractDdmin<ModuleBDDField> {
 	 *            the minimized guarantees core already found.
 	 */
 
-	public DdminUnrealizableVarsCore(GameModel model, List<BehaviorInfo> gc) {
+	public DdminUnrealizableVarsCore(GameModel model) {
 		this.model = model;
-		this.garCore = gc;
 		this.sysVars = model.getSys().getNonAuxFields();
 	}
 
@@ -80,13 +82,9 @@ public class DdminUnrealizableVarsCore extends AbstractDdmin<ModuleBDDField> {
 		List<ModuleBDDField> vars = new ArrayList<ModuleBDDField>(sysVars);
 		vars.removeAll(part);
 
-		GameBuilderUtil.buildQuantifiedSys(model, garCore, vars);
+		GameBuilderUtil.buildQuantifiedSys(model, vars);
 
-		GR1Game gr1game = new GR1GameMemoryless(model);
-		boolean unrealizable = !gr1game.checkRealizability();
-		gr1game.free();
-
-		return unrealizable;
+		return !realizable(model);
 	}
 
 }

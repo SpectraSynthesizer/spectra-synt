@@ -31,38 +31,42 @@ package tau.smlab.syntech.gameinput.spec;
 import tau.smlab.syntech.gameinput.model.Counter;
 
 public class CounterReference implements Spec {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 9216596016000764782L;
+	
+	private Counter counter;
 
-  private Counter counter;
-  
-  public CounterReference(Counter counter) {
-    this.counter = counter;
-  }
+	public CounterReference(Counter counter) {
+		this.counter = counter;
+	}
 
-  public String toString()
-  {
-    return "<CounterReference: " + counter.getName() +">";
-  }
-  
-  @Override
-  public boolean isPastLTLSpec() {
-    return false;
-  }
+	public String toString()
+	{
+		return "<CounterReference: " + counter.getName() +">";
+	}
 
-  @Override
-  public boolean isPropSpec() {
-    return false;
-  }
+	@Override
+	public boolean isPastLTLSpec() {
+		return false;
+	}
 
-  @Override
-  public boolean hasTemporalOperators() {
-    return false;
-  }
+	@Override
+	public boolean isPropSpec() {
+		return false;
+	}
 
-  public CounterReference clone() throws CloneNotSupportedException {
-    return new CounterReference(this.counter);
-  }
-  
-  public Counter getCounter() {
-    return counter;
-  }
+	@Override
+	public boolean hasTemporalOperators() {
+		return false;
+	}
+
+	public CounterReference clone() throws CloneNotSupportedException {
+		return new CounterReference(this.counter);
+	}
+
+	public Counter getCounter() {
+		return counter;
+	}
 }

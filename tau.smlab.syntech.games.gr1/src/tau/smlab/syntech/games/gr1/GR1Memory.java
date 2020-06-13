@@ -33,9 +33,21 @@ import tau.smlab.syntech.games.GameMemory;
 import tau.smlab.syntech.jtlv.Env;
 
 public class GR1Memory extends GameMemory {
+	
 	protected BDD[][][] x_mem;
 	protected BDD[][] y_mem;
 	protected BDD[] z_mem;
+	
+	//Memory vectors used for GR(1)*
+	
+	//Memory to fulfill the k-th existential guarantee 
+	protected BDD[][] fulfill_exist_gar_mem; 
+	
+	//Memory to reach a state that starts the fulfillment of the k-th existential guarantee 
+	protected BDD[][] towards_exist_gar_mem; 
+	
+	//Memory of co-Buchi game of justice assumption violation (in case of non well-separation)
+	protected BDD[][] envJusticeViolation_mem;
 
 	@Override
 	public void free() {
@@ -46,6 +58,28 @@ public class GR1Memory extends GameMemory {
 		y_mem = null;
 		Env.free(x_mem);
 		x_mem = null;
+		Env.free(fulfill_exist_gar_mem);
+		fulfill_exist_gar_mem = null;
+		Env.free(towards_exist_gar_mem);
+		towards_exist_gar_mem = null;
+		Env.free(envJusticeViolation_mem);
+		envJusticeViolation_mem = null;
+	}
+	
+	public int getRank(int j) {
+		return y_mem[j].length;
+	}
+	
+	public int getFulfillRank(int exj) {
+		return fulfill_exist_gar_mem[exj].length;
+	}
+	
+	public int getTowardsRank(int exj) {
+		return towards_exist_gar_mem[exj].length;
+	}
+	
+	public int getEnvViolationRank() {
+		return envJusticeViolation_mem[0].length;
 	}
 
 	// extended_size<=0 will tight the arrays to be the exact sizes.

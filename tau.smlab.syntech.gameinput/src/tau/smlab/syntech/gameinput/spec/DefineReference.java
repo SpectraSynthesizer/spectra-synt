@@ -30,48 +30,52 @@ package tau.smlab.syntech.gameinput.spec;
 
 import tau.smlab.syntech.gameinput.model.Define;
 
-public class DefineReference implements Spec{
+public class DefineReference implements Spec {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 7153031562445721013L;
+	
+	private Define define;
 
-  private Define define;
-  
-  public DefineReference(Define define)
-  {
-    this.define = define;
-  }
-  
-  public String toString()
-  {
-    return "<DefineReference: " + this.define.getName() +">";
-  }
-  @Override
-  public boolean isPastLTLSpec() {
-    // TODO Auto-generated method stub
-    return false;
-  }
+	public DefineReference(Define define)
+	{
+		this.define = define;
+	}
 
-  @Override
-  public boolean isPropSpec() {
-    // TODO Auto-generated method stub
-    return false;
-  }
+	public String toString()
+	{
+		return "<DefineReference: " + this.define.getName() +">";
+	}
+	@Override
+	public boolean isPastLTLSpec() {
+		// TODO Auto-generated method stub
+		return false;
+	}
 
-  @Override
-  public boolean hasTemporalOperators() {
-    // TODO Auto-generated method stub
-    return false;
-  }
+	@Override
+	public boolean isPropSpec() {
+		// TODO Auto-generated method stub
+		return false;
+	}
 
-  public Define getDefine() {
-    return define;
-  }
+	@Override
+	public boolean hasTemporalOperators() {
+		// TODO Auto-generated method stub
+		return false;
+	}
 
-  public void setDefine(Define define) {
-    this.define = define;
-  }
+	public Define getDefine() {
+		return define;
+	}
 
-  @Override
-  public DefineReference clone() throws CloneNotSupportedException {
-    return new DefineReference(this.define);
-  }
-  
+	public void setDefine(Define define) {
+		this.define = define;
+	}
+
+	@Override
+	public DefineReference clone() throws CloneNotSupportedException {
+		return new DefineReference(this.define);
+	}
+
 }

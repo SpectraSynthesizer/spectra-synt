@@ -28,43 +28,48 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package tau.smlab.syntech.gameinput.model;
 
+import java.io.Serializable;
 import java.util.List;
 
 import tau.smlab.syntech.gameinput.spec.Spec;
 
-public class Predicate {
+public class Predicate implements Serializable {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -808139840754118691L;
+	
+	private String predicateName;
+	private Spec expression;
+	private List<Variable> paramsList;
+	private int traceId;
 
-  private String predicateName;
-  private Spec expression;
-  private List<Variable> paramsList;
-  private int traceId;
+	public Predicate(String predicateName, Spec expression, List<Variable> paramsList, int traceId)
+	{
+		this.predicateName = predicateName;
+		this.expression = expression;
+		this.paramsList = paramsList;
+		this.traceId = traceId;
+	}
 
-  public Predicate(String predicateName, Spec expression, List<Variable> paramsList, int traceId)
-  {
-    this.predicateName = predicateName;
-    this.expression = expression;
-    this.paramsList = paramsList;
-    this.traceId = traceId;
-  }
+	public String getPredicateName() {
+		return predicateName;
+	}
 
-  public String getPredicateName() {
-    return predicateName;
-  }
+	public Spec getExpression() {
+		return expression;
+	}
 
-  public Spec getExpression() {
-    return expression;
-  }
+	public void setSpec(Spec expression) {
+		this.expression = expression;
+	}
 
-  public void setSpec(Spec expression) {
-    this.expression = expression;
-  }
-  
-  public List<Variable> getParamsList() {
-    return paramsList;
-  }
+	public List<Variable> getParamsList() {
+		return paramsList;
+	}
 
 
-  public int getTraceId() {
-    return traceId;
-  }
+	public int getTraceId() {
+		return traceId;
+	}
 }

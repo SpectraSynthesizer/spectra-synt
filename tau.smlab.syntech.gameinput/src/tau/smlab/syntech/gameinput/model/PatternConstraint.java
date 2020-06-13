@@ -33,38 +33,42 @@ import java.util.List;
 import tau.smlab.syntech.gameinput.spec.Spec;
 
 public class PatternConstraint extends Constraint {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -9107457598931230133L;
 
-  public PatternConstraint(String name, Pattern pattern, List<Spec> parameters, int traceId) {
-    super(Kind.PATTERN, null, name, traceId);
-    this.pattern = pattern;
-    this.parameters = parameters;
-  }
+	public PatternConstraint(String name, Pattern pattern, List<Spec> parameters, int traceId) {
+		super(Kind.PATTERN, null, name, traceId);
+		this.pattern = pattern;
+		this.parameters = parameters;
+	}
 
-  private Pattern pattern;
-  private List<Spec> parameters;
+	private Pattern pattern;
+	private List<Spec> parameters;
 
-  public String toString()
-  {
-    return "PatternConstraint_pattern: " + pattern + " PatternConstraint_parameters: " + parameters;
-  }
-  public Pattern getPattern() {
-    return pattern;
-  }
+	public String toString()
+	{
+		return "PatternConstraint_pattern: " + pattern + " PatternConstraint_parameters: " + parameters;
+	}
+	public Pattern getPattern() {
+		return pattern;
+	}
 
-  public void setPattern(Pattern pattern) {
-    this.pattern = pattern;
-  }
+	public void setPattern(Pattern pattern) {
+		this.pattern = pattern;
+	}
 
-  public List<Spec> getParameters() {
-    return parameters;
-  }
+	public List<Spec> getParameters() {
+		return parameters;
+	}
 
-  public void setParameters(List<Spec> parameters) {
-    this.parameters = parameters;
-  }
+	public void setParameters(List<Spec> parameters) {
+		this.parameters = parameters;
+	}
 
-  @Override
-  public Kind getKind() {
-    return Kind.PATTERN;
-  }
+	@Override
+	public Kind getKind() {
+		return Kind.PATTERN;
+	}
 }

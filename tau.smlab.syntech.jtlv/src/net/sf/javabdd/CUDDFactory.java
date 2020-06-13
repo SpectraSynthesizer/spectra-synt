@@ -190,7 +190,8 @@ public class CUDDFactory extends BDDFactory {
 
 	private static native long apply0(long b, long c, int opr, boolean ADD, boolean apply_with, boolean deref_other);
 
-	private static native long satOne0(long b, long c, boolean ADD);
+//	private static native long satOne0(long b, long c, boolean ADD);
+	private static native long satOne0(long b, boolean ADD);
 
 	private static native int nodeCount0(long b);
 
@@ -311,7 +312,41 @@ public class CUDDFactory extends BDDFactory {
 	private static native long[] getZMem0();
 
 	private static native long[] getZMemFirstItr0();
-
+		
+	
+	private static native long getJusticesBDD0(long[] sysJ, long[] envJ, int[] jindices, int[] iindices, int utilindex);
+	
+	private static native long getJusticesStarBDD0(long[] sysJ, long[] envJ, int[] jindices, int[] iindices, int utilindex);
+	
+	private static native long getTransBDD0(long sysIni, long envIni, long sysTrans, long envTrans, 
+			int[] jindices, int[] iindices, int utilindex);
+	
+	private static native long getFixpointsBDD0(int[] jindices, int[] iindices, int[] kindices);
+	
+	private static native long getFixpointsStarBDD0(int[] jindices, int[] iindices, int[] kindices);
+	
+	private static native long getFulfillBDD0(int[] exjindices, int[] findices);
+	
+	private static native long getTowardsBDD0(int[] exjindices, int[] tindices);
+	
+	private static native long getEnvViolationBDD0(int[] iindices, int[] kindices);
+	
+	private static native void loadFixpointsJits0(long fixpoints, int[] jindices, int[] iindices, int[] kindices, int[] ranks, long pairs, long primeVars);
+	
+	private static native void loadTransJits0(long trans, int[] jindices, int[] iindices, int utilindex);
+	
+	private static native void loadJusticesJits0(long justices, int[] jindices, int[] iindices, int utilindex, int n, int m);
+	
+	private static native long nextStatesJits0(long current, long inputs, long pairs, long unprimeVars);
+	
+	private static native int initControllerJits0(long inputs);
+	
+	private static native void freeControllerJits0();
+	
+	private static native long getTransitionsJits0();
+	
+	private static native long getInitialJits0();
+	
 	private static native boolean gr1Game0(long[] sysJ, long[] envJ, long sysIni, long envIni, long sysTrans,
 			long envTrans, long sysUnprime, long envUnprime, long sysPrime, long envPrime, long pairs,
 			long[] sysTransList, long[] envTransList, long[] sysQuantSets, long[] envQuantSets, boolean efp,
@@ -339,7 +374,39 @@ public class CUDDFactory extends BDDFactory {
 			long envTrans, long sysUnprime, long envUnprime, long sysPrime, long envPrime, long pairs, boolean efp,
 			boolean eun, boolean fpr, boolean sca, int incBitmap, long incStartZ, long[] incZMem, long[] incXMem,
 			int jIdx, int incSizeD1, int incSizeD2, int[] incSizeD3);
-
+	
+	
+	/* ************************ GR(1)* *********************************************** */
+	
+	private static native long getGR1StarWinningStates0();
+	
+	private static native int[] getGR1StarJusticeIterNum0();
+	
+	private static native int[] getGR1StarTowardsExistIterNum();
+	
+	private static native int[] getGR1StarFulfillExistIterNum();
+	
+	private static native int getGR1StarEnvJViolationIterNum();
+	
+	private static native long[] getGR1StarYMem0();
+	
+	private static native long[] getGR1StarXMem0();
+	
+	private static native long[] getGR1StarFulfillExistMem0();
+	
+	private static native long[] getGR1StarTowardsExistMem0();
+	
+	private static native long[] getGR1StarEnvJViolationMem0();
+	
+	private static native boolean gr1StarGame0(long[] sysJ, long[] envJ,
+			long[] sfaIni, long[] sfaTrans, long[] sfaTransToAcc, long[] sfaUnprime, long[] sfaPrime,
+			long sysIni, long envIni, long sysTrans,
+			long envTrans, long sysUnprime, long envUnprime, long sysPrime, long envPrime, long pairs,
+			long[] sysTransList, long[] envTransList, long[] sysQuantSets, long[] envQuantSets, boolean efp,
+			boolean eun, boolean fpr, boolean sca, boolean mem);
+	
+	/* ***************************************** */
+	
 	/*
 	 * private static native boolean negCycleCheck0(long A, long S, long primedVars,
 	 * long allPairs);
@@ -1352,8 +1419,9 @@ public class CUDDFactory extends BDDFactory {
 		 */
 		@Override
 		public BDD satOne(BDDVarSet var) {
-			CUDDBDD c = (CUDDBDD) ((BDDVarSet.DefaultImpl) var).b;
-			long b = satOne0(_ddnode_ptr, c._ddnode_ptr, this.isADD());
+//			CUDDBDD c = (CUDDBDD) ((BDDVarSet.DefaultImpl) var).b;
+//			long b = satOne0(_ddnode_ptr, c._ddnode_ptr, this.isADD());
+			long b = satOne0(_ddnode_ptr, this.isADD());
 			return new CUDDBDD(b);
 		}
 
@@ -1567,8 +1635,9 @@ public class CUDDFactory extends BDDFactory {
 
 		@Override
 		public ADD satOne(BDDVarSet var) {
-			CUDDADD c = (CUDDADD) ((BDDVarSet.DefaultImpl) var).b;
-			long b = satOne0(_ddnode_ptr, c._ddnode_ptr, this.isADD());
+//			CUDDADD c = (CUDDADD) ((BDDVarSet.DefaultImpl) var).b;
+//			long b = satOne0(_ddnode_ptr, c._ddnode_ptr, this.isADD());
+			long b = satOne0(_ddnode_ptr, this.isADD());
 			return new CUDDADD(b);
 		}
 
@@ -2090,7 +2159,82 @@ public class CUDDFactory extends BDDFactory {
 		}
 
 	}
-
+	
+	@Override
+	public BDD getGr1StarWinningStates() {
+		return new CUDDBDD(getGR1StarWinningStates0());
+	}
+	
+	@Override
+	public int[] getGr1StarJusticeIterNum() {
+		return getGR1StarJusticeIterNum0();
+	}
+	
+	@Override
+	public BDD[] getGr1StarXMem() {
+		long[] xMem = getGR1StarXMem0();
+		BDD[] res = new BDD[xMem.length];
+		for (int i = 0; i < xMem.length; i++) {
+			res[i] = new CUDDBDD(xMem[i]);
+		}
+		return res;
+	}
+	
+	@Override
+	public BDD[] getGr1StarYMem() {
+		long[] yMem = getGR1StarYMem0();
+		BDD[] res = new BDD[yMem.length];
+		for (int j = 0; j < yMem.length; j++) {
+			res[j] = new CUDDBDD(yMem[j]);
+		}
+		return res;
+	}
+	
+	@Override
+	public int[] getGr1StarTowardsExistIterNum() {
+		return getGR1StarTowardsExistIterNum();
+	}
+	
+	@Override
+	public int[] getGr1StarFulfillExistIterNum() {
+		return getGR1StarFulfillExistIterNum();
+	}
+	
+	@Override
+	public int getGr1StarEnvJViolationIterNum() {
+		return getGR1StarEnvJViolationIterNum();
+	}
+	
+	@Override
+	public BDD[] getGr1StarFulfillExistMem() {
+		long[] fExistMem = getGR1StarFulfillExistMem0();
+		BDD[] res = new BDD[fExistMem.length];
+		for(int i = 0; i < fExistMem.length; i++) {
+			res[i] = new CUDDBDD(fExistMem[i]);
+		}
+		return res;
+	}
+	
+	@Override
+	public BDD[] getGr1StarTowardsExistMem() {
+		long[] tExistMem = getGR1StarTowardsExistMem0();
+		BDD[] res = new BDD[tExistMem.length];
+		for(int i = 0; i < tExistMem.length; i++) {
+			res[i] = new CUDDBDD(tExistMem[i]);
+		}
+		return res;
+	}
+	
+	@Override
+	public BDD[] getGR1StarEnvJViolationMem() {
+		long[] envJVMem = getGR1StarEnvJViolationMem0();
+		BDD[] res = new BDD[envJVMem.length];
+		for(int i = 0; i < envJVMem.length; i++) {
+			res[i] = new CUDDBDD(envJVMem[i]);
+		}
+		return res;
+	}
+	
 	public int[] getAttrSizes() {
 		return getAttrSizes0();
 	}
@@ -2140,6 +2284,219 @@ public class CUDDFactory extends BDDFactory {
 		}
 
 		return res;
+	}
+	
+	@Override
+	public boolean gr1StarGame(BDD[] sysJ, BDD[] envJ,
+			BDD[] sfaIni, BDD[] sfaTrans, BDD[] sfaTransToAcc, BDDVarSet[] sfaUnprimeStateVars, BDDVarSet[] sfaPrimeStateVars,
+			BDD sysIni, BDD envIni, BDD sysTrans, BDD envTrans,
+			BDDVarSet sysUnprimeVars, BDDVarSet envUnprimeVars, BDDVarSet sysPrimeVars, BDDVarSet envPrimeVars,
+			BDDPairing pairs, BDD[] sysTransList, BDD[] envTransList, BDDVarSet[] sysQuantSets,
+			BDDVarSet[] envQuantSets, boolean efp, boolean eun, boolean fpr, boolean sca, boolean mem) {
+		
+		CUDDBDDPairing p = (CUDDBDDPairing) pairs;
+
+		CUDDBDD sysIniBDD = (CUDDBDD) sysIni;
+		CUDDBDD envIniBDD = (CUDDBDD) envIni;
+
+		CUDDBDD sysTransBDD = (CUDDBDD) sysTrans;
+		CUDDBDD envTransBDD = (CUDDBDD) envTrans;
+
+		long[] sysJPtrArr = new long[sysJ.length];
+		for (int i = 0; i < sysJ.length; i++) {
+			sysJPtrArr[i] = ((CUDDBDD) sysJ[i])._ddnode_ptr;
+		}
+
+		long[] envJPtrArr = new long[envJ.length];
+		for (int i = 0; i < envJ.length; i++) {
+			envJPtrArr[i] = ((CUDDBDD) envJ[i])._ddnode_ptr;
+		}
+		
+		long[] sfaIniPtrArr = new long[sfaIni.length];
+		for (int i = 0; i < sfaIni.length; i++) {
+			sfaIniPtrArr[i] = ((CUDDBDD) sfaIni[i])._ddnode_ptr;
+		}
+		
+		long[] sfaTransPtrArr = new long[sfaTrans.length];
+		for (int i = 0; i < sfaTrans.length; i++) {
+			sfaTransPtrArr[i] = ((CUDDBDD) sfaTrans[i])._ddnode_ptr;
+		}
+		
+		long[] sfaTransToAccPtrArr = new long[sfaTransToAcc.length];
+		for (int i = 0; i < sfaTransToAcc.length; i++) {
+			sfaTransToAccPtrArr[i] = ((CUDDBDD) sfaTransToAcc[i])._ddnode_ptr;
+		}
+		
+		long[] sfaUnprimeVarsPtrArr = new long[sfaUnprimeStateVars.length];
+		for(int i = 0 ; i < sfaUnprimeStateVars.length; i++) {
+			sfaUnprimeVarsPtrArr[i] = ((CUDDBDD) ((BDDVarSet.DefaultImpl) sfaUnprimeStateVars[i]).b)._ddnode_ptr;
+		}
+		
+		long[] sfaPrimeVarsPtrArr = new long[sfaPrimeStateVars.length];
+		for(int i = 0 ; i < sfaPrimeStateVars.length; i++) {
+			sfaPrimeVarsPtrArr[i] = ((CUDDBDD) ((BDDVarSet.DefaultImpl) sfaPrimeStateVars[i]).b)._ddnode_ptr;
+		}
+		
+		CUDDBDD sysUnp = (CUDDBDD) ((BDDVarSet.DefaultImpl) sysUnprimeVars).b;
+		CUDDBDD envUnp = (CUDDBDD) ((BDDVarSet.DefaultImpl) envUnprimeVars).b;
+
+		CUDDBDD sysP = (CUDDBDD) ((BDDVarSet.DefaultImpl) sysPrimeVars).b;
+		CUDDBDD envP = (CUDDBDD) ((BDDVarSet.DefaultImpl) envPrimeVars).b;
+
+		long[] sysTransListArr = new long[sysTransList.length];
+		for (int i = 0; i < sysTransList.length; i++) {
+			sysTransListArr[i] = ((CUDDBDD) sysTransList[i])._ddnode_ptr;
+		}
+
+		long[] envTransListArr = new long[envTransList.length];
+		for (int i = 0; i < envTransList.length; i++) {
+			envTransListArr[i] = ((CUDDBDD) envTransList[i])._ddnode_ptr;
+		}
+
+		long[] sysQuantSetsArr = new long[sysQuantSets.length];
+		for (int i = 0; i < sysQuantSets.length; i++) {
+			sysQuantSetsArr[i] = ((CUDDBDD) ((BDDVarSet.DefaultImpl) sysQuantSets[i]).b)._ddnode_ptr;
+		}
+
+		long[] envQuantSetsArr = new long[envQuantSets.length];
+		for (int i = 0; i < envQuantSets.length; i++) {
+			envQuantSetsArr[i] = ((CUDDBDD) ((BDDVarSet.DefaultImpl) envQuantSets[i]).b)._ddnode_ptr;
+		}
+
+		return gr1StarGame0(sysJPtrArr, envJPtrArr,
+				sfaIniPtrArr, sfaTransPtrArr, sfaTransToAccPtrArr, sfaUnprimeVarsPtrArr, sfaPrimeVarsPtrArr,
+				sysIniBDD._ddnode_ptr, envIniBDD._ddnode_ptr, sysTransBDD._ddnode_ptr,
+				envTransBDD._ddnode_ptr, sysUnp._ddnode_ptr, envUnp._ddnode_ptr, sysP._ddnode_ptr, envP._ddnode_ptr,
+				p._ptr, sysTransListArr, envTransListArr, sysQuantSetsArr, envQuantSetsArr, efp, eun, fpr, sca, mem);
+	}
+	
+	
+	public BDD getFulfillBDD(int[] exjindices, int[] findices) {
+		
+		long fulfill = getFulfillBDD0(exjindices, findices);
+		return new CUDDBDD(fulfill);
+	}
+	
+	public BDD getTowardsBDD(int[] exjindices, int[] tindices) {
+		
+		long towards = getTowardsBDD0(exjindices, tindices);
+		return new CUDDBDD(towards);
+	}
+	
+	public BDD getEnvViolationBDD(int[] iindices, int[] kindices) {
+		
+		long towards = getEnvViolationBDD0(iindices, kindices);
+		return new CUDDBDD(towards);
+	}
+	
+	public BDD getJusticesBDD(BDD[] sysJ, BDD[] envJ, int[] jindices, int[] iindices, int utilindex) {
+		
+		long[] sysJPtrArr = new long[sysJ.length];
+		for (int i = 0; i < sysJ.length; i++) {
+			sysJPtrArr[i] = ((CUDDBDD) sysJ[i])._ddnode_ptr;
+		}
+
+		long[] envJPtrArr = new long[envJ.length];
+		for (int i = 0; i < envJ.length; i++) {
+			envJPtrArr[i] = ((CUDDBDD) envJ[i])._ddnode_ptr;
+		}
+		
+		long justice = getJusticesBDD0(sysJPtrArr, envJPtrArr, jindices, iindices, utilindex);
+		return new CUDDBDD(justice);
+	}
+	
+	public BDD getJusticesStarBDD(BDD[] sysJ, BDD[] envJ, int[] jindices, int[] iindices, int utilindex) {
+		
+		long[] sysJPtrArr = new long[sysJ.length];
+		for (int i = 0; i < sysJ.length; i++) {
+			sysJPtrArr[i] = ((CUDDBDD) sysJ[i])._ddnode_ptr;
+		}
+
+		long[] envJPtrArr = new long[envJ.length];
+		for (int i = 0; i < envJ.length; i++) {
+			envJPtrArr[i] = ((CUDDBDD) envJ[i])._ddnode_ptr;
+		}
+		
+		long justice = getJusticesStarBDD0(sysJPtrArr, envJPtrArr, jindices, iindices, utilindex);
+		return new CUDDBDD(justice);
+	}
+	
+	public BDD getTransBDD(BDD sysIni, BDD envIni, BDD sysTrans, BDD envTrans, int[] jindices, int[] iindices, int utilindex) {
+		
+		CUDDBDD sysIniBDD = (CUDDBDD) sysIni;
+		CUDDBDD envIniBDD = (CUDDBDD) envIni;
+
+		CUDDBDD sysTransBDD = (CUDDBDD) sysTrans;
+		CUDDBDD envTransBDD = (CUDDBDD) envTrans;
+		
+		long trans = getTransBDD0(sysIniBDD._ddnode_ptr, envIniBDD._ddnode_ptr, sysTransBDD._ddnode_ptr, envTransBDD._ddnode_ptr, 
+				jindices, iindices, utilindex);
+		return new CUDDBDD(trans);
+	}
+	
+	public BDD getFixpointsBDD(int[] jindices, int[] iindices, int[] kindices) {
+		
+		long fixpoints = getFixpointsBDD0(jindices, iindices, kindices);
+		return new CUDDBDD(fixpoints);
+	}
+	
+	public BDD getFixpointsStarBDD(int[] jindices, int[] iindices, int[] kindices) {
+		
+		long fixpoints = getFixpointsStarBDD0(jindices, iindices, kindices);
+		return new CUDDBDD(fixpoints);
+	}
+	
+	public void loadFixpointsJits(BDD fixpoints, int[] jindices, int[] iindices, int[] kindices, int[] ranks, BDDPairing pairs, BDDVarSet primeVars) {
+		
+		CUDDBDDPairing p = (CUDDBDDPairing) pairs;
+		CUDDBDD fixpointsBDD = (CUDDBDD) fixpoints;
+		CUDDBDD primeVarsBDD = (CUDDBDD) ((BDDVarSet.DefaultImpl) primeVars).b;
+		loadFixpointsJits0(fixpointsBDD._ddnode_ptr, jindices, iindices, kindices, ranks, p._ptr, primeVarsBDD._ddnode_ptr);
+	}
+	
+	public void loadTransJits(BDD trans, int[] jindices, int[] iindices, int utilindex) {
+		
+		CUDDBDD transBDD = (CUDDBDD) trans;
+		loadTransJits0(transBDD._ddnode_ptr, jindices, iindices, utilindex);
+	}
+	
+	public void loadJusticesJits(BDD justices, int[] jindices, int[] iindices, int utilindex, int n, int m) {
+		
+		CUDDBDD justicesBDD = (CUDDBDD) justices;
+		loadJusticesJits0(justicesBDD._ddnode_ptr, jindices, iindices, utilindex, n, m);
+	}
+	
+	public BDD nextStatesJits(BDD current, BDD inputs, BDDPairing pairs, BDDVarSet unprimeVars) {
+		
+		CUDDBDD currentBDD = (CUDDBDD) current;
+		CUDDBDD inputsBDD = (CUDDBDD) inputs;
+		CUDDBDDPairing p = (CUDDBDDPairing) pairs;
+		CUDDBDD unprimeVarsBDD = (CUDDBDD) ((BDDVarSet.DefaultImpl) unprimeVars).b;
+		long nextStates = nextStatesJits0(currentBDD._ddnode_ptr, inputsBDD._ddnode_ptr, p._ptr, unprimeVarsBDD._ddnode_ptr);
+		return new CUDDBDD(nextStates);
+	}
+	
+	public int initControllerJits(BDD inputs) {
+		
+		CUDDBDD inputsBDD = (CUDDBDD) inputs;
+		return initControllerJits0(inputsBDD._ddnode_ptr);
+	}
+	
+	public void freeControllerJits() {
+		
+		freeControllerJits0();
+	}
+	
+	public BDD getTransitionsJits() {
+		
+		long trans = getTransitionsJits0();
+		return new CUDDBDD(trans);
+	}
+	
+	public BDD getInitialJits() {
+		
+		long ini = getInitialJits0();
+		return new CUDDBDD(ini);
 	}
 
 	public boolean gr1Game(BDD[] sysJ, BDD[] envJ, BDD sysIni, BDD envIni, BDD sysTrans, BDD envTrans,

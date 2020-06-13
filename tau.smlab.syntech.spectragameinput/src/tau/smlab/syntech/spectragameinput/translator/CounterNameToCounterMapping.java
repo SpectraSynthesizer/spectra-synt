@@ -130,7 +130,7 @@ public class CounterNameToCounterMapping {
     TemporalExpression exp = eList.get(0);
     Spec content;
     try {
-      content = SpectraASTToSpecGenerator.getConstraintSpec(exp, entitiesMapper, tracer, null, null).getSpec();
+      content = SpectraASTToSpecGenerator.getConstraintSpec(exp, entitiesMapper, tracer, null, null, null).getSpec();
     } catch (SpectraTranslationException e) {
       e.setTraceId(tracer.addTrace(exp));
       throw e;

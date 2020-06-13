@@ -949,7 +949,6 @@ public abstract class BDDFactory {
 	 * </p>
 	 */
 	public void save(String filename, BDD var) throws IOException {
-		reorder(REORDER_SIFT); // FIXME this is not good!
 		BufferedWriter is = null;
 		try {
 			is = new BufferedWriter(new FileWriter(filename));
@@ -2474,7 +2473,38 @@ public abstract class BDDFactory {
 		System.out.println("getZMemFirstItr() not implemented");
 		return null;
 	}
+	
+	public BDD getFulfillBDD(int[] exjindices, int[] findices) {
+		System.out.println("getFulfillBDD not implemented");
+		return null;
+	}
+	
+	public BDD getTowardsBDD(int[] exjindices, int[] tindices) {
+		System.out.println("getTowardsBDD not implemented");
+		return null;
+	}
+	
+	public BDD getEnvViolationBDD(int[] iindices, int[] kindices) {
+		System.out.println("getEnvViolationBDD not implemented");
+		return null;
+	}
+	
+	public BDD getGr1StarWinningStates() {
+		System.out.println("getGr1StarWinningStates() not implemented");
+		return null;
+	}
 
+	public boolean gr1StarGame(BDD[] sysJ, BDD[] envJ,
+			BDD[] sfaIni, BDD[] sfaTrans, BDD[] sfaTransToAcc, BDDVarSet[] sfaUnprimeStateVars, BDDVarSet[] sfaPrimeStateVars,
+			BDD sysIni, BDD envIni, BDD sysTrans,
+			BDD envTrans, BDDVarSet sysUnprimeVars, BDDVarSet envUnprimeVars, BDDVarSet sysPrimeVars,
+			BDDVarSet envPrimeVars, BDDPairing pairs, BDD[] sysTransList, BDD[] envTransList,
+			BDDVarSet[] sysQuantSets, BDDVarSet[] envQuantSets, boolean efp,
+			boolean eun, boolean fpr, boolean sca, boolean mem) {
+		System.out.println("gr1 star game not implemented");
+		return false;
+	}
+	
 	public boolean gr1Game(BDD[] sysJ, BDD[] envJ, BDD sysIni, BDD envIni, BDD sysTrans, BDD envTrans,
 			BDDVarSet sysUnprimeVars, BDDVarSet envUnprimeVars, BDDVarSet sysPrimeVars, BDDVarSet envPrimeVars,
 			BDDPairing pairs, BDD[] sysTransList, BDD[] envTransList, BDDVarSet[] sysQuantSets,
@@ -2527,5 +2557,122 @@ public abstract class BDDFactory {
 		System.out.println("rabinGameWithIncData not implemented");
 		return false;
 	}
+	
+	public BDD getJusticesBDD(BDD[] sysJ, BDD[] envJ, int[] jindices, int[] iindices, int utilindex) {
+		System.out.println("getJusticesBDD not implemented");
+		return null;
+	}
+	
+	public BDD getTransBDD(BDD sysIni, BDD envIni, BDD sysTrans, BDD envTrans, int[] jindices, int[] iindices, int utilindex) {
+		System.out.println("getTransBDD not implemented");
+		return null;
+	}
+	
+	public BDD getFixpointsBDD(int[] jindices, int[] iindices, int[] kindices) {
+		System.out.println("getFixpointsBDD not implemented");
+		return null;
+	}
+	
+	public BDD getFixpointsStarBDD(int[] jindices, int[] iindices, int[] kindices) {
+		System.out.println("getFixpointsStarBDD not implemented");
+		return null;
+	}
+	
+	public BDD getJusticesStarBDD(BDD[] sysJ, BDD[] envJ, int[] jindices, int[] iindices, int utilindex) {
+		System.out.println("getJusticesStarBDD not implemented");
+		return null;
+	}
+	
+	
+	
+	
+	// GR(1) controller execution funcions
+	
+	public void loadFixpointsJits(BDD fixpoints, int[] jindices, int[] iindices, int[] kindices, int[] ranks, BDDPairing pairs, BDDVarSet primeVars) {
+		System.out.println("loadFixpointsJits not implemented");
+	}
+	
+	public void loadTransJits(BDD trans, int[] jindices, int[] iindices, int utilindex) {
+		System.out.println("loadTransJits not implemented");
+	}
+	
+	public void loadJusticesJits(BDD justices, int[] jindices, int[] iindices, int utilindex, int n, int m) {
+		System.out.println("loadJusticesJits not implemented");
+	}
+	
+	public BDD nextStatesJits(BDD current, BDD inputs, BDDPairing pairs, BDDVarSet unprimeVars) {
+		System.out.println("nextStatesJits not implemented");
+		return null;
+	}
+	
+	public int initControllerJits(BDD inputs, BDDPairing pairs) {
+		System.out.println("initControllerJits not implemented");
+		return 0;
+	}
+	
+	public void freeControllerJits() {
+		System.out.println("freeControllerJits not implemented");
+	}
+	
+	public BDD getTransitionsJits() {
+		System.out.println("getTransitionsJits not implemented");
+		return null;
+	}
+	
+	public BDD getInitialJits() {
+		System.out.println("getInitialJits not implemented");
+		return null;
+	}
+	
+	
+	
+	
+
+	public BDD[] getGr1StarXMem() {
+		System.out.println("getGr1StarXMem() game not implemented");
+		return null;
+	}
+
+	public BDD[] getGr1StarYMem() {
+		System.out.println("getGr1StarYMem() game not implemented");
+		return null;
+	}
+
+	public int[] getGr1StarTowardsExistIterNum() {
+		System.out.println("getGr1StarTowardsExistIterNum() game not implemented");
+		return null;
+	}
+
+	public int[] getGr1StarFulfillExistIterNum() {
+		System.out.println("getGr1StarFulfillExistIterNum() game not implemented");
+		return null;
+	}
+
+	public int getGr1StarEnvJViolationIterNum() {
+		System.out.println("getGr1StarEnvJViolationIterNum() game not implemented");
+		return 0;
+	}
+
+	public BDD[] getGr1StarFulfillExistMem() {
+		System.out.println("getGr1StarFulfillExistMem() game not implemented");
+		return null;
+	}
+
+	public BDD[] getGr1StarTowardsExistMem() {
+		System.out.println("getGr1StarTowardsExistMem() game not implemented");
+		return null;
+	}
+
+	public BDD[] getGR1StarEnvJViolationMem() {
+		System.out.println("getGR1StarEnvJViolationMem() game not implemented");
+		return null;
+	}
+
+	public int[] getGr1StarJusticeIterNum() {
+		System.out.println("getGr1StarJusticeIterNum() game not implemented");
+		return null;
+	}
+
+
 
 }

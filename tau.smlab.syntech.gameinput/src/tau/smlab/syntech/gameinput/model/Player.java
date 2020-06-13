@@ -28,87 +28,92 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package tau.smlab.syntech.gameinput.model;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Player {
-  private List<Variable> vars = new ArrayList<>();
-  private List<Constraint> constraints = new ArrayList<>();
-  private List<PatternConstraint> patterns = new ArrayList<>();
-  private List<Trigger> triggers = new ArrayList<>();
-  private List<ExistentialConstraint> existentialConstraints = new ArrayList<>();
+public class Player implements Serializable {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -5085525976634287802L;
+	
+	private List<Variable> vars = new ArrayList<>();
+	private List<Constraint> constraints = new ArrayList<>();
+	private List<PatternConstraint> patterns = new ArrayList<>();
+	private List<TriggerConstraint> triggers = new ArrayList<>();
+	private List<ExistentialConstraint> existentialConstraints = new ArrayList<>();
 
 
-  public Player() {
-    this.vars = new  ArrayList<>();
-    this.constraints = new ArrayList<>();
-    this.patterns = new ArrayList<>();
-    this.triggers = new ArrayList<>();
-    this.existentialConstraints = new ArrayList<>();
-  }
+	public Player() {
+		this.vars = new  ArrayList<>();
+		this.constraints = new ArrayList<>();
+		this.patterns = new ArrayList<>();
+		this.triggers = new ArrayList<>();
+		this.existentialConstraints = new ArrayList<>();
+	}
 
-  public String toString()
-  {
-    return "Player:[vars: " + vars + " constraints: " + constraints + "patterns: " + patterns+"]";
-  }
-  public List<Variable> getVars() {
-    return vars;
-  }
+	public String toString()
+	{
+		return "Player:[vars: " + vars + " constraints: " + constraints + "patterns: " + patterns+"]";
+	}
+	public List<Variable> getVars() {
+		return vars;
+	}
 
-  public void setVars(List<Variable> vars) {
-    this.vars = vars;
-  }
+	public void setVars(List<Variable> vars) {
+		this.vars = vars;
+	}
 
-  public List<Constraint> getConstraints() {
-    return constraints;
-  }
+	public List<Constraint> getConstraints() {
+		return constraints;
+	}
 
-  public void setConstraints(List<Constraint> constraints) {
-    this.constraints = constraints;
-  }
+	public void setConstraints(List<Constraint> constraints) {
+		this.constraints = constraints;
+	}
 
-  public List<PatternConstraint> getPatterns() {
-    return patterns;
-  }
-  
-  public void setPatterns(List<PatternConstraint> patterns) {
-    this.patterns = patterns;
-  }
+	public List<PatternConstraint> getPatterns() {
+		return patterns;
+	}
 
-  public void setExistentialConstraints(List<ExistentialConstraint> existentialConstraints) {
-	this.existentialConstraints = existentialConstraints;
-}
+	public void setPatterns(List<PatternConstraint> patterns) {
+		this.patterns = patterns;
+	}
 
-public List<ExistentialConstraint> getExistentialConstraints() {
-	return existentialConstraints;
-}
+	public void setExistentialConstraints(List<ExistentialConstraint> existentialConstraints) {
+		this.existentialConstraints = existentialConstraints;
+	}
 
-public void addVar(Variable variable)
-  {
-    this.vars.add(variable);
-  }
+	public List<ExistentialConstraint> getExistentialConstraints() {
+		return existentialConstraints;
+	}
 
-  public void addConstraint(Constraint constraint)
-  {
-    this.constraints.add(constraint);
-  }
+	public void addVar(Variable variable)
+	{
+		this.vars.add(variable);
+	}
 
-  public void addPatternConstraint(PatternConstraint patternConstraint)
-  {
-    this.patterns.add(patternConstraint);
-  }
-  
-  public void addExistentialConstraint(ExistentialConstraint existentialConstraint)
-  {
-    this.existentialConstraints.add(existentialConstraint);
-  }
+	public void addConstraint(Constraint constraint)
+	{
+		this.constraints.add(constraint);
+	}
 
-  public void addTrigger(Trigger trigger) {
-    this.triggers.add(trigger);
-  }
+	public void addPatternConstraint(PatternConstraint patternConstraint)
+	{
+		this.patterns.add(patternConstraint);
+	}
 
-  public List<Trigger> getTriggers() {
-    return triggers;
-  }
+	public void addExistentialConstraint(ExistentialConstraint existentialConstraint)
+	{
+		this.existentialConstraints.add(existentialConstraint);
+	}
 
+	public void addTrigger(TriggerConstraint trigger) {
+		this.triggers.add(trigger);
+	}
+
+	public List<TriggerConstraint> getTriggers() {
+		return triggers;
+	}
 }

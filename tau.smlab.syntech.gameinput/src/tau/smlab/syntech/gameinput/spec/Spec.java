@@ -28,7 +28,9 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package tau.smlab.syntech.gameinput.spec;
 
-public interface Spec{
+import java.io.Serializable;
+
+public interface Spec extends Serializable {
 
   boolean isPastLTLSpec();
 

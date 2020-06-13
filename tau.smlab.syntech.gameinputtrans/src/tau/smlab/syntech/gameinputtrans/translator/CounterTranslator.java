@@ -43,6 +43,7 @@ import tau.smlab.syntech.gameinput.model.ExistentialConstraint;
 import tau.smlab.syntech.gameinput.model.GameInput;
 import tau.smlab.syntech.gameinput.model.Monitor;
 import tau.smlab.syntech.gameinput.model.PatternConstraint;
+import tau.smlab.syntech.gameinput.model.TriggerConstraint;
 import tau.smlab.syntech.gameinput.model.TypeDef;
 import tau.smlab.syntech.gameinput.model.Variable;
 import tau.smlab.syntech.gameinput.model.WeightDefinition;
@@ -51,6 +52,7 @@ import tau.smlab.syntech.gameinput.spec.Operator;
 import tau.smlab.syntech.gameinput.spec.PrimitiveValue;
 import tau.smlab.syntech.gameinput.spec.Spec;
 import tau.smlab.syntech.gameinput.spec.SpecExp;
+import tau.smlab.syntech.gameinput.spec.SpecRegExp;
 import tau.smlab.syntech.gameinput.spec.SpecTraceable;
 import tau.smlab.syntech.gameinput.spec.VariableReference;
 
@@ -74,11 +76,22 @@ public class CounterTranslator implements Translator {
 		for (Constraint c : input.getSys().getConstraints()) {
 			c.setSpec(replaceCounterRefs(counterVars, c.getSpec()));
 		}
-
+		
+		// sys triggers
+		replaceCounterRefsInTriggers(counterVars, input.getSys().getTriggers());
+		
 		// sys existential constraints
 		for (ExistentialConstraint exC : input.getSys().getExistentialConstraints()) {
-			for(int i = 0; i < exC.getSize() ; i++) {
-				exC.replaceSpec(i, replaceCounterRefs(counterVars, exC.getSpec(i)));
+			if(exC.isRegExp()) {
+				SpecRegExp regExp = exC.getRegExp();
+				for(SpecRegExp predRegExp : regExp.getPredicateSubExps()) {
+					predRegExp.setPredicate(replaceCounterRefs(counterVars, predRegExp.getPredicate()));
+				}
+			}
+			else {
+				for(int i = 0; i < exC.getSize() ; i++) {
+					exC.replaceSpec(i, replaceCounterRefs(counterVars, exC.getSpec(i)));
+				}
 			}
 		}
 
@@ -86,6 +99,9 @@ public class CounterTranslator implements Translator {
 		for (Constraint c : input.getEnv().getConstraints()) {
 			c.setSpec(replaceCounterRefs(counterVars, c.getSpec()));
 		}
+		
+		// env triggers
+		replaceCounterRefsInTriggers(counterVars, input.getEnv().getTriggers());
 
 		// auxiliary constraints
 		for (Constraint c : input.getAux().getConstraints()) {
@@ -320,6 +336,20 @@ public class CounterTranslator implements Translator {
 
 	private boolean noWorkToDo(GameInput input) {
 		return input.getCounters() == null || input.getCounters().isEmpty();
+	}
+	
+	private void replaceCounterRefsInTriggers(Map<String, Variable> counterVars, List<TriggerConstraint> moduleTriggers) {
+		SpecRegExp initSpecRegExp, effectSpecRegExp;
+		for(TriggerConstraint trigger : moduleTriggers) {
+			initSpecRegExp = trigger.getInitSpecRegExp();
+			for(SpecRegExp predRegExp : initSpecRegExp.getPredicateSubExps()) {
+				predRegExp.setPredicate(replaceCounterRefs(counterVars, predRegExp.getPredicate()));
+			}
+			effectSpecRegExp = trigger.getEffectSpecRegExp();
+			for(SpecRegExp predRegExp : effectSpecRegExp.getPredicateSubExps()) {
+				predRegExp.setPredicate(replaceCounterRefs(counterVars, predRegExp.getPredicate()));
+			}
+		}
 	}
 
 }

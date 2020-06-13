@@ -73,6 +73,43 @@ public class PlayerModule {
 		public BDD partTrans;
 		public BDDVarSet quantSet;
 	}
+	
+	/**
+	 * 
+	 * A nested class that represents an existential requirement of this player module.
+	 *
+	 */
+	public class ExistentialRequirement {
+		List<BDD> existFinallyAssrts;
+		SFAModuleConstraint regExpSfaConstraint;
+		
+		public ExistentialRequirement(List<BDD> existFinallyAssrts) {
+			this.existFinallyAssrts = existFinallyAssrts;
+		}
+		
+		public ExistentialRequirement(SFAModuleConstraint regExpSfaConstraint) {
+			this.regExpSfaConstraint = regExpSfaConstraint;
+		}
+		
+		public boolean hasRegExp() {
+			return this.regExpSfaConstraint != null;
+		}
+
+		public List<BDD> getExistFinallyAssrts() {
+			return existFinallyAssrts;
+		}
+
+		public SFAModuleConstraint getRegExpSfaConstraint() {
+			return regExpSfaConstraint;
+		}
+		
+		public int rank() {
+			if(this.existFinallyAssrts != null) {
+				return this.existFinallyAssrts.size();
+			}
+			return 0;
+		}
+	}
 
 	private String name;
 	private BDD initial = Env.TRUE();
@@ -84,7 +121,8 @@ public class PlayerModule {
 	private List<BDD> transList = new ArrayList<>();
 	private List<BDD> justice = new ArrayList<>();
 	private Map<Integer, Integer> justiceIDs = new HashMap<>();
-	private List<List<BDD>> existential = new ArrayList<>();
+	private List<ExistentialRequirement> existential = new ArrayList<>();
+	private int existRegExpReqNum = 0;
 	private Map<Integer, Integer> existentialIDs = new HashMap<>();
 
 	/**
@@ -181,50 +219,137 @@ public class PlayerModule {
 		return trans;
 	}
 
-
-	public int existentialGarNum() {
+	public int existReqNum() {
 		return existential.size();
+	}
+	
+	/**
+	 * Returns the number of existential requirements that have regular expressions.
+	 * 
+	 * @return
+	 */
+	public int existRegExpReqNum() {
+		return existRegExpReqNum;
+	}
+	
+	/**
+	 * Checks whether this module has any existential requirements.
+	 * 
+	 * @return
+	 */
+	public boolean hasExistReqs() {
+		return !this.existential.isEmpty();
 	}
 
 	/**
-	 * returns the existential guarantee at index <code>k</code>
+	 * Returns the existential requirement at index <code>k</code>.
 	 * 
 	 * @param k
 	 * @return
 	 */
-	public List<BDD> existentialGarAt(int k) {
+	public ExistentialRequirement existReqAt(int k) {
 		try {
 			return existential.get(k);
 		} catch (IndexOutOfBoundsException e) {
-			throw new IndexOutOfBoundsException("No existential guarantee at index " + k);
+			throw new IndexOutOfBoundsException("No existential requirement at index " + k);
 		}
+	}
+	
+	/**
+	 * 
+	 * Checks whether the existential requirement at index <code>k</code> contains a regular expression.
+	 * 
+	 * @param k
+	 * @return
+	 */
+	public boolean existReqHasRegExp(int k) {
+		try {
+			return existential.get(k).hasRegExp();
+		} catch (IndexOutOfBoundsException e) {
+			throw new IndexOutOfBoundsException("No existential requirement at index " + k);
+		} 
 	}
 
 	/**
-	 * returns the rank of the existential guarantee. The rank is nesting depth of finally (F) temporal operators.
+	 * Returns the rank of the {@code k}-th existential requirement.
+	 * The rank is nesting depth of finally (F) temporal operators.
+	 * If the {@code k}-th existential requirement consists of a regular expression, its rank is 0.
 	 * 
 	 * @param k
 	 * @return 
 	 */
-	public int existentialGarRank(int k) {
-		return existential.get(k).size();
+	public int existReqRank(int k) {
+		try {
+			return existential.get(k).rank();
+		} catch (IndexOutOfBoundsException e) {
+			throw new IndexOutOfBoundsException("No existential requirement at index " + k);
+		}
 	}
 
 	/**
-	 * adds the existential guarantee
+	 * Adds the specified existential requirement.
 	 * 
-	 * @param exGar
+	 * @param exReq the existential requirement
 	 */
-	public void addExistentialGar(List<BDD> exGar) {
-		this.existential.add(exGar);
+	public void addExistReq(ExistentialRequirement exReq) {
+		this.existential.add(exReq);
+		if(exReq.hasRegExp()) {
+			existRegExpReqNum++;
+		}
+	}
+	
+	/**
+	 * Adds a new existential requirement with the assertions in {@code existFinallyAssrts}.
+	 * 
+	 * @param existFinallyAssrts the assertions
+	 */
+	public void addExistReq(List<BDD> existFinallyAssrts) {
+		this.addExistReq(new ExistentialRequirement(existFinallyAssrts));
+	}
+	
+	/**
+	 * Adds a new existential requirement that contains the specified regular expression
+	 * given by the BDD encoding of its corresponding SFA.
+	 * 
+	 * @param regExpSfaConstraint the BDD encoding of the SFA that corresponds to the regular expression 
+	 */
+	public void addExistReq(SFAModuleConstraint regExpSfaConstraint) {
+		this.addExistReq(new ExistentialRequirement(regExpSfaConstraint));
+	}
+	
+	/**
+	 * Adds a new existential requirement that contains the specified regular expression
+	 * given by the BDD encoding of its corresponding SFA.
+	 * 
+	 * @param regExpSfaConstraint the BDD encoding of the SFA that corresponds to the regular expression
+	 * @param traceId
+	 */
+	public void addExistReq(SFAModuleConstraint regExpSfaConstraint, int traceId) {
+		this.addExistReq(new ExistentialRequirement(regExpSfaConstraint), traceId);
+	}
+	
+	/**
+	 * Adds a new existential requirement with the assertions in {@code existFinallyAssrts}.
+	 * 
+	 * @param existFinallyAssrts the assertions
+	 * @param traceId
+	 */
+	public void addExistReq(List<BDD> existFinallyAssrts, int traceId) {
+		this.addExistReq(new ExistentialRequirement(existFinallyAssrts), traceId);
+	}
+	
+	/**
+	 * Adds the specified existential requirement.
+	 * 
+	 * @param exReq the existential requirement
+	 * @param traceId
+	 */
+	public void addExistReq(ExistentialRequirement exReq, int traceId) {
+		this.addExistReq(exReq);
+		this.existentialIDs.put(traceId, this.existential.size() - 1);
 	}
 
-	public void addExistentialGar(List<BDD> exGar, int id) {
-		this.addExistentialGar(exGar);
-		this.existentialIDs.put(id, this.existential.size() - 1);
-	}
-
-	public Map<Integer, Integer> getExistentialGarIndexToIDMap() {
+	public Map<Integer, Integer> getTraceIdToExistReqIndexMap() {
 		return this.existentialIDs;
 	}
 
@@ -233,7 +358,7 @@ public class PlayerModule {
 	}
 
 	/**
-	 * returns the original justice at index <code>i</code>
+	 * Returns the original justice at index <code>i</code>
 	 * 
 	 * @param i
 	 * @return
@@ -247,7 +372,7 @@ public class PlayerModule {
 	}
 
 	/**
-	 * adds the justice (do not free it!)
+	 * Adds the justice (does not free it!)
 	 * 
 	 * @param j
 	 */
@@ -262,6 +387,10 @@ public class PlayerModule {
 
 	public Map<Integer, Integer> getJusticeIndexToIDMap() {
 		return this.justiceIDs;
+	}
+	
+	public BDD[] getJustices() {
+		return this.justice.toArray(new BDD[this.justice.size()]);
 	}
 
 	/**
@@ -1387,12 +1516,62 @@ public class PlayerModule {
 	public void setName(String name) {
 		this.name = name;
 	}
-
+	
+	
+	/**
+	 * <p>
+	 * Add a Boolean variable to this module.
+	 * </p>
+	 * 
+	 * @param new_var the new variable name
+	 * @param restrictIniTrans if true, then initials and transitions are restricted to the domain of the newly created variable
+	 * @return The newly created field.
+	 * @throws ModuleException
+	 *           If an illegal manipulation to the module had been done. e.g. duplicate variable names.
+	 * @throws ModuleVariableException
+	 */
+	public ModuleBDDField addVar(String new_var, boolean aux, boolean restrictIniTrans) throws ModuleException,
+	ModuleVariableException {
+		return addVar(new_var, VarKind.BOOLEAN, 2, null, Integer.MIN_VALUE, aux, restrictIniTrans);
+	}
+	
+	
+	/**
+	 * <p>
+	 * Add a Boolean variable to this module.
+	 * </p>
+	 * 
+	 * @param new_var the new variable name
+	 * @return The newly created field.
+	 * @throws ModuleException
+	 *           If an illegal manipulation to the module had been done. e.g. duplicate variable names.
+	 * @throws ModuleVariableException
+	 */
 	public ModuleBDDField addVar(String new_var, boolean aux) throws ModuleException,
 	ModuleVariableException {
-		return addVar(new_var, VarKind.BOOLEAN, 2, null, Integer.MIN_VALUE, aux);
+		return addVar(new_var, VarKind.BOOLEAN, 2, null, Integer.MIN_VALUE, aux, true);
 	}
 
+	/**
+	 * <p>
+	 * Add a set of values variable to this module.
+	 * </p>
+	 * 
+	 * @param new_var
+	 *          The new variable name.
+	 * @param val_names
+	 *          The set of values that this variable can be assigned with.
+	 * @param restrictIniTrans if true, then initials and transitions are restricted to the domain of the newly created variable
+	 * @return The newly created field.
+	 * @throws ModuleException
+	 *           If an illegal manipulation to the module had been done. e.g. duplicate variable names.
+	 * @throws ModuleVariableException
+	 */
+	public ModuleBDDField addVar(String new_var, String[] val_names, boolean aux, boolean restrictIniTrans)
+			throws ModuleException, ModuleVariableException {
+		return addVar(new_var, VarKind.ENUMERATION, val_names.length, val_names, Integer.MIN_VALUE, aux, restrictIniTrans);
+	}
+	
 	/**
 	 * <p>
 	 * Add a set of values variable to this module.
@@ -1409,9 +1588,31 @@ public class PlayerModule {
 	 */
 	public ModuleBDDField addVar(String new_var, String[] val_names, boolean aux)
 			throws ModuleException, ModuleVariableException {
-		return addVar(new_var, VarKind.ENUMERATION, val_names.length, val_names, Integer.MIN_VALUE, aux);
+		return addVar(new_var, val_names, aux, true);
 	}
 
+	/**
+	 * <p>
+	 * Add a range variable to this module.
+	 * </p>
+	 * 
+	 * @param new_var
+	 *          The new variable name.
+	 * @param range_start
+	 *          The starting range of the variable.
+	 * @param range_end
+	 *          The ending range of the variable.
+	 * @param restrictIniTrans if true, then initials and transitions are restricted to the domain of the newly created variable
+	 * @return The newly created field.
+	 * @throws ModuleException
+	 *           If an illegal manipulation to the module had been done. e.g. duplicate variable names.
+	 * @throws ModuleVariableException
+	 */
+	public ModuleBDDField addVar(String new_var, int range_start, int range_end, boolean aux, boolean restrictIniTrans)
+			throws ModuleException, ModuleVariableException {
+		return addVar(new_var, VarKind.RANGE, (range_end - range_start + 1), null, range_start, aux, restrictIniTrans);
+	}
+	
 	/**
 	 * <p>
 	 * Add a range variable to this module.
@@ -1430,9 +1631,9 @@ public class PlayerModule {
 	 */
 	public ModuleBDDField addVar(String new_var, int range_start, int range_end, boolean aux)
 			throws ModuleException, ModuleVariableException {
-		return addVar(new_var, VarKind.RANGE, (range_end - range_start + 1), null, range_start, aux);
+		return addVar(new_var, range_start, range_end, aux, true);
 	}
-
+	
 	/**
 	 * <p>
 	 * Check whether a variable with the given name exists.
@@ -1453,9 +1654,14 @@ public class PlayerModule {
 		}
 		return false;
 	}
+	
+//	private ModuleBDDField addVar(String new_var, VarKind kind, int values_size,
+//			String[] val_names, int range_start, boolean aux) throws ModuleException, ModuleVariableException {
+//		return addVar(new_var, kind, values_size, val_names, range_start, aux, true);
+//	}
 
 	private ModuleBDDField addVar(String new_var, VarKind kind, int values_size,
-			String[] val_names, int range_start, boolean aux) throws ModuleException, ModuleVariableException {
+			String[] val_names, int range_start, boolean aux, boolean restrictIniTrans) throws ModuleException, ModuleVariableException {
 		if (new_var == null || new_var.equals(""))
 			throw new ModuleException("Couldn't declare a variable with no " + "name.");
 
@@ -1523,10 +1729,13 @@ public class PlayerModule {
 		// update doms with domains of variables
 		this.doms.andWith(bdd_var.getDomain().domain());
 		this.doms.andWith(bdd_var.getOtherDomain().domain());
-		// restrict trans to domains
-		conjunctTrans(doms.id());
-		// restrict initials to domains
-		conjunctInitial(bdd_var.getDomain().domain());
+		
+		if(restrictIniTrans) {
+			// restrict trans to domains
+			conjunctTrans(doms.id());
+			// restrict initials to domains
+			conjunctInitial(bdd_var.getDomain().domain());
+		}
 		return bdd_var;
 	}
 
@@ -1544,19 +1753,60 @@ public class PlayerModule {
 	}
 	
 	/**
-	 * Given a set of states, this procedure returns all states from which this and the responder module can reach this set together in a single step
+	 * Given a set of states {@code to}, returns all states from which this and the responder module can reach {@code to} together in a single step.
+	 * 
 	 * @param responder
 	 * @param to
 	 * @return
 	 */
 	public BDD pred(PlayerModule responder, BDD to) {
+		return pred(responder, to, null);
+	}
+	
+	/**
+	 * <p>Given a set of states {@code to}, returns all states from which this and the responder module can reach {@code to} together in a single step.
+	 * However, as opposed to {@link #pred(PlayerModule, BDD)}, in addition to the transitions of this and the responder module, the single step also respects
+	 * the transitions of the {@link SFAModuleConstraint} associated with the specified existential requirement at position {@code regExpSfaExReqIdx}.</p>
+	 * 
+	 * <p>Consequently, the returned set of states are of the form (s,q) where s is over the (unprimed) variables of both modules and q is over
+	 * the variables that encode the states of the specified {@link SFAModuleConstraint}.</p>
+	 * 
+	 * @param responder
+	 * @param to
+	 * @param regExpSfaExReqIdx the index of the existential requirement, expected to have a regular expression
+	 * @return
+	 */
+	public BDD pred(PlayerModule responder, BDD to, int regExpSfaExReqIdx) {
+		ExistentialRequirement regExpExReq = this.existReqAt(regExpSfaExReqIdx);
+		if(!regExpExReq.hasRegExp()) {
+			throw new RuntimeException("The existential requirement at position " + regExpSfaExReqIdx + " does not have a regular expression (an SFA)");
+		}
+		return pred(responder, to, regExpExReq.getRegExpSfaConstraint());
+	}
+	
+	/**
+	 * <p>Given a set of states {@code to}, returns all states from which this and the responder module can reach {@code to} together in a single step.
+	 * However, as opposed to {@link #pred(PlayerModule, BDD)}, in addition to the transitions of this and the responder module, the single step also respects
+	 * the transitions of the specified {@link SFAModuleConstraint}, {@code exReqSfa}.</p>
+	 * 
+	 * <p>Consequently, the returned set of states are of the form (s,q) where s is over the (unprimed) variables of both modules and q is over
+	 * the variables that encode the states {@code exReqSfa}.</p>
+	 * 
+	 * <p>However, if {@code exReqSfa} is {@code null}, it is ignored, and the result is as if {@link #pred(PlayerModule, BDD)} was invoked.</p>
+	 * 
+	 * @param responder
+	 * @param to
+	 * @param exReqSfa
+	 * @return
+	 */
+	public BDD pred(PlayerModule responder, BDD to, SFAModuleConstraint exReqSfa) {
 		switch (transFunc) {
 		case SINGLE_FUNC: 
-			return predSingleTrans(responder, to);
+			return predSingleTrans(responder, to, exReqSfa);
 		case DECOMPOSED_FUNC:
-			return predTransDecomposed(responder,to);
+			return predTransDecomposed(responder,to, exReqSfa);
 		case PARTIAL_DECOMPOSED_FUNC:
-			return predTransDecomposed(responder,to);
+			return predTransDecomposed(responder,to, exReqSfa);
 		default:
 			System.err.println("Unknown type: transFunc = " + transFunc);
 			break;
@@ -1564,9 +1814,8 @@ public class PlayerModule {
 		return Env.FALSE();  
 	}
 	
-	
-	private BDD predSingleTrans(PlayerModule responder, BDD to) {		
-		BDD modulesTrans = trans.and(responder.trans());
+	private BDD predSingleTrans(PlayerModule responder, BDD to, SFAModuleConstraint exReqSfa) {
+		BDD modulesTrans = (exReqSfa != null) ? (trans.and(responder.trans())).andWith(exReqSfa.getTrans().id()) : trans.and(responder.trans());
 		BDD primedTo = Env.prime(to);		
 		BDDVarSet modulesPrimeVars = this.modulePrimeVars().union(responder.modulePrimeVars());
 		BDD result;
@@ -1578,15 +1827,15 @@ public class PlayerModule {
 			result = transAndTo.exist(modulesPrimeVars);
 			transAndTo.free();
 		}
-		
-		
+
+
 		if (PlayerModule.TEST_MODE) {
 			BDD resSCA =  primedTo.relprod(modulesTrans, modulesPrimeVars);
-			
+
 			BDD transAndTo = modulesTrans.and(primedTo);
 			BDD resAndEx = transAndTo.exist(modulesPrimeVars);
 			transAndTo.free();
-	
+
 			if (!resSCA.equals(resAndEx)){
 				System.err.println("resSCA not equals resAndEx" );
 				assert(false);
@@ -1594,60 +1843,72 @@ public class PlayerModule {
 			resSCA.free();
 			resAndEx.free();
 		}
-		
+
 		modulesTrans.free();
 		primedTo.free();		
 		modulesPrimeVars.free();
-		
+
 		return result;
 	}
 
-	private BDD predTransDecomposed(PlayerModule responder, BDD to) {
-			List<TransQuantPair> responder_transQuantList = responder.getTransQuantList();
-			BDD res = Env.prime(to);
-			BDD tmp;
-			for (int i = 0; i < responder_transQuantList.size(); i++) {
-				if (simConjunctAbs) {
-					tmp = res.relprod(responder_transQuantList.get(i).partTrans, responder_transQuantList.get(i).quantSet);
-					res.free();
-					res = tmp;
-				} else {
-					tmp = res.and(responder_transQuantList.get(i).partTrans);
-					res.free();
-					res = tmp.exist(responder_transQuantList.get(i).quantSet);
-					tmp.free();
-				}
+	private BDD predTransDecomposed(PlayerModule responder, BDD to, SFAModuleConstraint exReqSfa) {
+		List<TransQuantPair> responder_transQuantList = responder.getTransQuantList();
+		BDD res = Env.prime(to);
+		BDD tmp;
+		if(exReqSfa != null) {
+			if(simConjunctAbs) {
+				tmp = res.relprod(exReqSfa.getTrans(), exReqSfa.getStatesVar().prime().support());
+				res.free();
+				res = tmp;
 			}
-
-			for (int i = 0; i < this.transQuantList.size(); i++) {
-				if	(simConjunctAbs) {
-					tmp = res.relprod(this.transQuantList.get(i).partTrans, this.transQuantList.get(i).quantSet);
-					res.free();
-					res = tmp;
-				}
-				else {
-					tmp = res.and(this.transQuantList.get(i).partTrans);
-					res.free();
-					res = tmp.exist(this.transQuantList.get(i).quantSet);
-					tmp.free();
-				}
+			else {
+				tmp = res.and(exReqSfa.getTrans());
+				res.free();
+				res = tmp.exist(exReqSfa.getStatesVar().prime().support());
+				tmp.free();
 			}
-			
-			if (PlayerModule.TEST_MODE) {
-				BDD singleRes = predSingleTrans(responder, to);
-//				System.out.println("-------res.nodeCount = " + res.nodeCount());
-		
-				if (!singleRes.equals(res)){
-					System.err.println("singleRes not equals res" );
-					System.err.println("  singleRes.support() = " + singleRes.support());
-					System.err.println("  res.support() = " + res.support());
-					assert(false);
-				}
-				singleRes.free();
-			}
-
-			return res;
 		}
+		for (int i = 0; i < responder_transQuantList.size(); i++) {
+			if (simConjunctAbs) {
+				tmp = res.relprod(responder_transQuantList.get(i).partTrans, responder_transQuantList.get(i).quantSet);
+				res.free();
+				res = tmp;
+			} else {
+				tmp = res.and(responder_transQuantList.get(i).partTrans);
+				res.free();
+				res = tmp.exist(responder_transQuantList.get(i).quantSet);
+				tmp.free();
+			}
+		}
+
+		for (int i = 0; i < this.transQuantList.size(); i++) {
+			if	(simConjunctAbs) {
+				tmp = res.relprod(this.transQuantList.get(i).partTrans, this.transQuantList.get(i).quantSet);
+				res.free();
+				res = tmp;
+			}
+			else {
+				tmp = res.and(this.transQuantList.get(i).partTrans);
+				res.free();
+				res = tmp.exist(this.transQuantList.get(i).quantSet);
+				tmp.free();
+			}
+		}
+
+		if (PlayerModule.TEST_MODE) {
+			BDD singleRes = predSingleTrans(responder, to, exReqSfa);
+			//				System.out.println("-------res.nodeCount = " + res.nodeCount());
+
+			if (!singleRes.equals(res)){
+				System.err.println("singleRes not equals res" );
+				System.err.println("  singleRes.support() = " + singleRes.support());
+				System.err.println("  res.support() = " + res.support());
+				assert(false);
+			}
+			singleRes.free();
+		}
+		return res;
+	}
 	
 
 	/**
@@ -1720,6 +1981,25 @@ public class PlayerModule {
 		for (BDD j : justice) {
 			buf.append(i++ + ": ");
 			buf.append(Env.toNiceString(j));
+		}
+		buf.append("\n\n");
+		buf.append("Existential\n");
+		i = 0;
+		for(ExistentialRequirement existReq : existential) {
+			buf.append(i++ + ": ");
+			if(existReq.hasRegExp()) {
+				buf.append(existReq.getRegExpSfaConstraint().toString());
+			}
+			else {
+				int j = 0;
+				buf.append("The following ordered list of assertions:");
+				for(BDD fAssrt : existReq.getExistFinallyAssrts()) {
+					buf.append("\n");
+					buf.append(j++ + ": ");
+					buf.append(Env.toNiceString(fAssrt));
+				}
+			}
+			buf.append("\n");
 		}
 		buf.append("\n\n");
 

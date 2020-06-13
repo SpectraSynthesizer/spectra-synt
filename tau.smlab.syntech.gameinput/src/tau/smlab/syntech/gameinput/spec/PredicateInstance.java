@@ -33,57 +33,61 @@ import java.util.List;
 import tau.smlab.syntech.gameinput.model.Predicate;
 
 public class PredicateInstance implements Spec {
-  
-  private Predicate predicate;
-  private List<Spec> parameters;
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -2518428787086751295L;
+	
+	private Predicate predicate;
+	private List<Spec> parameters;
 
-  public PredicateInstance(Predicate predicate, List<Spec> parameters)
-  {
-    this.predicate = predicate;
-    this.parameters = parameters;
-  }
-  
-  public String toString()
-  {
-    return "<PredicateInstance: " + this.predicate.getPredicateName() + ">";
-  }
-  
-  public Predicate getPredicate() {
-    return predicate;
-  }
+	public PredicateInstance(Predicate predicate, List<Spec> parameters)
+	{
+		this.predicate = predicate;
+		this.parameters = parameters;
+	}
 
-  public void setPredicate(Predicate predicate) {
-    this.predicate = predicate;
-  }
+	public String toString()
+	{
+		return "<PredicateInstance: " + this.predicate.getPredicateName() + ">";
+	}
 
-  public List<Spec> getParameters() {
-    return parameters;
-  }
+	public Predicate getPredicate() {
+		return predicate;
+	}
 
-  public void setParameters(List<Spec> parameters) {
-    this.parameters = parameters;
-  }
+	public void setPredicate(Predicate predicate) {
+		this.predicate = predicate;
+	}
 
-  @Override
-  public boolean isPastLTLSpec() {
-    // TODO Auto-generated method stub
-    return false;
-  }
+	public List<Spec> getParameters() {
+		return parameters;
+	}
 
-  @Override
-  public boolean isPropSpec() {
-    // TODO Auto-generated method stub
-    return false;
-  }
+	public void setParameters(List<Spec> parameters) {
+		this.parameters = parameters;
+	}
 
-  @Override
-  public boolean hasTemporalOperators() {
-    // TODO Auto-generated method stub
-    return false;
-  }
+	@Override
+	public boolean isPastLTLSpec() {
+		// TODO Auto-generated method stub
+		return false;
+	}
 
-  @Override
-  public PredicateInstance clone() throws CloneNotSupportedException {
-    return new PredicateInstance(this.predicate, this.parameters);
-  }
+	@Override
+	public boolean isPropSpec() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean hasTemporalOperators() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public PredicateInstance clone() throws CloneNotSupportedException {
+		return new PredicateInstance(this.predicate, this.parameters);
+	}
 }

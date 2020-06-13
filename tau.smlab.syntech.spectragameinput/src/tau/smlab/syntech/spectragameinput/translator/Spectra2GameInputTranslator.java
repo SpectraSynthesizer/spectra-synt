@@ -29,7 +29,10 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package tau.smlab.syntech.spectragameinput.translator;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.EObject;
@@ -45,11 +48,15 @@ import tau.smlab.syntech.gameinput.model.ExistentialConstraint;
 import tau.smlab.syntech.gameinput.model.GameInput;
 import tau.smlab.syntech.gameinput.model.PatternConstraint;
 import tau.smlab.syntech.gameinput.model.Player;
+import tau.smlab.syntech.gameinput.model.TriggerConstraint;
 import tau.smlab.syntech.gameinput.model.TypeDef;
 import tau.smlab.syntech.gameinput.model.Variable;
 import tau.smlab.syntech.gameinput.model.WeightDefinition;
+import tau.smlab.syntech.gameinput.spec.PrimitiveValue;
 import tau.smlab.syntech.gameinput.spec.Spec;
+import tau.smlab.syntech.gameinput.spec.SpecRegExp;
 import tau.smlab.syntech.gameinput.spec.SpecWrapper;
+import tau.smlab.syntech.spectra.Decl;
 import tau.smlab.syntech.spectra.DefineDecl;
 import tau.smlab.syntech.spectra.EXGar;
 import tau.smlab.syntech.spectra.LTLAsm;
@@ -58,8 +65,10 @@ import tau.smlab.syntech.spectra.Model;
 import tau.smlab.syntech.spectra.Pattern;
 import tau.smlab.syntech.spectra.PatternParam;
 import tau.smlab.syntech.spectra.Predicate;
+import tau.smlab.syntech.spectra.RegExp;
 import tau.smlab.syntech.spectra.Subrange;
 import tau.smlab.syntech.spectra.TemporalExpression;
+import tau.smlab.syntech.spectra.Trigger;
 import tau.smlab.syntech.spectra.TypeConstant;
 import tau.smlab.syntech.spectra.TypedParam;
 import tau.smlab.syntech.spectra.Var;
@@ -81,143 +90,28 @@ public class Spectra2GameInputTranslator {
 		Player auxPlayer = new Player();
 
 		// Variables
-		List<VarDecl> modelVariables = EcoreUtil2.getAllContentsOfType(model, VarDecl.class);
-		for (VarDecl varDec : modelVariables) {
-			Pattern patternContainer = EcoreUtil2.getContainerOfType(varDec, Pattern.class);
-			if (patternContainer == null) // check that varDec isn't declared inside a
-				// pattern
-			{
-				if (isSysVar(varDec)) {
-					addVarToPlayer(sysPlayer, varDec, entitiesMapper.getVariableNameToVariableMapping(), tracer);
-				} else if (isEnvVar(varDec)) {
-					addVarToPlayer(envPlayer, varDec, entitiesMapper.getVariableNameToVariableMapping(), tracer);
-				} else if (isAuxVar(varDec)) {
-					addVarToPlayer(auxPlayer, varDec, entitiesMapper.getVariableNameToVariableMapping(), tracer);
-				}
-			}
-
-		}
+		EcoreUtil2.getAllContentsOfType(model, VarDecl.class)
+				.forEach(varDec -> addVarToPlayer(entitiesMapper, tracer, sysPlayer, envPlayer, auxPlayer, varDec));
 
 		// WeightDefinition
-		List<WeightDef> spectraWeightDefinitionsList = Lists
-				.newArrayList(Iterators.filter(model.getElements().iterator(), WeightDef.class));
-		List<WeightDefinition> giWeightDefsList = new ArrayList<>();
-		for (WeightDef spectraWeight : spectraWeightDefinitionsList) {
-			tracer.addTrace(spectraWeight);
-			int weightValue = (spectraWeight.getNegative() == null ? spectraWeight.getValue()
-					: (-1) * spectraWeight.getValue());
-			Spec weightSpec;
-			try {
-				weightSpec = SpectraASTToSpecGenerator
-						.getConstraintSpec(spectraWeight.getDefinition(), entitiesMapper, tracer, null, null)
-						.getSpec();
-			} catch (SpectraTranslationException e) {
-				e.setTraceId(tracer.getTrace(spectraWeight));
-				throw e;
-			}
-			Constraint weightConstraint = new Constraint(Kind.WEIGHT, weightSpec, spectraWeight.getName(),
-					tracer.getTrace(spectraWeight));
-			WeightDefinition giWeight = new WeightDefinition(spectraWeight.getName(), weightValue, weightConstraint);
-			giWeightDefsList.add(giWeight);
-		}
+		List<WeightDefinition> giWeightDefsList = Lists
+				.newArrayList(Iterators.filter(model.getElements().iterator(), WeightDef.class)).stream()
+				.map(spectraWeight -> getGiWeight(entitiesMapper, tracer, spectraWeight)).collect(Collectors.toList());
 
 		// keep track of all QuantifierVars
-		//		List<Variable> allQuantifierVars = new ArrayList<Variable>();
+		// List<Variable> allQuantifierVars = new ArrayList<Variable>();
 
 		// Gars
-		List<LTLGar> garsList = Lists.newArrayList(Iterators.filter(model.getElements().iterator(), LTLGar.class));
-		for (LTLGar gar : garsList) {
-			tracer.addTrace(gar);
-			//			List<Variable> quantifierVars = getQuantifierVars(gar.getTemporalExpr());
-			//			allQuantifierVars.addAll(quantifierVars);
-			SpecWrapper specWrapper;
-			try {
-				if (getConstraintKind(gar) == Kind.TRIGGER) {
-					specWrapper = SpectraASTToSpecGenerator.getConstraintSpec(gar.getTrig(), entitiesMapper, tracer);
-				} else {
-					// INI, SAFETY, or JUSTICE
-					specWrapper = SpectraASTToSpecGenerator.getConstraintSpec(gar.getTemporalExpr(), entitiesMapper,
-							tracer, null, null);
-				}
-			} catch (SpectraTranslationException e) {
-				e.setTraceId(tracer.getTrace(gar));
-				throw e;
-			}
-			if (!specWrapper.isHasPatternReference()) { // case of a non-pattern constraint
-				Kind constraintKind = getConstraintKind(gar);
-				if (constraintKind.equals(Kind.TRIGGER)) {
-					// Case of a trigger constraint
-					specWrapper.getTrigger().setTraceId(tracer.getTrace(gar));
-					sysPlayer.addTrigger(specWrapper.getTrigger());
-				} else {
-					// case of an other non-pattern constraint
-					sysPlayer.addConstraint(
-							new Constraint(constraintKind, specWrapper.getSpec(), gar.getName(), tracer.getTrace(gar)));
-				}
-			} else { // case of a pattern constraint
-				sysPlayer.addPatternConstraint(new PatternConstraint(specWrapper.getPattern().getPatternName(),
-						specWrapper.getPattern(), specWrapper.getParameters(), tracer.getTrace(gar)));
-			}
-		}
+		Iterators.filter(model.getElements().iterator(), LTLGar.class)
+				.forEachRemaining(gar -> addGar(entitiesMapper, tracer, sysPlayer, gar));
 
 		// Assumptions
-		List<LTLAsm> asmsList = Lists.newArrayList(Iterators.filter(model.getElements().iterator(), LTLAsm.class));
-		for (LTLAsm asm : asmsList) {
-			tracer.addTrace(asm);
-			SpecWrapper specWrapper;
-
-			try {
-				if (getConstraintKind(asm) == Kind.TRIGGER) {
-					specWrapper = SpectraASTToSpecGenerator.getConstraintSpec(asm.getTrig(), entitiesMapper, tracer);
-				} else {
-					// INI, SAFETY, or JUSTICE
-					specWrapper = SpectraASTToSpecGenerator.getConstraintSpec(asm.getTemporalExpr(), entitiesMapper,
-							tracer, null, null);
-				}
-			} catch (SpectraTranslationException e) {
-				e.setTraceId(tracer.getTrace(asm));
-				throw e;
-			}
-			if (!specWrapper.isHasPatternReference()) { // case of a non-pattern constraint
-				Kind constraintKind = getConstraintKind(asm);
-				if (constraintKind.equals(Kind.TRIGGER)) {
-					// Case of a trigger constraint
-					specWrapper.getTrigger().setTraceId(tracer.getTrace(asm));
-					envPlayer.addTrigger(specWrapper.getTrigger());
-				} else {
-					// case of an other non-pattern constraint
-					envPlayer.addConstraint(
-							new Constraint(constraintKind, specWrapper.getSpec(), asm.getName(), tracer.getTrace(asm)));
-				}
-			} else { // case of a pattern constraint
-				envPlayer.addPatternConstraint(new PatternConstraint(specWrapper.getPattern().getPatternName(),
-						specWrapper.getPattern(), specWrapper.getParameters(), tracer.getTrace(asm)));
-			}
-		}
+		Iterators.filter(model.getElements().iterator(), LTLAsm.class)
+				.forEachRemaining(asm -> addAsm(entitiesMapper, tracer, envPlayer, asm));
 
 		// Existential Gars
-		List<EXGar> exGarList = Lists.newArrayList(Iterators.filter(model.getElements().iterator(), EXGar.class));
-		ExistentialConstraint exConstraint;
-		SpecWrapper specWrapper;
-		for (EXGar exGar : exGarList) {
-			tracer.addTrace(exGar);
-			if(exGar.getElements() != null) {
-				exConstraint = new ExistentialConstraint(exGar.getName(), tracer.getTrace(exGar));
-				for(EObject exp : exGar.getElements()) {
-					try {
-						specWrapper = SpectraASTToSpecGenerator.getConstraintSpec((TemporalExpression)exp, entitiesMapper,
-						tracer, null, null);
-					}
-					catch (SpectraTranslationException e) {
-						e.setTraceId(tracer.getTrace(exGar));
-						throw e;
-					}
-					exConstraint.addSpec(specWrapper.getSpec());
-				}
-				sysPlayer.addExistentialConstraint(exConstraint);		
-			}
-		}
-
+		Iterators.filter(model.getElements().iterator(), EXGar.class)
+				.forEachRemaining(exGar -> addExGar(entitiesMapper, tracer, sysPlayer, exGar));
 
 		GameInput gi = new GameInput(model.getName(), sysPlayer, envPlayer, auxPlayer);
 		gi.setDefines(entitiesMapper.getDefineNameToDefineMapping().getAllDefines());
@@ -227,6 +121,159 @@ public class Spectra2GameInputTranslator {
 		gi.setCounters(entitiesMapper.getCounterNameToCounterMapping().getAllCounters());
 		gi.setWeightDefs(giWeightDefsList);
 		return gi;
+	}
+
+	private static void addVarToPlayer(EntitiesMapper entitiesMapper, Tracer tracer, Player sysPlayer, Player envPlayer,
+			Player auxPlayer, VarDecl varDec) {
+		Pattern patternContainer = EcoreUtil2.getContainerOfType(varDec, Pattern.class);
+		if (patternContainer == null) {
+			// check that varDec isn't declared inside a pattern
+			if (isSysVar(varDec)) {
+				addVarToPlayer(sysPlayer, varDec, entitiesMapper.getVariableNameToVariableMapping(), tracer);
+			} else if (isEnvVar(varDec)) {
+				addVarToPlayer(envPlayer, varDec, entitiesMapper.getVariableNameToVariableMapping(), tracer);
+			} else if (isAuxVar(varDec)) {
+				addVarToPlayer(auxPlayer, varDec, entitiesMapper.getVariableNameToVariableMapping(), tracer);
+			}
+		}
+	}
+
+	private static WeightDefinition getGiWeight(EntitiesMapper entitiesMapper, Tracer tracer, WeightDef spectraWeight) {
+		tracer.addTrace(spectraWeight);
+		try {
+			int weightValue = (spectraWeight.getNegative() == null ? spectraWeight.getValue()
+					: (-1) * spectraWeight.getValue());
+			Spec weightSpec;
+			try {
+				weightSpec = SpectraASTToSpecGenerator
+						.getConstraintSpec(spectraWeight.getDefinition(), entitiesMapper, tracer, null, null, null)
+						.getSpec();
+			} catch (SpectraTranslationException e) {
+				e.setTraceId(tracer.getTrace(spectraWeight));
+				throw e;
+			}
+			Constraint weightConstraint = new Constraint(Kind.WEIGHT, weightSpec, spectraWeight.getName(),
+					tracer.getTrace(spectraWeight));
+			return new WeightDefinition(spectraWeight.getName(), weightValue, weightConstraint);
+		} catch (SpectraTranslationException e) {
+			e.setTraceId(tracer.getTrace(spectraWeight));
+			throw new RuntimeException(e);
+		}
+	}
+
+	private static void addGar(EntitiesMapper entitiesMapper, Tracer tracer, Player sysPlayer, LTLGar gar) {
+		tracer.addTrace(gar);
+		try {
+			if (gar.getTemporalExpr() != null) {
+				if (gar.getParams() != null) {
+					addParameterizedConstraint(entitiesMapper, tracer, sysPlayer, gar, gar.getName(),
+							gar.getParams().getParams());
+				} else {
+					addSingleConstraint(entitiesMapper, tracer, sysPlayer, gar, gar.getName(), null);
+				}
+			} else { // Case of a trigger constraint
+				TriggerConstraint trig = computeTriggerConstraint(entitiesMapper, tracer, tracer.getTrace(gar),
+						gar.getTrig(), gar.getName());
+				sysPlayer.addTrigger(trig);
+			}	
+		} catch (SpectraTranslationException e) {
+			e.setTraceId(tracer.getTrace(gar));
+			throw new RuntimeException(e);
+		}
+	}
+
+	private static void addAsm(EntitiesMapper entitiesMapper, Tracer tracer, Player envPlayer, LTLAsm asm) {
+		tracer.addTrace(asm);
+		try {
+			if (asm.getTemporalExpr() != null) {
+				if (asm.getParams() != null) {
+					addParameterizedConstraint(entitiesMapper, tracer, envPlayer, asm, asm.getName(),
+							asm.getParams().getParams());
+				} else {
+					addSingleConstraint(entitiesMapper, tracer, envPlayer, asm, asm.getName(), null);
+				}
+			} else { // Case of a trigger constraint
+				TriggerConstraint trig = computeTriggerConstraint(entitiesMapper, tracer, tracer.getTrace(asm),
+						asm.getTrig(), asm.getName());
+				envPlayer.addTrigger(trig);
+			}
+
+		} catch (SpectraTranslationException e) {
+			e.setTraceId(tracer.getTrace(asm));
+			throw new RuntimeException(e);
+		}
+	}
+
+	private static void addParameterizedConstraint(EntitiesMapper entitiesMapper, Tracer tracer, Player player,
+			Decl constraint, String name, List<TypedParam> parameters) throws SpectraTranslationException {
+		List<List<PrimitiveValue>> primitivesLists = parameters.stream()
+				.map(param -> getTypeDef(param.getType()).getPrimitivesList()).collect(Collectors.toList());
+
+		int valuesCounter = 0;
+		for (List<PrimitiveValue> values : Lists.cartesianProduct(primitivesLists)) {
+			Map<String, PrimitiveValue> variables = new HashMap<>();
+
+			for (int i = 0; i < parameters.size(); i++) {
+				variables.put(parameters.get(i).getName(), values.get(i));
+			}
+
+			// Need to add the constraint several times to the tracer, to get a unique trace id each time
+			// the constraint is duplicated
+			tracer.addTrace(constraint);
+			addSingleConstraint(entitiesMapper, tracer, player, constraint, name + valuesCounter, variables);
+			valuesCounter++;
+		}
+	}
+
+	private static void addSingleConstraint(EntitiesMapper entitiesMapper, Tracer tracer, Player player,
+			Decl constraint, String name, Map<String, PrimitiveValue> params) throws SpectraTranslationException {
+		TemporalExpression expr = null;
+		if (constraint instanceof LTLAsm) {
+			expr = ((LTLAsm) constraint).getTemporalExpr();
+		} else if (constraint instanceof LTLGar) {
+			expr = ((LTLGar) constraint).getTemporalExpr();
+		}
+
+		// INI, SAFETY, or JUSTICE
+		SpecWrapper specWrapper = SpectraASTToSpecGenerator.getConstraintSpec(expr, entitiesMapper, tracer, null, null,
+				params);
+		if (!specWrapper.isHasPatternReference()) { // case of a non-pattern constraint
+			Kind constraintKind = getConstraintKind(constraint);
+			player.addConstraint(
+					new Constraint(constraintKind, specWrapper.getSpec(), name, tracer.getTrace(constraint)));
+		} else { // case of a pattern constraint
+			player.addPatternConstraint(new PatternConstraint(specWrapper.getPattern().getPatternName(),
+					specWrapper.getPattern(), specWrapper.getParameters(), tracer.getTrace(constraint)));
+		}
+	}
+
+	private static void addExGar(EntitiesMapper entitiesMapper, Tracer tracer, Player sysPlayer, EXGar exGar) {
+		ExistentialConstraint exConstraint;
+		SpecWrapper specWrapper;
+		tracer.addTrace(exGar);
+		try {
+			if (exGar.getElements() != null && !exGar.getElements().isEmpty()) {
+				exConstraint = new ExistentialConstraint(exGar.getName(), tracer.getTrace(exGar));
+				for (EObject exp : exGar.getElements()) {
+					specWrapper = SpectraASTToSpecGenerator.getConstraintSpec((TemporalExpression) exp, entitiesMapper,
+							tracer, null, null, null);
+					exConstraint.addSpec(specWrapper.getSpec());
+				}
+			} else if (exGar.getRegExpPointer() != null) {
+				// TODO check if the regexp has already been mapped using the tracer
+				exConstraint = new ExistentialConstraint(exGar.getName(), SpectraASTToSpecGenerator
+						.getConstraintSpecRegExp(entitiesMapper, tracer, exGar.getRegExpPointer().getExp()),
+						tracer.getTrace(exGar));
+			} else { // exGar.getRegExp() != null
+				exConstraint = new ExistentialConstraint(exGar.getName(),
+						SpectraASTToSpecGenerator.getConstraintSpecRegExp(entitiesMapper, tracer, exGar.getRegExp()),
+						tracer.getTrace(exGar));
+			}
+			sysPlayer.addExistentialConstraint(exConstraint);
+		} catch (SpectraTranslationException e) {
+			e.setTraceId(tracer.getTrace(exGar));
+			throw new RuntimeException(e);
+		}
 	}
 
 	public static tau.smlab.syntech.gameinput.model.Pattern computePattern(EntitiesMapper entitiesMapper, Tracer tracer,
@@ -254,7 +301,7 @@ public class Spectra2GameInputTranslator {
 			Spec initalSpec;
 			try {
 				initalSpec = SpectraASTToSpecGenerator
-						.getConstraintSpec(initial, entitiesMapper, tracer, null, varsAndParamsList).getSpec();
+						.getConstraintSpec(initial, entitiesMapper, tracer, null, varsAndParamsList, null).getSpec();
 			} catch (SpectraTranslationException e) {
 				e.setTraceId(tracer.getTrace(initial));
 				throw e;
@@ -266,7 +313,7 @@ public class Spectra2GameInputTranslator {
 			Spec safetySpec;
 			try {
 				safetySpec = SpectraASTToSpecGenerator
-						.getConstraintSpec(safety, entitiesMapper, tracer, null, varsAndParamsList).getSpec();
+						.getConstraintSpec(safety, entitiesMapper, tracer, null, varsAndParamsList, null).getSpec();
 			} catch (SpectraTranslationException e) {
 				e.setTraceId(tracer.getTrace(safety));
 				throw e;
@@ -278,7 +325,7 @@ public class Spectra2GameInputTranslator {
 			Spec safetySpec;
 			try {
 				safetySpec = SpectraASTToSpecGenerator
-						.getConstraintSpec(stateInv, entitiesMapper, tracer, null, varsAndParamsList).getSpec();
+						.getConstraintSpec(stateInv, entitiesMapper, tracer, null, varsAndParamsList, null).getSpec();
 			} catch (SpectraTranslationException e) {
 				e.setTraceId(tracer.getTrace(stateInv));
 				throw e;
@@ -290,7 +337,7 @@ public class Spectra2GameInputTranslator {
 			Spec justiceSpec;
 			try {
 				justiceSpec = SpectraASTToSpecGenerator
-						.getConstraintSpec(justice, entitiesMapper, tracer, null, varsAndParamsList).getSpec();
+						.getConstraintSpec(justice, entitiesMapper, tracer, null, varsAndParamsList, null).getSpec();
 			} catch (SpectraTranslationException e) {
 				e.setTraceId(tracer.getTrace(justice));
 				throw e;
@@ -304,20 +351,60 @@ public class Spectra2GameInputTranslator {
 		return gameInputPattern;
 	}
 
+	public static TriggerConstraint computeTriggerConstraint(EntitiesMapper entitiesMapper, Tracer tracer, int traceId,
+			Trigger trig, String trigName) throws SpectraTranslationException {
+
+		RegExp init = null, effect = null;
+		SpecRegExp initSpecRegExp, effectSpecRegExp;
+
+		// Create SpecRegExp for the trigger initiator
+		if (trig.getInitPointer() != null) {
+			init = trig.getInitPointer().getExp();
+		} else if (trig.getInitRegExp() != null) {
+			init = trig.getInitRegExp();
+		}
+
+		if (init == null) {
+			throw new SpectraTranslationException("trigger has no initial regexp");
+		}
+
+		initSpecRegExp = SpectraASTToSpecGenerator.getConstraintSpecRegExp(entitiesMapper, tracer, init);
+
+		// Create SpecRegExp for the trigger effect
+		if (trig.getEffectPointer() != null) {
+			effect = trig.getEffectPointer().getExp();
+		} else if (trig.getEffectRegExp() != null) {
+			effect = trig.getEffectRegExp();
+		}
+
+		if (effect == null) {
+			throw new SpectraTranslationException("trigger has no effect regexp");
+		}
+
+		effectSpecRegExp = SpectraASTToSpecGenerator.getConstraintSpecRegExp(entitiesMapper, tracer, effect);
+
+		// Create the trigger
+		TriggerConstraint spectraTrig = new TriggerConstraint(trigName, initSpecRegExp, effectSpecRegExp, traceId);
+
+		return spectraTrig;
+	}
+
 	public static tau.smlab.syntech.gameinput.model.Predicate computePredicate(EntitiesMapper entitiesMapper,
 			Tracer tracer, Predicate predicate) throws SpectraTranslationException {
 		tracer.addTrace(predicate);
 
 		List<Variable> paramsList = new ArrayList<>();
-		for (TypedParam typedParam : predicate.getParams().getParams()) {
-			TypeDef paramType = getTypeDef(typedParam.getType());
-			paramsList.add(new Variable(typedParam.getName(), paramType, tracer.addTrace(typedParam)));
+		if (predicate.getParams() != null) {
+			for (TypedParam typedParam : predicate.getParams().getParams()) {
+				TypeDef paramType = getTypeDef(typedParam.getType());
+				paramsList.add(new Variable(typedParam.getName(), paramType, tracer.addTrace(typedParam)));
+			}
 		}
 
 		Spec predicateExpression;
 		try {
 			predicateExpression = SpectraASTToSpecGenerator
-					.getConstraintSpec(predicate.getBody(), entitiesMapper, tracer, paramsList, null).getSpec();
+					.getConstraintSpec(predicate.getBody(), entitiesMapper, tracer, paramsList, null, null).getSpec();
 		} catch (SpectraTranslationException e) {
 			e.setTraceId(tracer.addTrace(predicate.getBody()));
 			throw e;
@@ -326,14 +413,13 @@ public class Spectra2GameInputTranslator {
 				predicate.getName(), predicateExpression, paramsList, tracer.getTrace(predicate));
 
 		return gameInputPredicate;
-
 	}
 
 	public static Define computeDefine(EntitiesMapper entitiesMapper, Tracer tracer, DefineDecl define)
 			throws SpectraTranslationException {
 		try {
 			return new Define(define.getName(), SpectraASTToSpecGenerator
-					.getConstraintSpec(define.getSimpleExpr(), entitiesMapper, tracer, null, null).getSpec());
+					.getConstraintSpec(define.getSimpleExpr(), entitiesMapper, tracer, null, null, null).getSpec());
 		} catch (SpectraTranslationException e) {
 			e.setTraceId(tracer.addTrace(define.getSimpleExpr()));
 			throw e;
@@ -364,37 +450,41 @@ public class Spectra2GameInputTranslator {
 		return false;
 	}
 
-	private static Kind getConstraintKind(LTLAsm asm) {
+	private static Kind getConstraintKind(Decl constraint) {
 
-		if (asm.getTrig() != null) {
-			return Kind.TRIGGER;
+		if (constraint instanceof LTLAsm) {
+			LTLAsm asm = (LTLAsm) constraint;
+			if (asm.getTrig() != null) {
+				return Kind.TRIGGER;
+			}
+			if (asm.getJustice() != null) {
+				return Kind.JUSTICE;
+			}
+			if (asm.getSafety() != null) {
+				return Kind.SAFETY;
+			}
+			if (asm.getStateInv() != null) {
+				return Kind.STATE_INV;
+			}
+			return Kind.INI;
+		} else if (constraint instanceof LTLGar) {
+			LTLGar gar = (LTLGar) constraint;
+			if (gar.getTrig() != null) {
+				return Kind.TRIGGER;
+			}
+			if (gar.getJustice() != null) {
+				return Kind.JUSTICE;
+			}
+			if (gar.getSafety() != null) {
+				return Kind.SAFETY;
+			}
+			if (gar.getStateInv() != null) {
+				return Kind.STATE_INV;
+			}
+			return Kind.INI;
 		}
-		if (asm.getJustice() != null) {
-			return Kind.JUSTICE;
-		}
-		if (asm.getSafety() != null) {
-			return Kind.SAFETY;
-		}
-		if (asm.getStateInv() != null) {
-			return Kind.STATE_INV;
-		}
-		return Kind.INI;
-	}
 
-	private static Kind getConstraintKind(LTLGar gar) {
-		if (gar.getTrig() != null) {
-			return Kind.TRIGGER;
-		}
-		if (gar.getJustice() != null) {
-			return Kind.JUSTICE;
-		}
-		if (gar.getSafety() != null) {
-			return Kind.SAFETY;
-		}
-		if (gar.getStateInv() != null) {
-			return Kind.STATE_INV;
-		}
-		return Kind.INI;
+		return null;
 	}
 
 	private static void addVarToPlayer(Player player, VarDecl varDec, VariableNameToVariableMapping variableMapping,
@@ -467,7 +557,7 @@ public class Spectra2GameInputTranslator {
 			tracer.addTrace(t);
 			Spec s;
 			try {
-				s = SpectraASTToSpecGenerator.getConstraintSpec(t, entitiesMapper, tracer, null, null).getSpec();
+				s = SpectraASTToSpecGenerator.getConstraintSpec(t, entitiesMapper, tracer, null, null, null).getSpec();
 			} catch (SpectraTranslationException e) {
 				e.setTraceId(tracer.getTrace(t));
 				throw e;
@@ -478,7 +568,7 @@ public class Spectra2GameInputTranslator {
 			tracer.addTrace(t);
 			Spec s;
 			try {
-				s = SpectraASTToSpecGenerator.getConstraintSpec(t, entitiesMapper, tracer, null, null).getSpec();
+				s = SpectraASTToSpecGenerator.getConstraintSpec(t, entitiesMapper, tracer, null, null, null).getSpec();
 			} catch (SpectraTranslationException e) {
 				e.setTraceId(tracer.getTrace(t));
 				throw e;
@@ -489,7 +579,7 @@ public class Spectra2GameInputTranslator {
 			tracer.addTrace(t);
 			Spec s;
 			try {
-				s = SpectraASTToSpecGenerator.getConstraintSpec(t, entitiesMapper, tracer, null, null).getSpec();
+				s = SpectraASTToSpecGenerator.getConstraintSpec(t, entitiesMapper, tracer, null, null, null).getSpec();
 			} catch (SpectraTranslationException e) {
 				e.setTraceId(tracer.getTrace(t));
 				throw e;
@@ -499,4 +589,5 @@ public class Spectra2GameInputTranslator {
 
 		return exps;
 	}
+
 }

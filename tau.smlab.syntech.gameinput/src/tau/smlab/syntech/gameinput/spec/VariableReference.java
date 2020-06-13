@@ -36,6 +36,10 @@ import java.util.Map;
 import tau.smlab.syntech.gameinput.model.Variable;
 
 public class VariableReference implements Spec {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -5143214095858633340L;
 
 	private Variable variable;
 	// in case of arrays referenceName contains indices
@@ -70,7 +74,7 @@ public class VariableReference implements Spec {
 	public boolean isPastLTLSpec() {
 		return false;
 	}
-	
+
 	public List<Integer> getIndexDimensions() {
 		return indexDimensions;
 	}
@@ -129,11 +133,18 @@ public class VariableReference implements Spec {
 	}
 
 	public VariableReference clone() throws CloneNotSupportedException {
-		Map<String, Variable> indexVars = (this.indexVars == null) ? null : new HashMap<String, Variable>(this.indexVars); // SHALLOW
-																											// COPY
-		ArrayList<Spec> indexSpecs = (this.indexSpecs == null) ? null : new ArrayList<Spec>(this.indexSpecs); // SHALLOW
-																												// COPY
-		ArrayList<Integer> indexDimensions = (this.indexDimensions == null) ? null : new ArrayList<Integer>(this.indexDimensions);
+		Map<String, Variable> indexVars = (this.indexVars == null) ? null : new HashMap<String, Variable>(this.indexVars); // SHALLOW COPY
+		
+		ArrayList<Spec> indexSpecs; // DEEP COPY
+		if (this.indexSpecs == null) {
+			indexSpecs = null;
+		} else {
+			indexSpecs = new ArrayList<Spec>();
+			for (Spec indexSpec : this.indexSpecs) {
+				indexSpecs.add(indexSpec.clone());
+			}
+		}
+		ArrayList<Integer> indexDimensions = (this.indexDimensions == null) ? null : new ArrayList<Integer>(this.indexDimensions); // SHALLOW COPY
 		return new VariableReference(this.variable, this.referenceName, indexVars, indexSpecs, indexDimensions);
 	}
 }

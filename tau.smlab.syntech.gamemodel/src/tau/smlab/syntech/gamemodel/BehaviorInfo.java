@@ -37,19 +37,21 @@ public class BehaviorInfo {
 	public BehaviorInfo() {
 	}
 
-	public BehaviorInfo(BDD initial, BDD safety, BDD justice, List<BDD> existential, int traceId, boolean aux) {
+	public BehaviorInfo(BDD initial, BDD safety, BDD justice, List<BDD> existentialFAssrts, SFAModuleConstraint existentialRegExp, int traceId, boolean aux) {
 		this.initial = initial;
 		this.safety = safety;
 		this.justice = justice;
-		this.existential = existential;
+		this.existentialFAssrts = existentialFAssrts;
+		this.existentialRegExp = existentialRegExp;
 		this.traceId = traceId;
 		this.aux = aux;
 	}
-
+	
+	public SFAModuleConstraint existentialRegExp;
 	public BDD initial;
 	public BDD safety;
 	public BDD justice;
-	public List<BDD> existential;
+	public List<BDD> existentialFAssrts;
 	public int traceId;
 	public boolean aux;
 
@@ -58,7 +60,7 @@ public class BehaviorInfo {
 	}
 
 	public boolean isExistential() {
-		return existential != null;
+		return this.existentialFAssrts != null || this.existentialRegExp != null;
 	}
 
 	public boolean isSafety() {
@@ -74,6 +76,7 @@ public class BehaviorInfo {
 		String s = isInitial() ? "ini" : "err";
 		s = isJustice() ? "justice" : s;
 		s = isSafety() ? "safety" : s;
+		s = isExistential() ? "existential" : s;
 		return "TraceId (" + s + ") = " + traceId;
 	}
 
@@ -88,10 +91,15 @@ public class BehaviorInfo {
 			justice.free();
 		}
 		if(isExistential()) {
-			for(BDD exBdd : this.existential) {
-				if(!exBdd.isFree()) {
-					exBdd.free();
+			if(this.existentialFAssrts != null) {
+				for(BDD exBdd : this.existentialFAssrts) {
+					if(!exBdd.isFree()) {
+						exBdd.free();
+					}
 				}
+			}
+			else { //this.existentialRegExp != null
+				this.existentialRegExp.free();
 			}
 		}
 	}

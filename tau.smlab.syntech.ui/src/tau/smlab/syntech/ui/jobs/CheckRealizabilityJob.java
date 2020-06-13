@@ -28,13 +28,13 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package tau.smlab.syntech.ui.jobs;
 
-import tau.smlab.syntech.bddgenerator.BDDEnergyReduction;
+import tau.smlab.syntech.bddgenerator.energy.BDDEnergyReduction;
 import tau.smlab.syntech.games.gr1.GR1Game;
 import tau.smlab.syntech.games.gr1.GR1GameEnergyADD;
-import tau.smlab.syntech.games.gr1.GR1GameExistentialMemoryless;
 import tau.smlab.syntech.games.gr1.GR1GameExperiments;
 import tau.smlab.syntech.games.gr1.GR1GameImplC;
 import tau.smlab.syntech.games.gr1.GR1GameMemoryless;
+import tau.smlab.syntech.games.gr1.GR1StarGameMemoryless;
 import tau.smlab.syntech.jtlv.BDDPackage;
 import tau.smlab.syntech.jtlv.Env;
 import tau.smlab.syntech.ui.preferences.PreferencePage;
@@ -45,9 +45,9 @@ public class CheckRealizabilityJob extends SyntechJob {
 		GR1Game gr1;
 
 		// check for existential guarantees
-		if(model.getSys().existentialGarNum() > 0) {
-			printToConsole("GR1GameExistentialMemoryless");
-			gr1 = new GR1GameExistentialMemoryless(model);
+		if(model.getSys().existReqNum() > 0) {
+			printToConsole("GR1StarGameMemoryless");
+			gr1 = new GR1StarGameMemoryless(model);
 		}
 		// check for weights or special reordering
 		else if (model.getWeights() != null && PreferencePage.getBDDPackageSelection().equals(BDDPackage.CUDD_ADD)) {
@@ -59,7 +59,7 @@ public class CheckRealizabilityJob extends SyntechJob {
 			Env.TRUE().getFactory().reorder(BDDFactory.REORDER_SIFTITE);*/
 		} else {
 			PreferencePage.setOptSelection();
-			resetSingleTrans(); //if decomposed transitions are used, then free the single transitions
+//			resetSingleTrans(); //if decomposed transitions are used, then free the single transitions
 			if (PreferencePage.getBDDPackageSelection().equals(BDDPackage.CUDD)) {
 				printToConsole("GR1GameImplC with memory");
 				gr1 = new GR1GameImplC(model);

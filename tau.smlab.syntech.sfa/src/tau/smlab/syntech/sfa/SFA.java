@@ -134,7 +134,7 @@ public interface SFA {
 	 * @param isAccepting whether the new state should be an accepting state
 	 * @return
 	 */
-	SFAState getNewState(boolean isAccepting);
+	SFAState newSfaState(boolean isAccepting);
 	
 	/**
 	 * Sets the initial state of this automaton. The specified state must be of the type this automaton enables.
@@ -251,7 +251,7 @@ public interface SFA {
 	int numStates();
 	
 	/**
-	 * Returns this Automaton's complement, which is constructed by determinizing this automaton and then flipping its
+	 * Returns this automaton's complement, which is constructed by determinizing this automaton and then flipping its
 	 * states' acceptance.
 	 * 
 	 * @return
@@ -280,6 +280,20 @@ public interface SFA {
 	 * @return
 	 */
 	boolean isSubsetOf(SFA other);
+	
+	/**
+	 * Checks whether this automaton's language is that of the TRUE* regular expression, i.e., whether this automaton accepts all finite words.
+	 * 
+	 * @return
+	 */
+	boolean isTrueStarLanguage();
+	
+	/**
+	 * Checks whether this automaton accepts the empty string.
+	 * 
+	 * @return
+	 */
+	boolean acceptsTheEmptyString();
 	
 	/**
 	 * Checks whether this and other automatons are equivalent, i.e., whether they accept the same
@@ -314,5 +328,5 @@ public interface SFA {
 	 * @see #hasOneFinalState()
 	 * @see #getFinalState()
 	 */
-	public void setFinalState(SFAState finalState);
+	void setFinalState(SFAState finalState);
 }

@@ -26,11 +26,61 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
 */
 
+package tau.smlab.syntech.games.controller.symbolic;
+
+import net.sf.javabdd.BDD;
+import tau.smlab.syntech.jtlv.Env;
+
 /**
+ * BDDs needed to store information to run the Just-in-time symbolic controller
  * 
- */
-/**
- * @author Jan Oliver Ringert
+ * @author Ilia Shevrin
  *
  */
-package tau.smlab.syntech.executor;
+public class SymbolicControllerJitInfo {
+
+	private BDD fixpoints = Env.FALSE();
+	private BDD safeties = Env.FALSE();
+	private BDD justices = Env.FALSE();
+	private int[] ranks;
+
+	public SymbolicControllerJitInfo(BDD fixpoints, BDD safeties, BDD justices, int[] ranks) {
+		this.fixpoints = fixpoints;
+		this.safeties = safeties;
+		this.justices = justices;
+		this.ranks = ranks;
+	}
+
+	public BDD fixpoints() {
+		return fixpoints;
+	}
+	
+	public BDD safeties() {
+		return safeties;
+	}
+
+	public BDD justices() {
+		return justices;
+	}
+	
+	public int ranks(int j) {
+		return ranks[j];
+	}
+
+	@Override
+	public String toString() {
+		String ret = "Fixpoints:\n";
+		ret += Env.toNiceString(fixpoints);
+		ret += "\nSafeties:\n";
+		ret += Env.toNiceString(safeties);
+		ret += "\nJustices:\n";
+		ret += Env.toNiceString(justices);
+		return ret;
+	}
+
+	public void free() {
+		fixpoints.free();
+		safeties.free();
+		justices.free();
+	}
+}

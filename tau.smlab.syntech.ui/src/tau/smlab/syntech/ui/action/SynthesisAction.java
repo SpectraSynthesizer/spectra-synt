@@ -73,7 +73,9 @@ import tau.smlab.syntech.ui.jobs.ChecksJob;
 import tau.smlab.syntech.ui.jobs.CounterStrategyJob;
 import tau.smlab.syntech.ui.jobs.MarkerKind;
 import tau.smlab.syntech.ui.jobs.SyntechJob;
+import tau.smlab.syntech.ui.jobs.SynthesizeSharedControllerJob;
 import tau.smlab.syntech.ui.jobs.SynthesizeConcreteControllerJob;
+import tau.smlab.syntech.ui.jobs.SynthesizeJitSymbolicControllerJob;
 import tau.smlab.syntech.ui.jobs.SynthesizeSymbolicControllerJob;
 import tau.smlab.syntech.ui.preferences.PreferencePage;
 
@@ -97,6 +99,12 @@ public class SynthesisAction implements IObjectActionDelegate, IEditorActionDele
 		switch (action.getId()) {
 		case "tau.smlab.syntech.syntSymbAction":
 			job = new SynthesizeSymbolicControllerJob();
+			break;
+		case "tau.smlab.syntech.syntJitSymbAction":
+			job = new SynthesizeJitSymbolicControllerJob();
+			break;
+		case "tau.smlab.syntech.syntSharedSymbAction":
+			job = new SynthesizeSharedControllerJob();
 			break;
 		case "tau.smlab.syntech.syntCmpAction":
 			job = new SynthesizeConcreteControllerJob();

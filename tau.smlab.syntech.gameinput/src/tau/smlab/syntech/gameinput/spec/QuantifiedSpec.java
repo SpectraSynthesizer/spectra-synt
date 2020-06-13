@@ -32,6 +32,10 @@ import tau.smlab.syntech.gameinput.model.Variable;
 
 //This class implements a Spec that represents a QuantifierExpr
 public class QuantifiedSpec implements Spec {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -355517893664017916L;
 	
 	Operator op; // The operator of the quantifier expression (forall or exists)
 	private Variable domainVar; // The domain var of the quantifier expression

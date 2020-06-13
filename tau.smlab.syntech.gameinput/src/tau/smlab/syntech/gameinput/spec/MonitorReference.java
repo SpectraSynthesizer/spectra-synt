@@ -31,36 +31,40 @@ package tau.smlab.syntech.gameinput.spec;
 import tau.smlab.syntech.gameinput.model.Monitor;
 
 public class MonitorReference implements Spec {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 6665749660100516045L;
+	
+	private Monitor monitor;
 
-  private Monitor monitor;
-  
-  public MonitorReference(Monitor mon) {
-    this.monitor = mon;
-  }
+	public MonitorReference(Monitor mon) {
+		this.monitor = mon;
+	}
 
-  public String toString()
-  {
-    return "<MonitorReference: " + monitor.getName() +">";
-  }
-  @Override
-  public boolean isPastLTLSpec() {
-    return false;
-  }
+	public String toString()
+	{
+		return "<MonitorReference: " + monitor.getName() +">";
+	}
+	@Override
+	public boolean isPastLTLSpec() {
+		return false;
+	}
 
-  @Override
-  public boolean isPropSpec() {
-    return monitor.getType().isBoolean();
-  }
+	@Override
+	public boolean isPropSpec() {
+		return monitor.getType().isBoolean();
+	}
 
-  @Override
-  public boolean hasTemporalOperators() {
-    return false;
-  }
+	@Override
+	public boolean hasTemporalOperators() {
+		return false;
+	}
 
-  public Monitor getMonitor() {
-    return monitor;
-  }
-  public MonitorReference clone() throws CloneNotSupportedException {
-    return new MonitorReference(this.monitor);
-  }
+	public Monitor getMonitor() {
+		return monitor;
+	}
+	public MonitorReference clone() throws CloneNotSupportedException {
+		return new MonitorReference(this.monitor);
+	}
 }

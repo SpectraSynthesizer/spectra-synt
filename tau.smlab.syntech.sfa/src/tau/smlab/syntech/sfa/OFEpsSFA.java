@@ -69,7 +69,9 @@ public class OFEpsSFA extends EpsSFA {
 	
 	protected OFEpsSFA(SFAState ini, SFAState finalState, PowerSetIteratorType psIterType) {
 		super(ini, psIterType);
-		this.setFinalState(finalState);
+		if(finalState != null) {
+			this.setFinalState(finalState);
+		}
 	}
 	
 	@Override
@@ -80,7 +82,7 @@ public class OFEpsSFA extends EpsSFA {
 	@Override
 	public void setFinalState(SFAState finalState) {
 		if(!(finalState instanceof EpsSFAState)) {
-			throw new SFAException("The specified state have an invalid type. The final state must be an instance of EpsSFAState.");
+			throw new SFAException("The specified state has an invalid type. The final state must be an instance of EpsSFAState.");
 		}
 		if(!finalState.isAccepting()) {
 			finalState.flipAcceptance();

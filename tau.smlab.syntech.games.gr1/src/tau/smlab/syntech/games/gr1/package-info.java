@@ -32,9 +32,11 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /**
  * @author Jan Oliver Ringert
  * @author Or Pistiner
+ * @author Gal Amram
  * @author Elizabeth Firman
  * @author Aviv Kuvent
  * @author Yaniv Sa'ar
+ * @Author Ilia Shevrin
  *
  */
 package tau.smlab.syntech.games.gr1;

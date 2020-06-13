@@ -28,38 +28,45 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package tau.smlab.syntech.gameinput.model;
 
-public class WeightDefinition {
-  private String name;
-  private int value;  
-  private Constraint definition;
+import java.io.Serializable;
 
-  public WeightDefinition(String name, int value, Constraint definition)
-  {
-    this.name = name;
-    this.value = value;
-    this.definition = definition;
-  }
-  public int getValue() {
-    return value;
-  }
+public class WeightDefinition implements Serializable {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 2047667500483501267L;
+	
+	private String name;
+	private int value;  
+	private Constraint definition;
 
-  public void setValue(int value) {
-    this.value = value;
-  }
+	public WeightDefinition(String name, int value, Constraint definition)
+	{
+		this.name = name;
+		this.value = value;
+		this.definition = definition;
+	}
+	public int getValue() {
+		return value;
+	}
 
-  public Constraint getDefinition() {
-    return definition;
-  }
+	public void setValue(int value) {
+		this.value = value;
+	}
 
-  public void setDefinition(Constraint definition) {
-    this.definition = definition;
-  }
+	public Constraint getDefinition() {
+		return definition;
+	}
 
-  public String getName() {
-    return name;
-  }
+	public void setDefinition(Constraint definition) {
+		this.definition = definition;
+	}
 
-  public void setName(String name) {
-    this.name = name;
-  }
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
 }

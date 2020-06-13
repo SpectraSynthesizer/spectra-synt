@@ -158,6 +158,23 @@ public class SFAUtil {
 
 		return clonedStatesList;
 	}
+	
+	/**
+	 * Returns a copy of the specified state. The returned copy is an accepting state iff the specified state is accepting.
+	 * The returned copy allows adding epsilon transitions iff the specified state allows that.
+	 * The returned copy has the SAME non-epsilon outgoing transitions. That is, all BDD guards are copied, while the SAME successor states are used.
+	 * Outgoing epsilon transitions are not copied.
+	 * 
+	 * @param state
+	 * @return
+	 */
+	public static SFAState cloneStateWithSameSucc(SFAState state) {
+		SFAState stateClone = state.cloneWithoutSucc();
+		for(SFAState succ : state.getSucc().keySet()) {
+			stateClone.addTrans(state.getSucc().get(succ).id(), succ);
+		}
+		return stateClone;
+	}
 
 	/**
 	 * Returns the set {@code universe} \ {@code transSet}, namely the complement of {@code transSet} w.r.t. {@code universe}.
@@ -169,5 +186,17 @@ public class SFAUtil {
 		Set<Map.Entry<T, BDD>> compTransSet = new HashSet<>(universe);
 		compTransSet.removeAll(transSet);
 		return compTransSet;
+	}
+	
+	/**
+	 * Adds the specified outgoing transitions to the given state.
+	 * 
+	 * @param state
+	 * @param transitions
+	 */
+	public static <T extends SFAState> void addTransitionsToState(T state, Map<? extends T, BDD> transitions) {
+		for(T succ : transitions.keySet()) {
+			state.addTrans(transitions.get(succ).id(), succ);
+		}
 	}
 }

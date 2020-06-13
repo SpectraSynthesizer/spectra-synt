@@ -140,19 +140,31 @@
                icon="icons/controller.gif"
                menubarPath="tau.smlab.syntech.ui.syntechmenu/group2"
                class="tau.smlab.syntech.ui.action.SynthesisAction"> 
-          </action>      
-      
-            <action
-               id="tau.smlab.syntech.syntSymbAction" 
-               label="Synthesize Symbolic Controller"
+          </action>
+          <!--<action
+               id="tau.smlab.syntech.syntSharedSymbAction" 
+               label="Synthesize Shared Static/JIT Controller"
                icon="icons/controller.gif"
                menubarPath="tau.smlab.syntech.ui.syntechmenu/group2"
                class="tau.smlab.syntech.ui.action.SynthesisAction"> 
-          </action>         
-      
+          </action>    --> 
+         <action
+               id="tau.smlab.syntech.syntSymbAction" 
+               label="Synthesize Static Symbolic Controller"
+               icon="icons/controller.gif"
+               menubarPath="tau.smlab.syntech.ui.syntechmenu/group2"
+               class="tau.smlab.syntech.ui.action.SynthesisAction"> 
+          </action>
+          <action
+               id="tau.smlab.syntech.syntJitSymbAction"
+               label="Synthesize Just-in-time Symbolic Controller"
+               icon="icons/controller.gif"
+               menubarPath="tau.smlab.syntech.ui.syntechmenu/group2"
+               class="tau.smlab.syntech.ui.action.SynthesisAction">
+         </action>
             <action
                id="tau.smlab.syntech.debugCmpAction" 
-               label="Synthesize Concrete Counter Strategy"
+               label="Synthesize Concrete Counter-Strategy"
                icon="icons/debug.gif"
                menubarPath="tau.smlab.syntech.ui.syntechmenu/group3"
                class="tau.smlab.syntech.ui.action.SynthesisAction"> 
@@ -194,12 +206,30 @@
                state="true"
                style="push">
          </action>
+         <!--<action
+               class="tau.smlab.syntech.ui.action.SynthesisAction"
+               enablesFor="1"
+               icon="icons/controller.gif"
+               id="tau.smlab.syntech.syntSharedSymbAction"
+               label="Synthesize Shared Static/JIT Controller"
+               menubarPath="tau.smlab.syntech.ui.syntechmenu/group2"
+               style="push">
+         </action>-->
          <action
                class="tau.smlab.syntech.ui.action.SynthesisAction"
                enablesFor="1"
                icon="icons/controller.gif"
                id="tau.smlab.syntech.syntSymbAction"
-               label="Synthesize Symbolic Controller"
+               label="Synthesize Static Symbolic Controller"
+               menubarPath="tau.smlab.syntech.ui.syntechmenu/group2"
+               style="push">
+         </action>
+         <action
+               class="tau.smlab.syntech.ui.action.SynthesisAction"
+               enablesFor="1"
+               icon="icons/controller.gif"
+               id="tau.smlab.syntech.syntJitSymbAction"
+               label="Synthesize Just-in-time Symbolic Controller"
                menubarPath="tau.smlab.syntech.ui.syntechmenu/group2"
                style="push">
          </action>

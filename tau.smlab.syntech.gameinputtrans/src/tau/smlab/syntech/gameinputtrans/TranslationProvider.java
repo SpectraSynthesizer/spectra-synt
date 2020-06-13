@@ -40,47 +40,43 @@ import tau.smlab.syntech.gameinputtrans.translator.Translator;
  */
 public class TranslationProvider {
 
-  /**
-   * translate the game input according to default translators
-   * 
-   * @param input
-   * @return
-   */
-  public static void translate(GameInput input) {
-    translate(input, DefaultTranslators.getDefaultTranslators());
-  }
+	/**
+	 * translate the game input according to default translators
+	 * 
+	 * @param input
+	 * @return
+	 */
+	public static void translate(GameInput input) {
+		translate(input, DefaultTranslators.getDefaultTranslators());
+	}
 
-  /**
-   * translate game input based on supplied list of translators
-   * 
-   * @param input
-   * @param translators
-   * @return
-   */
-  public static void translate(GameInput input, List<Translator> translators) {
-    if (! isSomePlayerHasVariables(input))
-    {
-      throw new TranslationException("None of the players has variables", -1);
-    }
-    for (Translator t : translators) {
-      t.translate(input);
-    }
-  }
+	/**
+	 * translate game input based on supplied list of translators
+	 * 
+	 * @param input
+	 * @param translators
+	 * @return
+	 */
+	public static void translate(GameInput input, List<Translator> translators) {
+		if (!isSomePlayerHasVariables(input)) {
+			throw new TranslationException("None of the players has variables", -1);
+		}
+		for (Translator t : translators) {
+			t.translate(input);
+		}
+	}
 
-  private static boolean isSomePlayerHasVariables(GameInput input) {
-    if (input.getAux().getVars() != null && input.getAux().getVars().size() > 0)
-    {
-      return true;
-    }
-    if (input.getSys().getVars() != null && input.getSys().getVars().size() > 0)
-    {
-      return true;
-    }
-    if (input.getEnv().getVars() != null && input.getEnv().getVars().size() > 0)
-    {
-      return true;
-    }
-    
-    return false;
-  }
+	private static boolean isSomePlayerHasVariables(GameInput input) {
+		if (input.getAux().getVars() != null && input.getAux().getVars().size() > 0) {
+			return true;
+		}
+		if (input.getSys().getVars() != null && input.getSys().getVars().size() > 0) {
+			return true;
+		}
+		if (input.getEnv().getVars() != null && input.getEnv().getVars().size() > 0) {
+			return true;
+		}
+
+		return false;
+	}
 }

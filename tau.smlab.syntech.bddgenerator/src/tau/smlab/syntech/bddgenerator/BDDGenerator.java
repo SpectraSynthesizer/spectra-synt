@@ -42,10 +42,15 @@ import net.sf.javabdd.BDDBitVector;
 import net.sf.javabdd.BDDDomain;
 import net.sf.javabdd.BDDException;
 import net.sf.javabdd.BDDVarSet;
+import tau.smlab.syntech.bddgenerator.energy.BDDEnergyReduction;
+import tau.smlab.syntech.bddgenerator.sfa.SFAGeneratorFactory;
+import tau.smlab.syntech.bddgenerator.sfa.SFAGeneratorFactory.RegExpSFAGeneratorType;
+import tau.smlab.syntech.bddgenerator.sfa.SFAGeneratorFactory.TriggerSFAGeneratorType;
 import tau.smlab.syntech.gameinput.model.Constraint;
 import tau.smlab.syntech.gameinput.model.ExistentialConstraint;
 import tau.smlab.syntech.gameinput.model.GameInput;
 import tau.smlab.syntech.gameinput.model.Player;
+import tau.smlab.syntech.gameinput.model.TriggerConstraint;
 import tau.smlab.syntech.gameinput.model.TypeDef;
 import tau.smlab.syntech.gameinput.model.Variable;
 import tau.smlab.syntech.gameinput.model.WeightDefinition;
@@ -57,9 +62,11 @@ import tau.smlab.syntech.gameinput.spec.VariableReference;
 import tau.smlab.syntech.gamemodel.BehaviorInfo;
 import tau.smlab.syntech.gamemodel.GameModel;
 import tau.smlab.syntech.gamemodel.PlayerModule;
+import tau.smlab.syntech.gamemodel.SFAModuleConstraint;
 import tau.smlab.syntech.gamemodel.PlayerModule.TransFuncType;
 import tau.smlab.syntech.jtlv.Env;
 import tau.smlab.syntech.jtlv.env.module.ModuleBDDField;
+import tau.smlab.syntech.sfa.SFA;
 
 public class BDDGenerator {
 
@@ -105,14 +112,21 @@ public class BDDGenerator {
 	public static GameModel generateGameModel(GameInput input, TraceInfo trace, boolean groupVars) {
 		return generateGameModel(input, trace, groupVars, TransFuncType.SINGLE_FUNC);
 	}
-	
+
 	public static GameModel generateGameModel(GameInput input, TraceInfo trace, boolean groupVars,
 			TransFuncType transFunc) {
 		return generateGameModel(input, trace, groupVars, transFunc, true);
 	}
-
+	
+	
+	public static GameModel generateGameModel(GameInput input, TraceInfo trace, boolean groupVars, 
+			TransFuncType transFunc, boolean debugLog) {
+		return  generateGameModel(input, trace, groupVars, transFunc, debugLog, TriggerSFAGeneratorType
+				.SIMPLE, RegExpSFAGeneratorType.SYMBOLIC);
+	}
+	
 	/**
-	 * creates a GameModel from a GameInput and creates BehaviorInfo for all modules mentioned in TraceInfo
+	 * Creates a {@link GameModel} from a {@link GameInput} and creates {@link BehaviorInfo} for all modules mentioned in {@link TraceInfo}.
 	 * 
 	 * @param input
 	 * @param trace
@@ -121,7 +135,7 @@ public class BDDGenerator {
 	 * @return
 	 */
 	public static GameModel generateGameModel(GameInput input, TraceInfo trace, boolean groupVars, 
-			TransFuncType transFunc, boolean debugLog) {
+			TransFuncType transFunc, boolean debugLog, TriggerSFAGeneratorType triggerSfaGenType, RegExpSFAGeneratorType regExpSfaGenType) {
 		if (debugLog) System.out.println("groupVars = " + groupVars + ", transFunc = " + transFunc);
 		GameModel model = new GameModel();
 
@@ -183,7 +197,7 @@ public class BDDGenerator {
 			sysMod.addToPartTransList(sysMod.trans().id());
 		}
 
-		// second add all constraint
+		// Second, add all constraint
 		if (debugLog) System.out.println("Constraints Env: ");
 		boolean traceEnv = trace.equals(TraceInfo.ALL) || trace.equals(TraceInfo.ENV);
 		model.getEnvBehaviorInfo().addAll(createModuleConstraints(envMod, env, false, traceEnv, false, debugLog));
@@ -193,18 +207,29 @@ public class BDDGenerator {
 		if (debugLog) System.out.println("Constraints Aux: ");
 		boolean traceAux = trace.equals(TraceInfo.ALL) || trace.equals(TraceInfo.AUX) || trace.equals(TraceInfo.SYS_AUX);
 		model.getAuxBehaviorInfo().addAll(createModuleConstraints(sysMod, aux, true, traceAux, false, debugLog));
-
-		//third add all weights
+		
+		
+		// Add existential guarantees
+		addExistentialGars(sysMod, sys, RegExpSFAGeneratorType.SYMBOLIC, groupVars, traceSys, model.getSysBehaviorInfo());
+		
+		// Add trigger constraints
+		createTriggerModuleConstraints(envMod, env, sysMod, triggerSfaGenType, regExpSfaGenType, groupVars, traceEnv, traceAux,
+				model.getAuxBehaviorInfo(), model.getEnvBehaviorInfo());
+		createTriggerModuleConstraints(sysMod, sys, sysMod, triggerSfaGenType, regExpSfaGenType, groupVars, traceSys, traceAux,
+				model.getAuxBehaviorInfo(), model.getSysBehaviorInfo());
+		
+		// Third, add all weights
 		model.setWeights(buildWeights(input.getWeightDefs()));
-		//if either CUDD or JTLV engines are used, apply reduction to energy (this may add safety contraints to the system module)
+		
+		// If either CUDD or JTLV engines are used, apply reduction to energy (this may add safety constraints to the system module)
 		if(!Env.getFactoryName().equals(CUDDADD_FACTORY)) {
-			model.getAuxBehaviorInfo().addAll(BDDEnergyReduction.reduce(sysMod, model.getWeights(), input.getEnergyBound(), traceAux));
+			model.getAuxBehaviorInfo().addAll(BDDEnergyReduction.reduce(sysMod, model.getWeights(), input.getEnergyBound(), groupVars, traceAux));
 		}
 
 		if (transFunc == TransFuncType.DECOMPOSED_FUNC) {
-//			if (debugLog) System.out.println("calcTransQuantList env: ");
+			//			if (debugLog) System.out.println("calcTransQuantList env: ");
 			envMod.calcTransQuantList();
-//			if (debugLog) System.out.println("calcTransQuantList sys: ");
+			//			if (debugLog) System.out.println("calcTransQuantList sys: ");
 			sysMod.calcTransQuantList();
 		} else if (transFunc == TransFuncType.PARTIAL_DECOMPOSED_FUNC) {
 			if (debugLog) System.out.println("incompleteCalcTransQuantList env: ");
@@ -227,7 +252,7 @@ public class BDDGenerator {
 	}
 
 	/**
-	 * creates a fixed group for each variable grouping the primed and unprimed versions
+	 * Creates a fixed group for each variable grouping the primed and unprimed versions.
 	 * 
 	 * @param p
 	 */
@@ -238,7 +263,7 @@ public class BDDGenerator {
 			both.free();      
 		}
 	}
-
+	
 	/**
 	 * Adds given states to set of states in map for specific weight.
 	 * 
@@ -360,9 +385,9 @@ public class BDDGenerator {
 	}
 
 	/**
-	 * adds constraints of the Player p to the PlayerModule m
+	 * Adds constraints of the {@link Player} {@code p} to the {@link PlayerModule} {@code m}.
 	 * 
-	 * if trace=true creates BehaviorInfo for every constraint and configures whether it isAux
+	 * If {@code trace == true}, creates {@link BehaviorInfo} for every constraint and configures whether it isAux.
 	 * 
 	 * @param m
 	 * @param p
@@ -374,9 +399,9 @@ public class BDDGenerator {
 			boolean trace, boolean isSys, boolean debugLog) {
 		List<BehaviorInfo> info = new ArrayList<>();
 
-		if (PlayerModule.TEST_MODE) {
-			System.out.println("TEST_MODE set to true, building also the single transition function");
-		}
+//		if (PlayerModule.TEST_MODE) {
+//			System.out.println("TEST_MODE set to true, building also the single transition function");
+//		}
 
 		int n_ini = 0;
 		int n_safety = 0;
@@ -398,11 +423,11 @@ public class BDDGenerator {
 			case SAFETY:
 				n_safety++;
 				i.safety = bdd.id();
-				
+
 				//To support legacy code that assumes the existence of a single transition relation,
 				//we always construct a single transition relation. If a decomposition is used, then we add the current safety constraint
 				//to the decomposed transitions' list
-				
+
 				//if (m.getTransFuncType() == TransFuncType.SINGLE_FUNC) {
 				//m.conjunctTrans(bdd);
 				m.conjunctTrans(bdd.id());
@@ -433,10 +458,6 @@ public class BDDGenerator {
 			}
 		}
 
-		if(isSys) {
-			addSysExistentialGars(m, p, trace, info);  //add BDDs of existential constraints
-		}
-
 		String type_str = "env";
 		if (isAux) {
 			type_str = "aux";
@@ -448,29 +469,81 @@ public class BDDGenerator {
 		if (debugLog) System.out.println("Spec Stats "+type_str+" justices: " + n_justice);
 		if (debugLog) System.out.println("Spec Stats "+type_str+" trans size: " + m.trans().nodeCount());
 
-		BDDTriggerGenerator.addTriggerConstraints(m, p, isAux, trace, info);
 		return info;
 	}
-
-	private static void addSysExistentialGars(PlayerModule m, Player sysP, boolean trace, List<BehaviorInfo> info) {
+	
+	
+	private static void createTriggerModuleConstraints(PlayerModule pMod, Player p, PlayerModule sysMod,
+			TriggerSFAGeneratorType triggerSfaGenType, RegExpSFAGeneratorType regExpSfaGenType, boolean groupVars, boolean traceP, boolean traceAux,
+			List<BehaviorInfo> auxBehaviorInfo, List<BehaviorInfo> pBehaviorInfo) {
+		SFA triggerSfa;
+		SFAModuleConstraint triggerSfaConstraint;
+		for(TriggerConstraint trigger : p.getTriggers()) {
+			triggerSfa = SFAGeneratorFactory.getGenerator(triggerSfaGenType, regExpSfaGenType, trigger, trigger.getTraceId()).generateTriggerSfa();
+			if(!triggerSfa.isTrueStarLanguage()) { //Only add non-trivial trigger constraints
+				triggerSfaConstraint = new SFAModuleConstraint.Builder().playerModule(sysMod).groupVars(groupVars).sfa(triggerSfa).traceId(trigger.getTraceId()).build();
+				if(traceAux) {
+					auxBehaviorInfo.add(new BehaviorInfo(triggerSfaConstraint.getIni().id(), null, null, null, null, trigger.getTraceId(), true));
+					auxBehaviorInfo.add(new BehaviorInfo(null, triggerSfaConstraint.getTrans().id(), null, null, null, trigger.getTraceId(), true));
+				}
+				if(traceP) {
+					pBehaviorInfo.add(new BehaviorInfo(null, null, triggerSfaConstraint.getAcceptance().id(), null, null, trigger.getTraceId(), true));
+				}
+				
+				sysMod.conjunctInitial(triggerSfaConstraint.getIni());
+				
+				sysMod.conjunctTrans(triggerSfaConstraint.getTrans().id());
+				if (sysMod.getTransFuncType() == TransFuncType.DECOMPOSED_FUNC) {
+					sysMod.addToTransList(triggerSfaConstraint.getTrans());
+				}
+				else if (sysMod.getTransFuncType() == TransFuncType.PARTIAL_DECOMPOSED_FUNC) {
+					sysMod.addToPartTransList(triggerSfaConstraint.getTrans());
+				}
+				else { //sysMod.getTransFuncType() == TransFuncType.SINGLE_FUNC
+					triggerSfaConstraint.getTrans().free();
+				}
+				
+				pMod.addJustice(triggerSfaConstraint.getAcceptance());
+			}
+			triggerSfa.free(); //Free the BDDs (guards) of the trigger sfa
+		}
+	}
+	
+	
+	private static void addExistentialGars(PlayerModule sysMod, Player sysP, RegExpSFAGeneratorType regExpSfaGenType, boolean groupVars, boolean traceSys, List<BehaviorInfo> sysBehaviorInfo) {
 		List<ExistentialConstraint> exConstraints = sysP.getExistentialConstraints();
 		BDD specBdd;
 		List<BDD> existentialBdds, traceInfoBdds;
 		BehaviorInfo i;
+		SFAModuleConstraint regExpSfaConstraint;
+		SFA regExpSfa;
 		for(ExistentialConstraint exC : exConstraints) {
-			existentialBdds = new ArrayList<>();
-			traceInfoBdds = new ArrayList<>();
-			for(Spec spec : exC.getSpecs()) {
-				specBdd = createBdd(spec, exC.getTraceId());
-				existentialBdds.add(specBdd);
-				if(trace) {
-					traceInfoBdds.add(specBdd.id());
+			if(exC.isRegExp()) { //An existential guarantee of a scenario described by a regular expression
+				regExpSfa = SFAGeneratorFactory.getGenerator(regExpSfaGenType, exC.getRegExp(), exC.getTraceId()).generateRegExpSfa();
+				if(!regExpSfa.acceptsTheEmptyString()) { //Only add existential guarantees that are not satisfied vacuously (i.e., whose regexps' languages do not contain the empty string)
+					regExpSfaConstraint = new SFAModuleConstraint.Builder().playerModule(sysMod).groupVars(groupVars).sfa(regExpSfa).restrictIniTrans(false).traceId(exC.getTraceId()).build();
+					sysMod.addExistReq(regExpSfaConstraint, exC.getTraceId());
+					if(traceSys) {
+						sysBehaviorInfo.add(new BehaviorInfo(null, null, null, null, regExpSfaConstraint.clone(), exC.getTraceId(), true));
+					}
 				}
+				regExpSfa.free();
 			}
-			m.addExistentialGar(existentialBdds, exC.getTraceId());
-			if(trace) {
-				i = new BehaviorInfo(null, null, null, traceInfoBdds, exC.getTraceId(), false);
-				info.add(i);
+			else { //An existential guarantee of a sequence of nested Finally (F) assertions
+				existentialBdds = new ArrayList<>();
+				traceInfoBdds = new ArrayList<>();
+				for(Spec spec : exC.getSpecs()) {
+					specBdd = createBdd(spec, exC.getTraceId());
+					existentialBdds.add(specBdd);
+					if(traceSys) {
+						traceInfoBdds.add(specBdd.id());
+					}
+				}
+				sysMod.addExistReq(existentialBdds, exC.getTraceId());
+				if(traceSys) {
+					i = new BehaviorInfo(null, null, null, traceInfoBdds, null, exC.getTraceId(), false);
+					sysBehaviorInfo.add(i);
+				}
 			}
 		}
 	}
@@ -523,7 +596,8 @@ public class BDDGenerator {
 			throw new BDDTranslationException("Unable to translate: " + spec + " when expecting a Boolean expression.",
 					traceId);
 
-		} else if (spec instanceof VariableReference) {
+		}
+		else if (spec instanceof VariableReference) {
 			VariableReference vr = (VariableReference) spec;
 			if (vr.isPropSpec()) { //a boolean variable
 				return Env.getBDDValue(vr.getReferenceName(), "true").id();
@@ -653,8 +727,8 @@ public class BDDGenerator {
 				reverseOp = Operator.LEFT_BIGGER_OR_EQUALS;
 				break;
 			default: //RIGHT_BIGGER
-			reverseOp = Operator.LEFT_BIGGER;
-			break;
+				reverseOp = Operator.LEFT_BIGGER;
+				break;
 			}
 			op = reverseOp;
 
@@ -738,8 +812,8 @@ public class BDDGenerator {
 		case RIGHT_BIGGER_OR_EQUALS:
 			break;
 		default: //RIGHT_BIGGER
-		strictIne = true;
-		break;
+			strictIne = true;
+			break;
 		}
 		return createGeneralInequalityExpression(strictIne, c1, c2, traceId);
 	}

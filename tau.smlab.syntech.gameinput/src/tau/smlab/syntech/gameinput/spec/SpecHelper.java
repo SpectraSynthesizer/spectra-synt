@@ -50,6 +50,20 @@ public class SpecHelper {
 	  }
 	}
 	
+	public static void updateRefName(VariableReference varRef) throws Exception {
+		String refName = varRef.getVariable().getName();
+		if (varRef.getIndexVars().isEmpty()) {
+			for (int i = 0; i < varRef.getIndexSpecs().size(); i++) {
+				Integer indexValue = SpecHelper.calculateSpec(varRef.getIndexSpecs().get(i));
+				if (indexValue < 0 || indexValue >= varRef.getIndexDimensions().get(i)) {
+					throw new Exception(String.format("Index %d out of bounds for variable %s", indexValue, varRef.getVariable().getName()));
+				}
+				refName += String.format("[%d]", indexValue);
+			}
+		}
+		varRef.setReferenceName(refName);
+	}
+	
 	public static Spec interpretWithVariable(Spec spec, Variable var, PrimitiveValue value) throws Exception {
 		// Assign value to varRef
 		if (spec instanceof VariableReference) {

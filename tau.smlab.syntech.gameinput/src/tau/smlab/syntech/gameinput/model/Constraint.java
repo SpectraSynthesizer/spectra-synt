@@ -28,71 +28,78 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package tau.smlab.syntech.gameinput.model;
 
+import java.io.Serializable;
+
 import tau.smlab.syntech.gameinput.spec.Spec;
 
 /**
  * constraints for a player (if player is system player then constraint is a guarantee)
  *
  */
-public class Constraint {
-  public enum Kind {
-    INI, SAFETY, STATE_INV, JUSTICE, PATTERN, WEIGHT, TRIGGER, EXISTS
-  };
+public class Constraint implements Serializable {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -2937844082083661821L;
 
-  // INI = nothing , SAFETY = G, JUSTICE = GF 
-  
-  private Kind kind;
-  private Spec spec;
-  private String name;
-  private int traceId;
+	public enum Kind {
+		INI, SAFETY, STATE_INV, JUSTICE, PATTERN, WEIGHT, TRIGGER, EXISTS
+	};
 
-  public Constraint(Kind kind, Spec spec, String name, int traceId)
-  {
-    this.kind = kind;
-    this.spec = spec;
-    this.name = name;
-    this.traceId = traceId;
-  }
-  
-  public String toString()
-  {
-    return " constraintName: " + name + " constraintKind: " + kind + " constraintSpec: " + spec + " constraintId: " + traceId;
-  }
-  public Kind getKind() {
-    return kind;
-  }
+	// INI = nothing , SAFETY = G, JUSTICE = GF 
 
-  public void setKind(Kind kind) {
-    this.kind = kind;
-  }
+	private Kind kind;
+	private Spec spec;
+	private String name;
+	private int traceId;
 
-  public Spec getSpec() {
-    return spec;
-  }
+	public Constraint(Kind kind, Spec spec, String name, int traceId)
+	{
+		this.kind = kind;
+		this.spec = spec;
+		this.name = name;
+		this.traceId = traceId;
+	}
 
-  public void setSpec(Spec spec) {
-    this.spec = spec;
-  }
+	public String toString()
+	{
+		return " constraintName: " + name + " constraintKind: " + kind + " constraintSpec: " + spec + " constraintId: " + traceId;
+	}
+	public Kind getKind() {
+		return kind;
+	}
 
-  public String getName() {
-    return name;
-  }
+	public void setKind(Kind kind) {
+		this.kind = kind;
+	}
 
-  public void setName(String name) {
-    this.name = name;
-  }
+	public Spec getSpec() {
+		return spec;
+	}
 
-  public int getTraceId() {
-    return traceId;
-  }
+	public void setSpec(Spec spec) {
+		this.spec = spec;
+	}
 
-  public void setTraceId(int traceId) {
-    this.traceId = traceId;
-  }
+	public String getName() {
+		return name;
+	}
 
-  public boolean isJustice() {
-    return Kind.JUSTICE.equals(this.kind);
+	public void setName(String name) {
+		this.name = name;
+	}
 
-  }
+	public int getTraceId() {
+		return traceId;
+	}
+
+	public void setTraceId(int traceId) {
+		this.traceId = traceId;
+	}
+
+	public boolean isJustice() {
+		return Kind.JUSTICE.equals(this.kind);
+
+	}
 
 }

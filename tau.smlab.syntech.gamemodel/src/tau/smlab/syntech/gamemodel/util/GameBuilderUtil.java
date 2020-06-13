@@ -36,82 +36,136 @@ import tau.smlab.syntech.gamemodel.BehaviorInfo;
 import tau.smlab.syntech.gamemodel.GameModel;
 import tau.smlab.syntech.gamemodel.ModuleException;
 import tau.smlab.syntech.gamemodel.PlayerModule;
+import tau.smlab.syntech.gamemodel.PlayerModule.TransFuncType;
 import tau.smlab.syntech.jtlv.env.module.ModuleBDDField;
 
 public class GameBuilderUtil {
 
+	/**
+	 * Use this method to build the system PlayerModule of the given GameModel. 
+	 * Aux behaviors are automatically used.
+	 * 
+	 * @param m		game model
+	 * @param part  the behaviors
+	 */
   public static void buildSys(GameModel m, List<BehaviorInfo> part) {
+	List<BehaviorInfo> bvs = new ArrayList<BehaviorInfo>(part);
+	bvs.addAll(m.getAuxBehaviorInfo());
+	m.getSysBehaviorInfo().clear();
+	m.getSysBehaviorInfo().addAll(part);
     try {
-  	  build(m.getSysBehaviorInfo(), m.getSys(), part, m.getAuxBehaviorInfo());		
+  	  build(m.getSys(), bvs);		
     } catch (ModuleException e) {
   	  e.printStackTrace();
     }	  
   }
 
+  	/**
+  	 * Use this method to build the environment PlayerModule of the given GameModel. 
+  	 * 
+  	 * @param m		game model
+  	 * @param part	the behaviors
+  	 */
   public static void buildEnv(GameModel m, List<BehaviorInfo> part) {
+	List<BehaviorInfo> bvs = new ArrayList<BehaviorInfo>(part);
+	m.getEnvBehaviorInfo().clear();
+	m.getEnvBehaviorInfo().addAll(part);
     try {
-  	  build(m.getEnvBehaviorInfo(), m.getEnv(), part, new ArrayList<BehaviorInfo>());		
+  	  build(m.getEnv(), bvs);		
     } catch (ModuleException e) {
   	  e.printStackTrace();
     }
   }
   
-  private static void build(List<BehaviorInfo> bi, PlayerModule pm, List<BehaviorInfo> part, List<BehaviorInfo> aux) throws ModuleException {
+  /**
+   * Build the PlayerModule using the given behaviors. Take into consideration the type of safety the module uses
+   * 
+   * @param module 
+   * @param beavs
+   * @throws ModuleException
+   */
+	private static void build(PlayerModule module, List<BehaviorInfo> beavs) throws ModuleException {
+
+		module.reset();
+
+		for (BehaviorInfo b : beavs) {
+			if (b.isInitial()) {
+				module.conjunctInitial(b.initial.id());
+			}
+			if (b.isSafety()) {
+				switch (module.getTransFuncType()) {
+				case SINGLE_FUNC:
+					module.conjunctTrans(b.safety.id());
+					break;
+				case DECOMPOSED_FUNC:
+					module.addToTransList(b.safety.id());
+					break;
+				case PARTIAL_DECOMPOSED_FUNC:
+					module.addToTransList(b.safety.id());
+					break;
+				default:
+					System.err.println("unknown type " + module.getTransFuncType());
+					break;
+				}
+			}
+			if (b.isJustice()) {
+				module.addJustice(b.justice.id(), b.traceId);
+			}
+		}
+
+		if (module.getTransFuncType() == TransFuncType.DECOMPOSED_FUNC) {
+			module.calcTransQuantList();
+		} else if (module.getTransFuncType() == TransFuncType.PARTIAL_DECOMPOSED_FUNC) {
+			module.createPartialTransQuantList();
+		}
+	}
   
-    bi.clear();
-    bi.addAll(part);
-    pm.reset();
-    part.addAll(aux);	  
-    
-    for (BehaviorInfo bhave : part) {
-  	  if (bhave.isInitial()) {
-  		  pm.conjunctInitial(bhave.initial.id());
-  	  }
-  	  if (bhave.isSafety()) {
-  		  pm.conjunctTrans(bhave.safety.id());
-  	  }
-  	  if (bhave.isJustice()) {
-  		  pm.addJustice(bhave.justice.id(), bhave.traceId);
-  	  }
-    }
-  }
-  
-  public static void buildQuantifiedSys(GameModel m, List<BehaviorInfo> part, List<ModuleBDDField> vars) {
-    PlayerModule pm = m.getSys();
+  public static void buildQuantifiedSys(GameModel m, List<ModuleBDDField> vars) {
+    PlayerModule module = m.getSys();
 	  
-	pm.reset();
+    module.reset();
+	
+	List<BehaviorInfo> part = new ArrayList<BehaviorInfo>();
+	part.addAll(m.getSysBehaviorInfo());
+	part.addAll(m.getAuxBehaviorInfo());
 	  
 	// quantify over core behavior and add
 	for (BehaviorInfo b : part) {
 	  if (b.isJustice()) {
 		BDD q = b.justice.id();
 		q = quanAll(q, vars);
-		pm.addJustice(q, b.traceId);
+		module.addJustice(q, b.traceId);
 	  }
 	  if (b.isSafety()) {
 		BDD q = b.safety.id();
-		q = quanAll(q, vars);
-		pm.conjunctTrans(q.id());
+		q = quanAll(q, vars);		
+		switch (module.getTransFuncType()) {
+		case SINGLE_FUNC:
+			module.conjunctTrans(q.id());
+			break;
+		case DECOMPOSED_FUNC:
+			module.addToTransList(q.id());
+			break;
+		case PARTIAL_DECOMPOSED_FUNC:
+			module.addToTransList(q.id());
+			break;
+		default:
+			System.err.println("unknown type " + module.getTransFuncType());
+			break;
+		}
 	  }
 	  if (b.isInitial()) {
 		BDD q = b.initial.id();
 		q = quanAll(q, vars);
-		pm.conjunctInitial(q.id());	 
+		module.conjunctInitial(q.id());	 
 	  }
 	}
-		
-	// add aux gars as are
-	for (BehaviorInfo g : m.getAuxBehaviorInfo()) {
-	  if (g.isInitial()) {
-	    pm.conjunctInitial(g.initial.id());
-	  }
-	  if (g.isSafety()) {
-	    pm.conjunctTrans(g.safety.id());
-	  }
-	  if (g.isJustice()) {
-	    pm.addJustice(g.justice.id(), g.traceId);
-	  }
-	} 
+	
+	if (module.getTransFuncType() == TransFuncType.DECOMPOSED_FUNC) {
+		module.calcTransQuantList();
+	} else if (module.getTransFuncType() == TransFuncType.PARTIAL_DECOMPOSED_FUNC) {
+		module.createPartialTransQuantList();
+	}
   }
   
 	/**

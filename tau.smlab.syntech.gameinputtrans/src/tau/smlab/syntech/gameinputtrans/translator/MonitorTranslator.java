@@ -40,11 +40,13 @@ import tau.smlab.syntech.gameinput.model.Define;
 import tau.smlab.syntech.gameinput.model.ExistentialConstraint;
 import tau.smlab.syntech.gameinput.model.GameInput;
 import tau.smlab.syntech.gameinput.model.Monitor;
+import tau.smlab.syntech.gameinput.model.TriggerConstraint;
 import tau.smlab.syntech.gameinput.model.Variable;
 import tau.smlab.syntech.gameinput.model.WeightDefinition;
 import tau.smlab.syntech.gameinput.spec.MonitorReference;
 import tau.smlab.syntech.gameinput.spec.Spec;
 import tau.smlab.syntech.gameinput.spec.SpecExp;
+import tau.smlab.syntech.gameinput.spec.SpecRegExp;
 import tau.smlab.syntech.gameinput.spec.VariableReference;
 
 public class MonitorTranslator implements Translator {
@@ -70,15 +72,29 @@ public class MonitorTranslator implements Translator {
 
 		// sys existential constraints
 		for (ExistentialConstraint exC : input.getSys().getExistentialConstraints()) {
-			for(int i = 0; i < exC.getSize() ; i++) {
-				exC.replaceSpec(i, replaceMonRefs(monVars, exC.getSpec(i)));
+			if(exC.isRegExp()) {
+				SpecRegExp regExp = exC.getRegExp();
+				for(SpecRegExp predRegExp : regExp.getPredicateSubExps()) {
+					predRegExp.setPredicate(replaceMonRefs(monVars, predRegExp.getPredicate()));
+				}
+			}
+			else {
+				for(int i = 0; i < exC.getSize() ; i++) {
+					exC.replaceSpec(i, replaceMonRefs(monVars, exC.getSpec(i)));
+				}
 			}
 		}
+		
+		//sys triggers
+		replaceMonRefsInTriggers(monVars, input.getSys().getTriggers());
 
 		// assumptions
 		for (Constraint c : input.getEnv().getConstraints()) {
 			c.setSpec(replaceMonRefs(monVars, c.getSpec()));
 		}
+		
+		//env triggers
+		replaceMonRefsInTriggers(monVars, input.getEnv().getTriggers());
 
 		// auxiliary constraints
 		for (Constraint c : input.getAux().getConstraints()) {
@@ -177,6 +193,20 @@ public class MonitorTranslator implements Translator {
 
 	private boolean noWorkToDo(GameInput input) {
 		return input.getMonitors() == null || input.getMonitors().isEmpty();
+	}
+	
+	private void replaceMonRefsInTriggers(Map<String, Variable> monVars, List<TriggerConstraint> moduleTriggers) {
+		SpecRegExp initSpecRegExp, effectSpecRegExp;
+		for(TriggerConstraint trigger : moduleTriggers) {
+			initSpecRegExp = trigger.getInitSpecRegExp();
+			for(SpecRegExp predRegExp : initSpecRegExp.getPredicateSubExps()) {
+				predRegExp.setPredicate(replaceMonRefs(monVars, predRegExp.getPredicate()));
+			}
+			effectSpecRegExp = trigger.getEffectSpecRegExp();
+			for(SpecRegExp predRegExp : effectSpecRegExp.getPredicateSubExps()) {
+				predRegExp.setPredicate(replaceMonRefs(monVars, predRegExp.getPredicate()));
+			}
+		}
 	}
 
 }

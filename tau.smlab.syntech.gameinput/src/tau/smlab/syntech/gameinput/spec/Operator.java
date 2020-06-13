@@ -42,6 +42,8 @@ public enum Operator {
 	// UNARY............
 	// Prop
 	NOT, PRIME,  //PRIME stands for next
+	REGEXP,
+	SUM_OF, AND_OF, OR_OF, PROD_OF,
 	// LTL
 	HISTORICALLY, ONCE, PREV,
 

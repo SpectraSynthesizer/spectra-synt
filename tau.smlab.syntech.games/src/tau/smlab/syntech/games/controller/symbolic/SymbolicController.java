@@ -41,113 +41,108 @@ import tau.smlab.syntech.jtlv.Env;
  */
 public class SymbolicController {
 
-  private BDD initial = Env.FALSE();
-  private BDD trans = Env.FALSE();
+	private BDD initial = Env.FALSE();
+	private BDD trans = Env.FALSE();
 
-  public SymbolicController() {
-  }
+	public SymbolicController() {
+	}
 
-  /**
-   * creates a new controller from given BDDs (consumed)
-   * 
-   * @param ini
-   *          (consumed)
-   * @param trans
-   *          (consumed)
-   */
-  public SymbolicController(BDD ini, BDD trans) {
-    this.initial = ini;
-    this.trans = trans;
-  }
+	/**
+	 * creates a new controller from given BDDs (consumed)
+	 * 
+	 * @param ini   (consumed)
+	 * @param trans (consumed)
+	 */
+	public SymbolicController(BDD ini, BDD trans) {
+		this.initial = ini;
+		this.trans = trans;
+	}
 
-  /**
-   * 
-   * @return direct reference to BDD that describes inital states
-   */
-  public BDD initial() {
-    return initial;
-  }
+	/**
+	 * 
+	 * @return direct reference to BDD that describes inital states
+	 */
+	public BDD initial() {
+		return initial;
+	}
 
-  /**
-   * sets the inital states
-   * 
-   * @param init
-   *          is used (don't modify or free)
-   */
-  public void setInit(BDD init) {
-    this.initial = init;
-  }
+	/**
+	 * sets the inital states
+	 * 
+	 * @param init is used (don't modify or free)
+	 */
+	public void setInit(BDD init) {
+		this.initial = init;
+	}
 
-  /**
-   * 
-   * @return direct reference to BDD that describes transitions
-   */
-  public BDD trans() {
-    return trans;
-  }
+	/**
+	 * 
+	 * @return direct reference to BDD that describes transitions
+	 */
+	public BDD trans() {
+		return trans;
+	}
 
-  /**
-   * sets the transitions
-   * 
-   * @param trans
-   *          is used (don't modify or free)
-   */
-  public void setTrans(BDD trans) {
-    this.trans = trans;
-  }
+	/**
+	 * sets the transitions
+	 * 
+	 * @param trans is used (don't modify or free)
+	 */
+	public void setTrans(BDD trans) {
+		this.trans = trans;
+	}
 
-  /**
-   * adds moreTrans as a disjunction to current transitions
-   * 
-   * @param moreTrans
-   *          (BDD not freed)
-   */
-  public void disjunctTrans(BDD moreTrans) {
-    trans.orWith(moreTrans.id());
-  }
+	/**
+	 * adds moreTrans as a disjunction to current transitions
+	 * 
+	 * @param moreTrans (BDD not freed)
+	 */
+	public void disjunctTrans(BDD moreTrans) {
+		trans.orWith(moreTrans.id());
+	}
 
-  public void disjunctTransWith(BDD moreTrans) {
-    trans.orWith(moreTrans);
-  }
+	public void disjunctTransWith(BDD moreTrans) {
+		trans.orWith(moreTrans);
+	}
 
-  /**
-   * restricts trans of controller to trans2
-   * 
-   * @param moreTrans
-   *          (BDD not freed)
-   */
-  public void conjunctTrans(BDD trans2) {
-    trans.andWith(trans2.id());
-  }
+	/**
+	 * restricts trans of controller to trans2
+	 * 
+	 * @param moreTrans (BDD not freed)
+	 */
+	public void conjunctTrans(BDD trans2) {
+		trans.andWith(trans2.id());
+	}
 
-  public void conjunctTransWith(BDD trans2) {
-    trans.andWith(trans2);
-  }
+	public void conjunctTransWith(BDD trans2) {
+		trans.andWith(trans2);
+	}
 
-  /**
-   * <p>
-   * This procedure return all states which the controller can reach in a single step from given a set of state.
-   * </p>
-   * 
-   * @param from
-   *          The set of state to start from.
-   * @return The set of states which the controller can reach in a single step from the given states.
-   */
-  public BDD succ(BDD from) {
-    return Env.succ(from, trans);
-  }
+	/**
+	 * <p>
+	 * This procedure return all states which the controller can reach in a single
+	 * step from given a set of state.
+	 * </p>
+	 * 
+	 * @param from The set of state to start from.
+	 * @return The set of states which the controller can reach in a single step
+	 *         from the given states.
+	 */
+	public BDD succ(BDD from) {
+		return Env.succ(from, trans);
+	}
 
-  @Override
-  public String toString() {
-    String ret = "Initial states:\n";
-    ret += Env.toNiceString(initial);
-    ret += "\n\nTransitions:\n";
-    ret += Env.toNiceString(trans);
-    return ret;
-  }
+	@Override
+	public String toString() {
+		String ret = "Initial states:\n";
+		ret += Env.toNiceString(initial);
+		ret += "\n\nTransitions:\n";
+		ret += Env.toNiceString(trans);
+		return ret;
+	}
 
-  public void free() {
-    initial.free();
-    trans.free();
-  }
+	public void free() {
+		initial.free();
+		trans.free();
+	}
 }

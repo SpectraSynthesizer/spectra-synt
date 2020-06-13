@@ -31,8 +31,6 @@ package tau.smlab.syntech.gameinput.spec;
 import java.util.List;
 
 import tau.smlab.syntech.gameinput.model.Pattern;
-import tau.smlab.syntech.gameinput.model.SpecRegExp;
-import tau.smlab.syntech.gameinput.model.Trigger;
 import tau.smlab.syntech.gameinput.spec.Spec;
 
 public class SpecWrapper {
@@ -40,8 +38,6 @@ public class SpecWrapper {
   private Spec spec;
   private boolean hasPatternReference;
   private Pattern pattern;
-  private SpecRegExp regExp;
-  private Trigger trigger;
   private List<Spec> parameters;
 
   
@@ -55,8 +51,6 @@ public class SpecWrapper {
     this.hasPatternReference = false;
     this.pattern = null;
     this.parameters = null;
-    this.regExp = null;
-    this.trigger = null;
   }
   
   /**
@@ -70,40 +64,8 @@ public class SpecWrapper {
     this.hasPatternReference = true;
     this.pattern = pattern;
     this.parameters = parameters;
-    this.regExp = null;
-    this.trigger = null;
   }
   
-  
-  /**
-   * Use this constructor to create a spec that describes a regular expression
-   */
-  public SpecWrapper(SpecRegExp regExp) {
-    this.spec = null;
-    this.hasPatternReference = false;
-    this.pattern = null;
-    this.parameters = null;
-    this.trigger = null;
-    this.regExp = regExp;
-  }
-  
-  
-  /**
-   * Use this constructor to create a spec that describes a trigger
-   */
-  public SpecWrapper(Trigger trigger) {
-    this.spec = null;
-    this.hasPatternReference = false;
-    this.pattern = null;
-    this.parameters = null;
-    this.regExp = null;
-    this.trigger = trigger;
-  }
-
-  public Trigger getTrigger() {
-    return trigger;
-  }
-
   public Spec getSpec() {
     return spec;
   }
@@ -116,13 +78,7 @@ public class SpecWrapper {
     return pattern;
   }
 
-  public SpecRegExp getRegExp() {
-    return this.regExp;
-  }
-  
   public List<Spec> getParameters() {
     return parameters;
   }
-  
-  
 }
