@@ -14,6 +14,8 @@ In order to compile Spectra synthesizer from source code:
 - Run project by creating a new `Eclipse Application` configuration in `Run Configurations` window.
 - On Linux additionally run `sudo apt install openjdk-8-jdk openjfx`.
 
+You might need to install several graphic plug-ins into Eclipse for the projects to compile. Inside your Eclipse, go to Help -> Install New Software and install GEF DOT, GEF FX, GEF GRAPH and GEF ZEST.FX.
+
 ## Documentation
 Information about Spectra language and tools can be found here: http://smlab.cs.tau.ac.il/syntech/.
 A detailed user guide can be downloaded from here: http://smlab.cs.tau.ac.il/syntech/spectra/userguide.pdf.
