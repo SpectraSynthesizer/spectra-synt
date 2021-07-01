@@ -66,6 +66,22 @@ public class GR1Memory extends GameMemory {
 		envJusticeViolation_mem = null;
 	}
 	
+	public BDD getFulfill(int exj, int f) {
+		return fulfill_exist_gar_mem[exj][f];
+	}
+	
+	public BDD getTowards(int exj, int t) {
+		return towards_exist_gar_mem[exj][t];
+	}
+	
+	public BDD getEnvViolation(int r, int i) {
+		return envJusticeViolation_mem[i][r];
+	}
+	
+	public BDD getX(int j, int r, int i) {
+		return x_mem[j][i][r];
+	}
+	
 	public int getRank(int j) {
 		return y_mem[j].length;
 	}

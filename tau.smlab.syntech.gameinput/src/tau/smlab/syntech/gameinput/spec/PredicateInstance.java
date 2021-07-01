@@ -28,6 +28,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package tau.smlab.syntech.gameinput.spec;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import tau.smlab.syntech.gameinput.model.Predicate;
@@ -88,6 +89,7 @@ public class PredicateInstance implements Spec {
 
 	@Override
 	public PredicateInstance clone() throws CloneNotSupportedException {
-		return new PredicateInstance(this.predicate, this.parameters);
+		List<Spec> newParameters = new ArrayList<>(this.parameters);
+		return new PredicateInstance(this.predicate, newParameters);
 	}
 }

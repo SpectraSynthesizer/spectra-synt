@@ -29,10 +29,11 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package tau.smlab.syntech.checks;
 
 import java.util.List;
+
+import tau.smlab.syntech.cores.domainagnostic.AbstractDdmin;
 import tau.smlab.syntech.gamemodel.BehaviorInfo;
 import tau.smlab.syntech.gamemodel.GameModel;
 import tau.smlab.syntech.gamemodel.util.GameBuilderUtil;
-import tau.smlab.syntech.games.util.AbstractDdmin;
 
 public abstract class DdminRealizableCore extends AbstractDdmin<BehaviorInfo> {
   protected GameModel model;

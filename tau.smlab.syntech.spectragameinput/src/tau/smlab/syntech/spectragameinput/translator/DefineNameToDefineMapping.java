@@ -38,41 +38,38 @@ import tau.smlab.syntech.spectra.DefineDecl;
 import tau.smlab.syntech.spectragameinput.SpectraTranslationException;
 
 public class DefineNameToDefineMapping {
-  private Map<String, Define> defineNameToDefineObjectMapping;
-  
-  public DefineNameToDefineMapping()
-  {
-    defineNameToDefineObjectMapping = new HashMap<>();
-  }
-  
-  public List<Define> getAllDefines()
-  {
-    return new ArrayList<>(defineNameToDefineObjectMapping.values());
-  }
+	private Map<String, Define> defineNameToDefineObjectMapping;
 
-  /**
-   * Computes GameInput Define on demand: If computed before, returns immediately. Otherwise computes the define, stores it and returns.
-   * @param defineDecl Spectra DefineDecl
-   * @param entitiesMapper
-   * @param tracer
-   * @return GameInput Define
-   * @throws SpectraTranslationException 
-   */
-  public Define get(DefineDecl defineDecl, EntitiesMapper entitiesMapper, Tracer tracer) throws SpectraTranslationException {
-    String defineName = defineDecl.getName();
-    if (defineNameToDefineObjectMapping.containsKey(defineName))
-    {
-      return defineNameToDefineObjectMapping.get(defineName);
-    }
-    else
-    {
-      // Compute the define
-      Define giDefine = Spectra2GameInputTranslator.computeDefine(entitiesMapper, tracer, defineDecl);
-      // Store it for future look ups
-      defineNameToDefineObjectMapping.put(defineName, giDefine);
-      return giDefine;
-    }
-  }
-  
+	public DefineNameToDefineMapping() {
+		defineNameToDefineObjectMapping = new HashMap<>();
+	}
+
+	public List<Define> getAllDefines() {
+		return new ArrayList<>(defineNameToDefineObjectMapping.values());
+	}
+
+	/**
+	 * Computes GameInput Define on demand: If computed before, returns immediately.
+	 * Otherwise computes the define, stores it and returns.
+	 * 
+	 * @param defineDecl     Spectra DefineDecl
+	 * @param entitiesMapper
+	 * @param tracer
+	 * @return GameInput Define
+	 * @throws SpectraTranslationException
+	 */
+	public Define get(DefineDecl defineDecl, EntitiesMapper entitiesMapper, Tracer tracer)
+			throws SpectraTranslationException {
+		String defineName = defineDecl.getName();
+		if (defineNameToDefineObjectMapping.containsKey(defineName)) {
+			return defineNameToDefineObjectMapping.get(defineName);
+		} else {
+			// Compute the define
+			Define giDefine = Spectra2GameInputTranslator.computeDefine(entitiesMapper, tracer, defineDecl);
+			// Store it for future look ups
+			defineNameToDefineObjectMapping.put(defineName, giDefine);
+			return giDefine;
+		}
+	}
 
 }

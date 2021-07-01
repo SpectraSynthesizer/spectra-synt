@@ -46,80 +46,109 @@ import tau.smlab.syntech.ui.preferences.PreferencePage;
 
 public class SynthesizeSymbolicControllerJob extends SyntechJob {
 
-	@Override
-	protected void doWork() {
-		GR1Game gr1;
+  @Override
+  protected void doWork() {
+    GR1Game gr1;
 
-		// initialize game based on configuration
-		if (PreferencePage.getBDDPackageSelection().equals(BDDPackage.CUDD_ADD) && model.getWeights() != null) {
-			printToConsole("GR1GameEnergyADD (without optimizations)");
-			gr1 = new GR1GameEnergyADD(model, gi.getEnergyBound());
-		} else {
-			PreferencePage.setOptSelection();
-			if (PreferencePage.getBDDPackageSelection().equals(BDDPackage.CUDD)) {
-				printToConsole("GR1GameImplC with memory");
-				gr1 = new GR1GameImplC(model);
-			} else {
-				String GR1SolverMsg = "GR1GameExperiments (" + (PreferencePage.hasOptSelection() ? "with" : "without")
-						+ " optimizations)";
-				printToConsole(GR1SolverMsg);
-				gr1 = new GR1GameExperiments(model);
-			}
-		}
+    // initialize game based on configuration
+    if (PreferencePage.getBDDPackageSelection().equals(BDDPackage.CUDD_ADD) && model.getWeights() != null) {
+      printToConsole("GR1GameEnergyADD (without optimizations)");
+      gr1 = new GR1GameEnergyADD(model, gi.getEnergyBound());
+    } else {
+      PreferencePage.setOptSelection();
+      if (PreferencePage.getBDDPackageSelection().equals(BDDPackage.CUDD)) {
+        printToConsole("GR1GameImplC with memory");
+        gr1 = new GR1GameImplC(model);
+      } else {
+        String GR1SolverMsg = "GR1GameExperiments (" + (PreferencePage.hasOptSelection() ? "with" : "without")
+            + " optimizations)";
+        printToConsole(GR1SolverMsg);
+        gr1 = new GR1GameExperiments(model);
+      }
+    }
 
-		// play actual game
-		if (gr1.checkRealizability()) {
-			this.isRealizable = true;
+    long start = System.currentTimeMillis();
 
-			if (PreferencePage.getBDDPackageSelection().equals(BDDPackage.CUDD_ADD) && model.getWeights() != null) {
-				((GR1GameEnergyADD) gr1).flattenGameMemoryTerminalsToVariables();
-				((GR1GameEnergyADD) gr1).updateSysTransWithEnergyConstraints();
-				((GR1GameEnergyADD) gr1).setSysWinningStatesWithFlatCredits();
-			}
+    // play actual game
+    if (gr1.checkRealizability()) {
 
-			SymbolicControllerConstruction cc = new GR1SymbolicControllerConstruction(gr1.getMem(), model);
-			SymbolicController ctrl = cc.calculateSymbolicController();
+      long time = System.currentTimeMillis() - start;
+      printToConsole("Realizability Check: " + time + "ms");
 
-			// if in Energy game then restrict initial states to minimum initial energy
-			// credit
-			if (model.getWeights() != null) {
-				BDD minWinCred;
-				if (PreferencePage.getBDDPackageSelection().equals(BDDPackage.CUDD_ADD)) {
-					minWinCred = Env.getBDDValue("energyVal", (int) ((GR1GameEnergyADD) gr1).getMinWinInitCred());
-				} else {
-					minWinCred = BDDEnergyReduction.getMinWinCred(model, gr1.sysWinningStates());
-				}
-				ctrl.initial().andWith(minWinCred);
-			}
+      this.isRealizable = true;
 
-			gr1.free();
-			
-			try {
+      if (PreferencePage.getBDDPackageSelection().equals(BDDPackage.CUDD_ADD) && model.getWeights() != null) {
+        ((GR1GameEnergyADD) gr1).flattenGameMemoryTerminalsToVariables();
+        ((GR1GameEnergyADD) gr1).updateSysTransWithEnergyConstraints();
+        ((GR1GameEnergyADD) gr1).setSysWinningStatesWithFlatCredits();
+      }
 
-				String location = specFile.getParent().getLocation().toOSString();
-				String outLocation = location + File.separator + "out";
+      start = System.currentTimeMillis();
 
-				SymbolicControllerReaderWriter.writeSymbolicController(ctrl, model, outLocation, PreferencePage.isReorderBeforeSave());
-				
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
+      SymbolicControllerConstruction cc = new GR1SymbolicControllerConstruction(gr1.getMem(), model);
+      SymbolicController ctrl = cc.calculateSymbolicController();
 
-			model.free();
+      time = System.currentTimeMillis() - start;
+      printToConsole("Symbolic BDDs Preparation: " + time + "ms");
 
-			// clean up the BDDs
-			Env.resetEnv();
-			return;
-		}
-		this.isRealizable = false;
+      // if in Energy game then restrict initial states to minimum initial energy
+      // credit
+      if (model.getWeights() != null) {
+        BDD minWinCred;
+        if (PreferencePage.getBDDPackageSelection().equals(BDDPackage.CUDD_ADD)) {
+          minWinCred = Env.getBDDValue("energyVal", (int) ((GR1GameEnergyADD) gr1).getMinWinInitCred());
+        } else {
+          minWinCred = BDDEnergyReduction.getMinWinCred(model, gr1.sysWinningStates());
+        }
+        ctrl.initial().andWith(minWinCred);
+      }
 
-		printToConsole("The selected specification is unrealizable.");
-		Env.resetEnv();
-	}
+      gr1.free();
 
-	@Override
-	public boolean needsBound() {
-		return true;
-	}
+      if (PreferencePage.isDeterminize()) {
+        printToConsole("Determinizing the controller.");
+        BDD tmp = ctrl.initial();
+        ctrl.setInit(det(tmp, model.getSys().moduleUnprimeVars()));
+        tmp.free();
+
+        tmp = ctrl.trans();
+        ctrl.setTrans(det(tmp, model.getSys().modulePrimeVars()));
+        tmp.free();
+      }
+
+      try {
+
+        start = System.currentTimeMillis();
+
+        String location = specFile.getParent().getLocation().toOSString();
+        String outLocation = location + File.separator + "out";
+
+        SymbolicControllerReaderWriter.writeSymbolicController(ctrl, model, outLocation,
+            PreferencePage.isReorderBeforeSave());
+
+        time = System.currentTimeMillis() - start;
+        printToConsole("Controller save to disk: " + time + "ms");
+
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+
+      model.free();
+
+      // clean up the BDDs
+      Env.resetEnv();
+      return;
+    }
+    this.isRealizable = false;
+
+    printToConsole("The selected specification is unrealizable.");
+    Env.resetEnv();
+  }
+
+  @Override
+  public boolean needsBound() {
+    return true;
+  }
+
 
 }

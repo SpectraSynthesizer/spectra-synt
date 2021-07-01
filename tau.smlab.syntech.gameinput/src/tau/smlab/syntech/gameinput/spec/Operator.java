@@ -44,10 +44,13 @@ public enum Operator {
 	NOT, PRIME,  //PRIME stands for next
 	REGEXP,
 	SUM_OF, AND_OF, OR_OF, PROD_OF,
+	MIN, MAX,
 	// LTL
 	HISTORICALLY, ONCE, PREV,
 
 	// BINARY............
+	
+	IN,
 	// Prop
 	AND, OR, XOR, IFF, IMPLIES, EQUALS,LEFT_BIGGER, LEFT_BIGGER_OR_EQUALS, RIGHT_BIGGER, RIGHT_BIGGER_OR_EQUALS, ADD, SUBSTRACT,
 	MULTIPLY, DIVIDE, MOD,
@@ -60,6 +63,7 @@ public enum Operator {
     // Quantifiers
     FORALL, EXISTS;
 
+	
 	// Extra Prop - Binary
 	// EQ, NEQ, LT, GT, LE, GE, SETIN, UNION, LSHIFT, RSHIFT, MOD, PLUS, MINUS,
 	// TIMES, DIVIDE, CONCATENATION;

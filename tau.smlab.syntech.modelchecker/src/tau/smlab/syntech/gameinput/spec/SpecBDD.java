@@ -104,4 +104,11 @@ public class SpecBDD implements Spec {
   public SpecBDD clone() throws CloneNotSupportedException {
     return new SpecBDD(this.getVal().id());
   }
+  
+  public boolean isOne() {
+    return val.isOne();
+  }
+  public boolean isZero() {
+    return val.isZero();
+  }
 }

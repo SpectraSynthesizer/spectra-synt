@@ -35,11 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.eclipse.gef.dot.internal.DotAttributes;
-import org.eclipse.gef.dot.internal.DotExport;
-import org.eclipse.gef.dot.internal.language.dot.GraphType;
-import org.eclipse.gef.graph.Graph;
-
 import dk.brics.automaton.Automaton;
 import dk.brics.automaton.State;
 import dk.brics.automaton.Transition;
@@ -102,8 +97,6 @@ public class MAAMinimizeAutomatonPrinter implements EnumStrategyPrinter {
 		out.println();
 
 		out.println("automaton:");
-		
-		Graph.Builder builder = new Graph.Builder().attr(DotAttributes::_setType, GraphType.DIGRAPH).attr(DotAttributes::setRankdir, "LR");
 
 		Map<Integer, State> states = new HashMap<Integer, State>();
 		for (int i = 0; i < c.numOfStates(); i++) {
@@ -173,7 +166,6 @@ public class MAAMinimizeAutomatonPrinter implements EnumStrategyPrinter {
 				out.print(", " + name);
 				i++;
 			}
-			builder.node(s).attr(DotAttributes::_setName, name).attr(DotAttributes::setLabel, name).attr(DotAttributes::setShape, "circle"); 
 			miniStates.put(s, name);
 		}
 
@@ -194,15 +186,8 @@ public class MAAMinimizeAutomatonPrinter implements EnumStrategyPrinter {
 					}
 				}
 				transitionLabel = transitionLabel.substring(0, transitionLabel.length() - 2);
-				builder.edge(s, t.getDest()).attr(DotAttributes::setLabel, transitionLabel);
 			}
 		}
-
-		out.println();
-		out.println();
-		out.println("DOT format concrete graph representation:");
-		out.println();
-		out.println(new DotExport().exportDot(builder.build()));
 	}
 
 	/**

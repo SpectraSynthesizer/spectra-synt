@@ -91,4 +91,17 @@ public class PrimitiveValue implements Spec {
 	public PrimitiveValue clone() throws CloneNotSupportedException {
 		return new PrimitiveValue(this.value);
 	}
+	
+	@Override
+	public int hashCode() {
+	  return toString().hashCode();
+	}
+	
+	@Override
+	public boolean equals(Object obj) {
+	  if (obj instanceof PrimitiveValue) {
+	    return this.value.equals(((PrimitiveValue) obj).getValue());
+	  }
+	  return false;
+	}
 }

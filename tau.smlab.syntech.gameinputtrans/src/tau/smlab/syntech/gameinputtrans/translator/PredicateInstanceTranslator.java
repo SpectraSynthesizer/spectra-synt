@@ -34,6 +34,7 @@ import java.util.List;
 import tau.smlab.syntech.gameinput.model.Constraint;
 import tau.smlab.syntech.gameinput.model.Counter;
 import tau.smlab.syntech.gameinput.model.Define;
+import tau.smlab.syntech.gameinput.model.DefineArray;
 import tau.smlab.syntech.gameinput.model.ExistentialConstraint;
 import tau.smlab.syntech.gameinput.model.GameInput;
 import tau.smlab.syntech.gameinput.model.Monitor;
@@ -41,6 +42,7 @@ import tau.smlab.syntech.gameinput.model.PatternConstraint;
 import tau.smlab.syntech.gameinput.model.TriggerConstraint;
 import tau.smlab.syntech.gameinput.model.Variable;
 import tau.smlab.syntech.gameinput.model.WeightDefinition;
+import tau.smlab.syntech.gameinput.spec.DefineReference;
 import tau.smlab.syntech.gameinput.spec.PredicateInstance;
 import tau.smlab.syntech.gameinput.spec.Spec;
 import tau.smlab.syntech.gameinput.spec.SpecExp;
@@ -114,7 +116,11 @@ public class PredicateInstanceTranslator implements Translator {
 
 		// going over defines
 		for (Define def : input.getDefines()) {
-			def.setExpression(replacePredicateInstances(def.getExpression()));
+			if (def.getExpression() != null) {
+				def.setExpression(replacePredicateInstances(def.getExpression()));
+			} else {
+				def.setDefineArray(replacePredicateInDefineArrays(def.getDefineArray()));
+			}
 		}
 		
 		for (Counter counter : input.getCounters()) {
@@ -155,6 +161,27 @@ public class PredicateInstanceTranslator implements Translator {
 
 		// clear all predicates
 		input.getPredicates().clear();
+	}
+	
+	private DefineArray replacePredicateInDefineArrays(DefineArray defArray) {
+
+		List<Spec> newSpec = null;
+		if (defArray.getExpressions() != null) {
+			newSpec = new ArrayList<>();
+			for (Spec exp : defArray.getExpressions()) {
+				newSpec.add(replacePredicateInstances(exp));
+			}
+		}
+		
+		List<DefineArray> newDefArray = null;
+		if (defArray.getDefineArray() != null) {
+			newDefArray = new ArrayList<>();
+			for (DefineArray innerArray : defArray.getDefineArray()) {
+				newDefArray.add(replacePredicateInDefineArrays(innerArray));
+			}
+		}
+		
+		return new DefineArray(newSpec, newDefArray);
 	}
 
 	private boolean noWorkToDo(GameInput input) {
@@ -223,6 +250,45 @@ public class PredicateInstanceTranslator implements Translator {
 					throw new TranslationException(e.getMessage(), 0);
 				}
 			}
+		} else if (predicateSpec instanceof DefineReference) {
+			
+			DefineReference defRef = (DefineReference) predicateSpec;
+			
+			if (defRef.getIndexSpecs() != null) {
+				
+				try {
+					DefineReference newDefRef = defRef.clone();
+					
+					List<Spec> newIndexSpec = new ArrayList<Spec>();
+					for (Spec indexSpec : newDefRef.getIndexSpecs()) {
+						indexSpec = removeParameterReferencesInPredicate(indexSpec, formalParams, actualParamsValues);
+						newIndexSpec.add(indexSpec);
+					}
+					newDefRef.setIndexSpecs(newIndexSpec);
+					
+					for (Variable var : formalParams) {
+						if (newDefRef.getIndexVars().containsValue(var)) {
+							newDefRef.getIndexVars().remove(var.getName());
+						}
+					}
+					
+					if (newDefRef.getIndexVars().isEmpty()) {
+						for (int i = 0; i < newDefRef.getIndexSpecs().size(); i++) {
+							Integer indexValue = SpecHelper.calculateSpec(newDefRef.getIndexSpecs().get(i));
+							if (indexValue < 0 || indexValue >= newDefRef.getIndexDimensions().get(i)) {
+								throw new Exception(String.format("Index %d out of bounds for variable %s", indexValue,
+										newDefRef.getDefine().getName()));
+							}
+						}
+					}
+					
+					predicateSpec = newDefRef;
+					
+				} catch (Exception e) {
+					throw new TranslationException(e.getMessage(), 0);
+				}
+			}
+		
 			// else: varRef points to a global variable. no need to replace
 		} else if (predicateSpec instanceof SpecExp) {
 			SpecExp se = (SpecExp) predicateSpec;

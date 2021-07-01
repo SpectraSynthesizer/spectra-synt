@@ -33,10 +33,11 @@ import java.util.List;
 
 import tau.smlab.syntech.gameinput.model.Constraint;
 import tau.smlab.syntech.gameinput.model.Define;
+import tau.smlab.syntech.gameinput.model.DefineArray;
 import tau.smlab.syntech.gameinput.model.GameInput;
 import tau.smlab.syntech.gameinput.model.Predicate;
-import tau.smlab.syntech.gameinput.model.TypeDef;
 import tau.smlab.syntech.gameinput.model.Variable;
+import tau.smlab.syntech.gameinput.spec.DefineReference;
 import tau.smlab.syntech.gameinput.spec.Operator;
 import tau.smlab.syntech.gameinput.spec.PredicateInstance;
 import tau.smlab.syntech.gameinput.spec.PrimitiveValue;
@@ -73,7 +74,12 @@ public class QuantifierTranslator implements Translator {
 
 		// defines
 		for (Define define : input.getDefines()) {
-			define.setExpression(replaceQuantifiers(define.getExpression(), 0));
+			
+			if (define.getExpression() != null) {
+				define.setExpression(replaceQuantifiers(define.getExpression(), 0));
+			} else {
+				define.setDefineArray(replaceQuantifiersInDefineArrays(define.getDefineArray()));
+			}
 		}
 
 		// Clear Domain variables list
@@ -171,6 +177,23 @@ public class QuantifierTranslator implements Translator {
 			
 			return varRef;
 			
+		} else if (spec instanceof DefineReference) {
+			DefineReference defRef = (DefineReference) spec;
+			
+			try {
+				if (defRef.getIndexSpecs() != null && defRef.getIndexVars().containsKey(domainVar.getName())) {
+					DefineReference newDefRef = defRef.clone();
+					
+					SpecHelper.updateDefineReference(newDefRef, domainVar, primVal);
+
+					return newDefRef;
+				}
+			} catch (Exception e) {
+				throw new TranslationException(e.getMessage(), traceId);
+			}
+			
+			return defRef;
+			
 		// if we arrived to PredicateInstance, we want to replace all the appearances of
 		// the current domain var in the parameters of the PredicateInstance
 		} else if (spec instanceof PredicateInstance) {
@@ -194,5 +217,26 @@ public class QuantifierTranslator implements Translator {
 		}
 		
 		return spec;
+	}
+	
+	private DefineArray replaceQuantifiersInDefineArrays(DefineArray defArray) {
+
+		List<Spec> newSpec = null;
+		if (defArray.getExpressions() != null) {
+			newSpec = new ArrayList<>();
+			for (Spec exp : defArray.getExpressions()) {
+				newSpec.add(replaceQuantifiers(exp, 0));
+			}
+		}
+		
+		List<DefineArray> newDefArray = null;
+		if (defArray.getDefineArray() != null) {
+			newDefArray = new ArrayList<>();
+			for (DefineArray innerArray : defArray.getDefineArray()) {
+				newDefArray.add(replaceQuantifiersInDefineArrays(innerArray));
+			}
+		}
+		
+		return new DefineArray(newSpec, newDefArray);
 	}
 }

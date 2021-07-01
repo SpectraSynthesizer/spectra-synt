@@ -10,4 +10,4 @@ Export-Package: net.sf.javabdd,
  tau.smlab.syntech.jtlv.lib
 Import-Package: org.eclipse.core.internal.resources,
  org.eclipse.core.resources
-Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Automatic-Module-Name: tau.smlab.syntech.jtlv

@@ -44,6 +44,7 @@ import com.google.common.collect.Lists;
 import tau.smlab.syntech.gameinput.model.Constraint;
 import tau.smlab.syntech.gameinput.model.Constraint.Kind;
 import tau.smlab.syntech.gameinput.model.Define;
+import tau.smlab.syntech.gameinput.model.DefineArray;
 import tau.smlab.syntech.gameinput.model.ExistentialConstraint;
 import tau.smlab.syntech.gameinput.model.GameInput;
 import tau.smlab.syntech.gameinput.model.PatternConstraint;
@@ -418,10 +419,40 @@ public class Spectra2GameInputTranslator {
 	public static Define computeDefine(EntitiesMapper entitiesMapper, Tracer tracer, DefineDecl define)
 			throws SpectraTranslationException {
 		try {
-			return new Define(define.getName(), SpectraASTToSpecGenerator
-					.getConstraintSpec(define.getSimpleExpr(), entitiesMapper, tracer, null, null, null).getSpec());
+			Spec singleDefine = null;
+			DefineArray defineArray = null;
+			if (define.getSimpleExpr() != null) {
+				singleDefine = SpectraASTToSpecGenerator
+						.getConstraintSpec(define.getSimpleExpr(), entitiesMapper, tracer, null, null, null).getSpec();
+			} else {
+				defineArray = computeDefineArray(entitiesMapper, tracer, define.getInnerArray());
+			}
+			return new Define(define.getName(), singleDefine, defineArray);
 		} catch (SpectraTranslationException e) {
-			e.setTraceId(tracer.addTrace(define.getSimpleExpr()));
+			if (e.getTraceId() == 0) {
+				e.setTraceId(tracer.addTrace(define.getSimpleExpr()));
+			}
+			throw e;
+		}
+	}
+	
+	private static DefineArray computeDefineArray(EntitiesMapper entitiesMapper, Tracer tracer, tau.smlab.syntech.spectra.DefineArray defineArray)
+			throws SpectraTranslationException {
+		int i = 0;
+		try {
+			List<Spec> defSpecs = new ArrayList<>();
+			for (TemporalExpression exp : defineArray.getSimpleExprs()) {
+				defSpecs.add(SpectraASTToSpecGenerator
+						.getConstraintSpec(exp, entitiesMapper, tracer, null, null, null).getSpec());
+				i++;
+			}
+			List<DefineArray> innerDefArrays = new ArrayList<>();
+			for (tau.smlab.syntech.spectra.DefineArray innerArray : defineArray.getInnerArrays()) {
+				innerDefArrays.add(computeDefineArray(entitiesMapper, tracer, innerArray));
+			}
+			return new DefineArray(defSpecs, innerDefArrays);
+		} catch (SpectraTranslationException e) {
+			e.setTraceId(tracer.addTrace(defineArray.getSimpleExprs().get(i)));
 			throw e;
 		}
 	}
@@ -500,8 +531,7 @@ public class Spectra2GameInputTranslator {
 		Subrange subrange = varType.getSubr();
 		EList<TypeConstant> consts = varType.getConst();
 
-		if (subrange != null && (TypeSystemUtils.sizeDefineToInt(subrange.getFrom()) != 0
-				|| TypeSystemUtils.sizeDefineToInt(subrange.getTo()) != 0)) {
+		if (subrange != null) {
 			// it's an integer
 			return new TypeDef(TypeSystemUtils.sizeDefineToInt(subrange.getFrom()),
 					TypeSystemUtils.sizeDefineToInt(subrange.getTo()), dimensions);

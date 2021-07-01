@@ -85,10 +85,17 @@ public class SynthesizeJitSymbolicControllerJob extends SyntechJob {
 				gr1 = new GR1GameExperiments(model);
 			}
 		}
+		
+		long start = System.currentTimeMillis();
 
 		// play actual game
 		if (gr1.checkRealizability()) {
+			
+			long time = System.currentTimeMillis() - start;
+			printToConsole("Realizability Check: " + time + "ms");
+			
 			this.isRealizable = true;
+			
 						
 			if (PreferencePage.getBDDPackageSelection().equals(BDDPackage.CUDD_ADD) &&
 					model.getWeights() != null) {
@@ -109,15 +116,24 @@ public class SynthesizeJitSymbolicControllerJob extends SyntechJob {
 					}
 				}
 				
+				start = System.currentTimeMillis();
+				
 				SymbolicControllerJitInfoConstruction jitInfoConstruction = new SymbolicControllerJitInfoConstruction(gr1.getMem(), model, minWinCred);
 				SymbolicControllerJitInfo jitInfo = jitInfoConstruction.calculateJitSymbollicControllerInfo();
 				
+				time = System.currentTimeMillis() - start;
+				printToConsole("JITS BDDs Preparation: " + time + "ms");
+				
+				start = System.currentTimeMillis();
 				
 				String location = specFile.getParent().getLocation().toOSString();
 				String outLocation = location + File.separator + "out";
 				
 				SymbolicControllerReaderWriter.writeJitSymbolicController(jitInfo, model, outLocation, PreferencePage.isReorderBeforeSave());
 				jitInfo.free();
+				
+				time = System.currentTimeMillis() - start;
+				printToConsole("Controller save to disk: " + time + "ms");
   
 	        } catch (Exception e) {
             	e.printStackTrace();

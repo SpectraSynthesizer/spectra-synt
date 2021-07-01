@@ -33,4 +33,4 @@ Export-Package: tau.smlab.syntech.ui,
  tau.smlab.syntech.ui.jobs,
  tau.smlab.syntech.ui.preferences,
  tau.smlab.syntech.ui.views
-Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Automatic-Module-Name: tau.smlab.syntech.ui

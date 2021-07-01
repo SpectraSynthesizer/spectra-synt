@@ -55,6 +55,8 @@ import tau.smlab.syntech.gameinputtrans.TranslationException;
  * 
  * https://smlab.unfuddle.com/svn/smlab_synthesis1/trunk/AspectLTL/net.games.core/src/net/games/core/parser/SpecificationParser.java
  * 
+ * Depends on DefinesTranslator, CounterTranslator, MonitorTranslator, PatternConstraintTranslator, PredicateInstanceTranslator
+ * 
  */
 public class PastLTLTranslator implements Translator {
 
@@ -183,7 +185,7 @@ public class PastLTLTranslator implements Translator {
 					iniSpec = new SpecExp(Operator.IFF, new VariableReference(aux), se.getChildren()[0]);
 					auxPastConstraints.add(new Constraint(Kind.INI, iniSpec, null, traceId));
 
-					Spec auxAndPChild = new SpecExp(Operator.AND, new VariableReference(aux), new SpecExp(Operator.PRIME, se.getChildren()[0].clone()));
+					Spec auxAndPChild = new SpecExp(Operator.OR, new VariableReference(aux), new SpecExp(Operator.PRIME, se.getChildren()[0].clone()));
 					safetySpec = new SpecExp(Operator.IFF, p_aux, auxAndPChild);
 					auxPastConstraints.add(new Constraint(Kind.SAFETY, safetySpec, null, traceId));
 					break;          

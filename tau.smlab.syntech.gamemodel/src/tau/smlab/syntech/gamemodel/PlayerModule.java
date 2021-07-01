@@ -2117,11 +2117,16 @@ public class PlayerModule {
 	public PlayerModule compose(PlayerModule other) {
 		PlayerModule composed = new PlayerModule();
 		composed.setName(this.name + "_composed_" + other.getName());
-
+		
+		composed.doms = this.doms.and(other.doms);
+		
 		composed.allFields.addAll(this.allFields);
 		composed.allFields.addAll(other.allFields);
 		composed.auxFields.addAll(this.auxFields);
 		composed.auxFields.addAll(other.auxFields);
+    composed.nonAuxFields.addAll(this.nonAuxFields);
+    composed.nonAuxFields.addAll(other.nonAuxFields);
+
 
 		composed.conjunctInitial(this.initial().id());
 		composed.conjunctInitial(other.initial().id());

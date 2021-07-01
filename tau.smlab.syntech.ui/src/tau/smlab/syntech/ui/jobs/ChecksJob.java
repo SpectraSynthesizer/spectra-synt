@@ -28,6 +28,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package tau.smlab.syntech.ui.jobs;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.ui.PartInitException;
@@ -123,13 +124,16 @@ public class ChecksJob extends SyntechJob {
       return;
     }
 
-    List<BehaviorInfo> iniCore = c.computeIniDeadlockCore(model);
+    List<String> examples = new ArrayList<>();
+    List<BehaviorInfo> iniCore = c.computeIniDeadlockCore(model, examples);
     if (iniCore!=null) {
       this.issuesKind = "Safety core";
       this.numIssues = iniCore.size();
 
       openView();
-      printToConsole("The environment can force the system to a deadlock from the initial state. See possible highlighting of initial constraitns in editor.");
+      printToConsole("The environment can force the system to a deadlock from the initial state. It can do so by setting:");
+      printToConsole(examples.get(examples.size()-1));
+      printToConsole("See highlighting of guarantees in the editor.");
       createMarker(iniCore, MarkerKind.UNSAT_CORE);
       model.free();
       return;

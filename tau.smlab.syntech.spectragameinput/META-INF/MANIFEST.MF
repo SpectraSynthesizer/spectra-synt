@@ -14,5 +14,5 @@ Require-Bundle: tau.smlab.syntech.gameinput;bundle-version="1.0.0",
 Export-Package: tau.smlab.syntech.spectragameinput,
  tau.smlab.syntech.spectragameinput.translator
 Import-Package: org.eclipse.xtext.xbase.lib
-Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Automatic-Module-Name: tau.smlab.syntech.spectragameinput
  

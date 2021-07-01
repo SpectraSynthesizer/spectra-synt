@@ -34,17 +34,20 @@ import java.util.List;
 public class DefaultTranslators {
   public static List<Translator> getDefaultTranslators() {
     List<Translator> ts = new ArrayList<Translator>();
+    ts.add(new MinMaxFunctionsTranslator());
+    ts.add(new TemporalInTranslator());
     ts.add(new ArrayFunctionsTranslator());
     ts.add(new TemporalRegexpTranslator());
     ts.add(new QuantifierTranslator()); //The translator of QuantifiedSpecs
-    ts.add(new StateInvTranslator());
+    ts.add(new StateInvTranslator(true));
     ts.add(new PredicateInstanceTranslator());
     ts.add(new PatternConstraintTranslator());
     ts.add(new MonitorTranslator());
-    ts.add(new DefinesTranslator());
     ts.add(new CounterTranslator());
-    ts.add(new PastLTLTranslator());
     ts.add(new VarIndexesTranslator()); //The translator of all the complex indexes in arrays
+    ts.add(new DefinesTranslator());
+    ts.add(new PastLTLTranslator());
+    ts.add(new StateInvTranslator(false)); // second part of translator to be aware of unfolded primes
     ts.add(new PrimesTranslator());
     ts.add(new PrimesInJusticeTranslator());
     return ts;

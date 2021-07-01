@@ -5,10 +5,8 @@ Bundle-SymbolicName: tau.smlab.syntech.games.strategy.MAAprinter
 Bundle-Version: 1.0.0.qualifier
 Require-Bundle: tau.smlab.syntech.games,
  tau.smlab.syntech.gamemodel,
- tau.smlab.syntech.jtlv,
- org.eclipse.gef.dot,
- org.eclipse.gef.graph
+ tau.smlab.syntech.jtlv
 Export-Package: tau.smlab.syntech.games.controller.enumerate.printers
 Bundle-ClassPath: automaton.jar,
  .
-Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Automatic-Module-Name: tau.smlab.syntech.games.strategy.MAAprinter

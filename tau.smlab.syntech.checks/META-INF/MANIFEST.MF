@@ -9,6 +9,7 @@ Require-Bundle: tau.smlab.syntech.games;bundle-version="1.0.0",
  tau.smlab.syntech.games.gr1,
  tau.smlab.syntech.gameinput;bundle-version="1.0.0",
  tau.smlab.syntech.gameinputtrans;bundle-version="1.0.0",
- tau.smlab.syntech.bddgenerator
+ tau.smlab.syntech.bddgenerator,
+ tau.smlab.syntech.cores
 Export-Package: tau.smlab.syntech.checks
-Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Automatic-Module-Name: tau.smlab.syntech.checks

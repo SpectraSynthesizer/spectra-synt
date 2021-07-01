@@ -10,7 +10,6 @@ Require-Bundle: tau.smlab.syntech.gamemodel;bundle-version="1.0.0",
  tau.smlab.syntech.games.simple,
  tau.smlab.syntech.bddgenerator
 Export-Package: tau.smlab.syntech.games.gr1,
- tau.smlab.syntech.games.gr1.jit,
- tau.smlab.syntech.games.gr1.unreal
+ tau.smlab.syntech.games.gr1.jit
 Import-Package: tau.smlab.syntech.games.rabin
-Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Automatic-Module-Name: tau.smlab.syntech.games.gr1

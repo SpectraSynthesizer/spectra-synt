@@ -54,6 +54,9 @@ public class CoreUtil {
    * @return
    */
   public static BDD satOne(BDD b, BDDVarSet vars) {
+    if (b.isZero()) {
+      return b;
+    }
     // working version (but slow).
     BDDIterator it = new BDDIterator(b, vars);
     BDD one = it.nextBDD();

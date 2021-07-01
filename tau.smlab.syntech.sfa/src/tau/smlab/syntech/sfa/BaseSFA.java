@@ -482,7 +482,7 @@ public abstract class BaseSFA<T extends BaseSFAState<T>> implements SFA {
 		BaseSFA<T> deterministicAutomaton = this.determinize();
 		deterministicAutomaton.completeTransitionFunction();
 
-		// Moore’s minimization algorithm (a.k.a. the standard algorithm) lifted to SFAs
+		// Mooreï¿½s minimization algorithm (a.k.a. the standard algorithm) lifted to SFAs
 		
 		// find all reachable states
 		List<T> reachableStates = deterministicAutomaton.reachableStates();

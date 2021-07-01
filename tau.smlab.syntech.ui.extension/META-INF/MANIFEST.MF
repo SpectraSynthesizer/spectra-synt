@@ -11,7 +11,7 @@ Require-Bundle: org.eclipse.ui,
  org.eclipse.jface.text;bundle-version="3.12.0",
  org.eclipse.ui.ide;bundle-version="3.13.1",
  org.eclipse.ui.console
-Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Bundle-ActivationPolicy: lazy
 Export-Package: tau.smlab.syntech.ui.console,
  tau.smlab.syntech.ui.extension
+Automatic-Module-Name: tau.smlab.syntech.ui.extension

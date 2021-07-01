@@ -34,7 +34,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 import tau.smlab.syntech.gamemodel.GameModel;
 import tau.smlab.syntech.games.util.SaveLoadWithDomains;
 import tau.smlab.syntech.jtlv.Env;
@@ -67,8 +66,8 @@ public class SymbolicControllerReaderWriter {
 	public static SymbolicController readSymbolicController(ObjectInputStream ois, BufferedReader initReader,
 			BufferedReader transReader) throws IOException {
 
-		// TODO: design
-		throw new NotImplementedException();
+		// TODO: not implemented yet
+		return null;
 	}
 
 	/**

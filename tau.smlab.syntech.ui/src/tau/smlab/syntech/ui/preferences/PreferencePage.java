@@ -93,7 +93,7 @@ public class PreferencePage extends FieldEditorPreferencePage implements IWorkbe
 				}, getFieldEditorParent(), true);
 
 		determinize = new BooleanFieldEditor(PreferenceConstants.DETERMINIZE,
-				"Determinize symbolic controllers (can be slow)", getFieldEditorParent());
+				"Determinize static symbolic controllers (can be slow)", getFieldEditorParent());
 		
 		reorderBeforeSave = new BooleanFieldEditor(PreferenceConstants.REORDER_BEFORE_SAVE,
 				"Reorder BDD before save to reduce size", getFieldEditorParent());

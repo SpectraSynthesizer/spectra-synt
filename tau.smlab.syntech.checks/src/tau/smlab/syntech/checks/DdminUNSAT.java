@@ -31,8 +31,8 @@ package tau.smlab.syntech.checks;
 import java.util.List;
 
 import net.sf.javabdd.BDD;
+import tau.smlab.syntech.cores.domainagnostic.AbstractDdmin;
 import tau.smlab.syntech.gamemodel.BehaviorInfo;
-import tau.smlab.syntech.games.util.AbstractDdmin;
 import tau.smlab.syntech.jtlv.Env;
 
 /**

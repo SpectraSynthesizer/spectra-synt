@@ -30,77 +30,111 @@ package tau.smlab.syntech.gameinputtrans.translator;
 
 import tau.smlab.syntech.gameinput.model.Constraint;
 import tau.smlab.syntech.gameinput.model.GameInput;
+import tau.smlab.syntech.gameinput.model.TriggerConstraint;
 import tau.smlab.syntech.gameinput.model.WeightDefinition;
 import tau.smlab.syntech.gameinput.spec.Operator;
 import tau.smlab.syntech.gameinput.spec.Spec;
 import tau.smlab.syntech.gameinput.spec.SpecExp;
+import tau.smlab.syntech.gameinput.spec.SpecRegExp;
 import tau.smlab.syntech.gameinput.spec.VariableReference;
 import tau.smlab.syntech.gameinputtrans.TranslationException;
 
 /**
- * should be run only after all past LTL, predicates, patterns, and defines have been instantiated
+ * should be run only after all past LTL, predicates, patterns, and defines have
+ * been instantiated
  * 
  * will only translate primes in main specifications
  */
 public class PrimesTranslator implements Translator {
 
-  @Override
-  public void translate(GameInput input) {
-    for (Constraint c : input.getSys().getConstraints()) {
-      c.setSpec(replacePrimes(c.getSpec(), c.getTraceId()));
-    }
-    for (Constraint c : input.getEnv().getConstraints()) {
-      c.setSpec(replacePrimes(c.getSpec(), c.getTraceId()));
-    }
-    for (Constraint c : input.getAux().getConstraints()) {
-      c.setSpec(replacePrimes(c.getSpec(), c.getTraceId()));
-    }
-    for (WeightDefinition wd : input.getWeightDefs()) {
-      wd.getDefinition().setSpec(replacePrimes(wd.getDefinition().getSpec(), wd.getDefinition().getTraceId()));
-    }
-  }
+	@Override
+	public void translate(GameInput input) {
+		for (Constraint c : input.getSys().getConstraints()) {
+			c.setSpec(replacePrimes(c.getSpec(), c.getTraceId()));
+		}
+		for (TriggerConstraint c : input.getSys().getTriggers()) {
+			c.setSpec(detectPrimes(c.getInitSpecRegExp(), c.getTraceId()));
+			c.setSpec(detectPrimes(c.getEffectSpecRegExp(), c.getTraceId()));
+		}
+		for (Constraint c : input.getEnv().getConstraints()) {
+			c.setSpec(replacePrimes(c.getSpec(), c.getTraceId()));
+		}
+		for (Constraint c : input.getAux().getConstraints()) {
+			c.setSpec(replacePrimes(c.getSpec(), c.getTraceId()));
+		}
+		for (WeightDefinition wd : input.getWeightDefs()) {
+			wd.getDefinition().setSpec(replacePrimes(wd.getDefinition().getSpec(), wd.getDefinition().getTraceId()));
+		}
+	}
 
-  /**
-   * look for prime operators and replace them
-   * 
-   * @param spec
-   * @return
-   */
-  private Spec replacePrimes(Spec spec, int traceId) {
-    if (spec instanceof SpecExp) {
-      SpecExp e = (SpecExp) spec;
-      if (Operator.PRIME.equals(e.getOperator())) {
-        Spec pSpec = primeVarAllReferences(e.getChildren()[0], traceId);
-        return replacePrimes(pSpec, traceId);
-      } else {
-        for (int i = 0; i < e.getChildren().length; i++) {
-          e.getChildren()[i] = replacePrimes(e.getChildren()[i], traceId);
-        }
-      }
-    }
-    return spec;
-  }
+	/**
+	 * look for prime operators and replace them
+	 * 
+	 * @param spec
+	 * @return
+	 */
+	private Spec replacePrimes(Spec spec, int traceId) {
+		if (spec instanceof SpecExp) {
+			SpecExp e = (SpecExp) spec;
+			if (Operator.PRIME.equals(e.getOperator())) {
+				Spec pSpec = primeVarAllReferences(e.getChildren()[0], traceId);
+				return replacePrimes(pSpec, traceId);
+			} else {
+				for (int i = 0; i < e.getChildren().length; i++) {
+					e.getChildren()[i] = replacePrimes(e.getChildren()[i], traceId);
+				}
+			}
+		}
+		return spec;
+	}
+	
+	/**
+	 * detect primes in triggers if there are any left after predicate translations
+	 * @param spec
+	 * @param traceId
+	 * @return
+	 */
+	private Spec detectPrimes(Spec spec, int traceId) {
+		if (spec instanceof SpecRegExp) {
+			SpecRegExp e = (SpecRegExp) spec;
+			
+			detectPrimes(e.getPredicate(), traceId);
+			detectPrimes(e.getLeft(), traceId);
+			detectPrimes(e.getRight(), traceId);
+			
+		} else if (spec instanceof SpecExp) {
+			SpecExp e = (SpecExp) spec;
+			if (Operator.PRIME.equals(e.getOperator())) {
+				throw new TranslationException("Regular expressions can't have primed ('next') variables", traceId);
+			} else {
+				for (int i = 0; i < e.getChildren().length; i++) {
+					detectPrimes(e.getChildren()[i], traceId);
+				}
+			}
+		}
+		return spec;
+	}
 
-  /**
-   * replace reference names with primed versions
-   * 
-   * @param spec
-   */
-  private Spec primeVarAllReferences(Spec spec, int traceId) {
+	/**
+	 * replace reference names with primed versions
+	 * 
+	 * @param spec
+	 */
+	private Spec primeVarAllReferences(Spec spec, int traceId) {
 
-    if (spec instanceof VariableReference) {
-      String refName = ((VariableReference) spec).getReferenceName();
-      if (refName.endsWith("'")) {
-        throw new TranslationException("Cannot prime primed variable.", traceId);
-      }
-      return new VariableReference(((VariableReference) spec).getVariable(), refName + "'");      
-    } else if (spec instanceof SpecExp) {
-      SpecExp e = (SpecExp) spec;
-      for (int i = 0; i < e.getChildren().length; i++) {
-        e.getChildren()[i] = primeVarAllReferences(e.getChildren()[i], traceId);
-      }
-    }
-    return spec;
-  }
+		if (spec instanceof VariableReference) {
+			String refName = ((VariableReference) spec).getReferenceName();
+			if (refName.endsWith("'")) {
+				throw new TranslationException("Cannot prime primed variable.", traceId);
+			}
+			return new VariableReference(((VariableReference) spec).getVariable(), refName + "'");
+		} else if (spec instanceof SpecExp) {
+			SpecExp e = (SpecExp) spec;
+			for (int i = 0; i < e.getChildren().length; i++) {
+				e.getChildren()[i] = primeVarAllReferences(e.getChildren()[i], traceId);
+			}
+		}
+		return spec;
+	}
 
 }

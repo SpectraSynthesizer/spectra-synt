@@ -905,7 +905,12 @@ public final class Env {
 	 */
 	private static BDD pred(BDD trans, BDD to, BDDVarSet primeVars) {
 		BDD prime_to = Env.prime(to);
-		return prime_to.and(trans).exist(primeVars);
+		prime_to.andWith(trans.id());
+		
+		BDD res = prime_to.exist(primeVars);
+		prime_to.free();
+		
+		return res;
 	}
 
 	/**
@@ -2529,6 +2534,10 @@ public final class Env {
 					satRes.andWith(randChoice ? states.getFactory().nithVar(i) : states.getFactory().ithVar(i));
 				}
 				satCheck.free();
+				
+				if (satRes.isZero()) {
+					System.out.println("WAT?");
+				}
 			}
 		}
 		

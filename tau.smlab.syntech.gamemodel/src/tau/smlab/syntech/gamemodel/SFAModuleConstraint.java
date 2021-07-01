@@ -242,6 +242,7 @@ public class SFAModuleConstraint {
 			accepting.orWith(Env.getBDDValue(this.statesVarName, finalStateId).id());
 		}
 		this.acceptance = accepting;
+		System.out.println("IN ACP: " + this.acceptance);
 		
 		BDD primedFinalStates = Env.prime(this.acceptance);
 		this.transToAcceptance = this.trans.relprod(primedFinalStates, this.statesVar.getOtherDomain().set());

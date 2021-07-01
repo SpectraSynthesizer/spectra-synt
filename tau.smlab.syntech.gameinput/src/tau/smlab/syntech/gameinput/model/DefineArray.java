@@ -26,65 +26,43 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
 */
 
-package tau.smlab.syntech.games.gr1.unreal;
+package tau.smlab.syntech.gameinput.model;
 
-import tau.smlab.syntech.games.util.AbstractDdmin;
-
-import java.util.ArrayList;
+import java.io.Serializable;
 import java.util.List;
 
-import tau.smlab.syntech.gamemodel.GameModel;
-import tau.smlab.syntech.gamemodel.util.GameBuilderUtil;
-import tau.smlab.syntech.jtlv.env.module.ModuleBDDField;
+import tau.smlab.syntech.gameinput.spec.Spec;
 
-/**
- * minimizes set of variables that keep system unrealizable given a minimized
- * set of guarantees.
- * 
- * @author shalom
- * 
- */
+public class DefineArray implements Serializable {
 
-public abstract class DdminUnrealizableVarsCore extends AbstractDdmin<ModuleBDDField> {
-
-	private GameModel model;
-	private List<ModuleBDDField> sysVars;
-
-	/**
-	 * This has to be filled by the caller in order to make realizability checks standard and menu opt. sensitive.
-	 * @param gm
-	 * @return
-	 */
-	public abstract boolean realizable(GameModel gm);
-	
-	/**
-	 * auxiliaries are always added to the system module
-	 * 
-	 * @param model
-	 *            the model
-	 * @param gc
-	 *            the minimized guarantees core already found.
-	 */
-
-	public DdminUnrealizableVarsCore(GameModel model) {
-		this.model = model;
-		this.sysVars = model.getSys().getNonAuxFields();
+	public DefineArray(List<Spec> expressions, List<DefineArray> defineArray) {
+		super();
+		this.expressions = expressions;
+		this.defineArray = defineArray;
 	}
 
 	/**
-	 * check for unrealizability
 	 * 
-	 * @return true if sys is unrealizable
 	 */
-	@Override
-	protected boolean check(List<ModuleBDDField> part) {
-		// find the other variables
-		List<ModuleBDDField> vars = new ArrayList<ModuleBDDField>(sysVars);
-		vars.removeAll(part);
+	private static final long serialVersionUID = -8767405686327363416L;
+	
+	private List<Spec> expressions;
+	private List<DefineArray> defineArray;
 
-		GameBuilderUtil.buildQuantifiedSys(model, vars);
+	public List<Spec> getExpressions() {
+		return expressions;
+	}
 
-		return !realizable(model);
+	public void setExpressions(List<Spec> expressions) {
+		this.expressions = expressions;
+	}
+
+	public List<DefineArray> getDefineArray() {
+		return defineArray;
+	}
+
+	public void setDefineArray(List<DefineArray> defineArray) {
+		this.defineArray = defineArray;
 	}
 
 }

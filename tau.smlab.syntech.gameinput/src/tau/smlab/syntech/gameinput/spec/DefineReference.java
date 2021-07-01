@@ -28,7 +28,13 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package tau.smlab.syntech.gameinput.spec;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import tau.smlab.syntech.gameinput.model.Define;
+import tau.smlab.syntech.gameinput.model.Variable;
 
 public class DefineReference implements Spec {
 	/**
@@ -37,10 +43,43 @@ public class DefineReference implements Spec {
 	private static final long serialVersionUID = 7153031562445721013L;
 	
 	private Define define;
-
-	public DefineReference(Define define)
-	{
+	private Map<String, Variable> indexVars = new HashMap<>(); // a set of complex (non-Integer) indexes, like vars and domain vars
+	private List<Spec> indexSpecs;
+	private List<Integer> indexDimensions;
+	
+	public DefineReference(Define define) {
 		this.define = define;
+	}
+	
+	public DefineReference(Define define, Map<String, Variable> indexVars, List<Spec> indexSpecs, List<Integer> indexDimensions) {
+		this.define = define;
+		this.indexVars = indexVars;
+		this.indexSpecs = indexSpecs;
+		this.indexDimensions = indexDimensions;
+	}
+
+	public Map<String, Variable> getIndexVars() {
+		return indexVars;
+	}
+
+	public void setIndexVars(Map<String, Variable> indexVars) {
+		this.indexVars = indexVars;
+	}
+
+	public List<Spec> getIndexSpecs() {
+		return indexSpecs;
+	}
+
+	public void setIndexSpecs(List<Spec> indexSpecs) {
+		this.indexSpecs = indexSpecs;
+	}
+
+	public List<Integer> getIndexDimensions() {
+		return indexDimensions;
+	}
+
+	public void setIndexDimension(List<Integer> indexDimensions) {
+		this.indexDimensions = indexDimensions;
 	}
 
 	public String toString()
@@ -72,10 +111,20 @@ public class DefineReference implements Spec {
 	public void setDefine(Define define) {
 		this.define = define;
 	}
-
-	@Override
+	
 	public DefineReference clone() throws CloneNotSupportedException {
-		return new DefineReference(this.define);
+		Map<String, Variable> indexVars = (this.indexVars == null) ? null : new HashMap<String, Variable>(this.indexVars); // SHALLOW COPY
+		ArrayList<Spec> indexSpecs; // DEEP COPY
+		if (this.indexSpecs == null) {
+			indexSpecs = null;
+		} else {
+			indexSpecs = new ArrayList<Spec>();
+			for (Spec indexSpec : this.indexSpecs) {
+				indexSpecs.add(indexSpec.clone());
+			}
+		}
+		ArrayList<Integer> indexDimensions = (this.indexDimensions == null) ? null : new ArrayList<Integer>(this.indexDimensions); // SHALLOW COPY
+		return new DefineReference(this.define, indexVars, indexSpecs, indexDimensions);
 	}
 
 }

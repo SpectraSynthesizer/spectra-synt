@@ -39,6 +39,7 @@ import tau.smlab.syntech.gameinput.model.Constraint;
 import tau.smlab.syntech.gameinput.model.Constraint.Kind;
 import tau.smlab.syntech.gameinput.model.Counter;
 import tau.smlab.syntech.gameinput.model.Define;
+import tau.smlab.syntech.gameinput.model.DefineArray;
 import tau.smlab.syntech.gameinput.model.ExistentialConstraint;
 import tau.smlab.syntech.gameinput.model.GameInput;
 import tau.smlab.syntech.gameinput.model.Monitor;
@@ -110,7 +111,12 @@ public class CounterTranslator implements Translator {
 
 		// defines
 		for (Define d : input.getDefines()) {
-			d.setExpression(replaceCounterRefs(counterVars, d.getExpression()));
+			
+			if (d.getExpression() != null) {
+				d.setExpression(replaceCounterRefs(counterVars, d.getExpression()));
+			} else {
+				d.setDefineArray(replaceCounterInDefineArrays(counterVars, d.getDefineArray()));
+			}
 		}
 
 		// weight definition
@@ -332,6 +338,27 @@ public class CounterTranslator implements Translator {
 
 	public List<String> getCountersNames() {
 		return counterNameList;
+	}
+	
+	private DefineArray replaceCounterInDefineArrays(Map<String, Variable> counterVars, DefineArray defArray) {
+
+		List<Spec> newSpec = null;
+		if (defArray.getExpressions() != null) {
+			newSpec = new ArrayList<>();
+			for (Spec exp : defArray.getExpressions()) {
+				newSpec.add(replaceCounterRefs(counterVars, exp));
+			}
+		}
+		
+		List<DefineArray> newDefArray = null;
+		if (defArray.getDefineArray() != null) {
+			newDefArray = new ArrayList<>();
+			for (DefineArray innerArray : defArray.getDefineArray()) {
+				newDefArray.add(replaceCounterInDefineArrays(counterVars, innerArray));
+			}
+		}
+		
+		return new DefineArray(newSpec, newDefArray);
 	}
 
 	private boolean noWorkToDo(GameInput input) {

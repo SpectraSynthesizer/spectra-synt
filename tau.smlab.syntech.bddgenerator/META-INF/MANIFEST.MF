@@ -10,6 +10,6 @@ Require-Bundle: tau.smlab.syntech.gameinput;bundle-version="1.0.0",
 Export-Package: tau.smlab.syntech.bddgenerator,
  tau.smlab.syntech.bddgenerator.energy,
  tau.smlab.syntech.bddgenerator.sfa.regexp
-Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Bundle-ClassPath: automaton.jar,
  .
+Automatic-Module-Name: tau.smlab.syntech.bddgenerator

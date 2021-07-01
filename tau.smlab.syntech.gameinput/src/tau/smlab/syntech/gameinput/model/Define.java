@@ -37,14 +37,15 @@ public class Define implements Serializable {
 	 * 
 	 */
 	private static final long serialVersionUID = 6360168530185398381L;
-	
+
 	private String name;
 	private Spec expression;
+	private DefineArray defineArray;
 
-	public Define(String name, Spec expression)
-	{
+	public Define(String name, Spec expression, DefineArray defineArray) {
 		this.name = name;
 		this.expression = expression;
+		this.defineArray = defineArray;
 	}
 
 	public String getName() {
@@ -58,5 +59,13 @@ public class Define implements Serializable {
 	public void setExpression(Spec spec) {
 		this.expression = spec;
 	}
-	
+
+	public DefineArray getDefineArray() {
+		return defineArray;
+	}
+
+	public void setDefineArray(DefineArray defineArray) {
+		this.defineArray = defineArray;
+	}
+
 }

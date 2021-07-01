@@ -8,4 +8,4 @@ Export-Package: tau.smlab.syntech.gameinput.model,
  tau.smlab.syntech.gameinput.triggers
 Import-Package: net.sf.javabdd,
  tau.smlab.syntech.spectra
-Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Automatic-Module-Name: tau.smlab.syntech.gameinput

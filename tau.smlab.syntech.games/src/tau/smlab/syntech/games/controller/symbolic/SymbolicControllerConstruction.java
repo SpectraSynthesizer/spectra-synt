@@ -48,6 +48,8 @@ public abstract class SymbolicControllerConstruction {
     this.env = m.getEnv();
     this.sys = m.getSys();
   }
+  
+  
 
   public abstract SymbolicController calculateSymbolicController();
 }

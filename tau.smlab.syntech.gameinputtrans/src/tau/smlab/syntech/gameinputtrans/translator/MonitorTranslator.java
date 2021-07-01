@@ -37,6 +37,7 @@ import java.util.Set;
 
 import tau.smlab.syntech.gameinput.model.Constraint;
 import tau.smlab.syntech.gameinput.model.Define;
+import tau.smlab.syntech.gameinput.model.DefineArray;
 import tau.smlab.syntech.gameinput.model.ExistentialConstraint;
 import tau.smlab.syntech.gameinput.model.GameInput;
 import tau.smlab.syntech.gameinput.model.Monitor;
@@ -103,7 +104,11 @@ public class MonitorTranslator implements Translator {
 
 		// defines
 		for (Define d : input.getDefines()) {
-			d.setExpression(replaceMonRefs(monVars, d.getExpression()));
+			if (d.getExpression() != null) {
+				d.setExpression(replaceMonRefs(monVars, d.getExpression()));
+			} else {
+				d.setDefineArray(replaceMonitorInDefineArrays(monVars, d.getDefineArray()));
+			}
 		}
 
 		// weight definition
@@ -189,6 +194,27 @@ public class MonitorTranslator implements Translator {
 
 	public List<String> getMonitorsNames() {
 		return monitorNameList;
+	}
+	
+	private DefineArray replaceMonitorInDefineArrays(Map<String, Variable> monVars, DefineArray defArray) {
+
+		List<Spec> newSpec = null;
+		if (defArray.getExpressions() != null) {
+			newSpec = new ArrayList<>();
+			for (Spec exp : defArray.getExpressions()) {
+				newSpec.add(replaceMonRefs(monVars, exp));
+			}
+		}
+		
+		List<DefineArray> newDefArray = null;
+		if (defArray.getDefineArray() != null) {
+			newDefArray = new ArrayList<>();
+			for (DefineArray innerArray : defArray.getDefineArray()) {
+				newDefArray.add(replaceMonitorInDefineArrays(monVars, innerArray));
+			}
+		}
+		
+		return new DefineArray(newSpec, newDefArray);
 	}
 
 	private boolean noWorkToDo(GameInput input) {

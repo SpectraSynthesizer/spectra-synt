@@ -39,6 +39,7 @@ import java.util.stream.Collectors;
 import net.sf.javabdd.BDD;
 import net.sf.javabdd.BDDVarSet;
 import tau.smlab.syntech.bddgenerator.BDDGenerator;
+import tau.smlab.syntech.cores.domainagnostic.AbstractDdmin;
 import tau.smlab.syntech.gameinput.model.Constraint;
 import tau.smlab.syntech.gameinput.spec.Spec;
 import tau.smlab.syntech.gameinput.spec.SpecExp;
@@ -51,7 +52,6 @@ import tau.smlab.syntech.gamemodel.BehaviorInfo;
 import tau.smlab.syntech.gamemodel.GameModel;
 import tau.smlab.syntech.gamemodel.PlayerModule;
 import tau.smlab.syntech.games.controller.symbolic.SymbolicController;
-import tau.smlab.syntech.games.util.AbstractDdmin;
 import tau.smlab.syntech.jtlv.CoreUtil;
 import tau.smlab.syntech.jtlv.Env;
 import tau.smlab.syntech.jtlv.env.module.ModuleBDDField;
@@ -70,14 +70,13 @@ public class Checker {
   private String[] counterCheckMessages;
 
   /**
-   * Computes a subset of initial system constraints that allow the environment to deadlock the system on its initial
+   * Computes a subset of initial and safety system constraints that allow the environment to deadlock the system on its initial
    * move. <br>
-   * This is a heuristics because it checks for deadlock wrt. assignments and not wrt. winning states.
    * 
    * @param m
    * @return null if no deadlock can occur
    */
-  public List<BehaviorInfo> computeIniDeadlockCore(GameModel model) {
+  public List<BehaviorInfo> computeIniDeadlockCore(GameModel model, List<String> l) {
     env = model.getEnv();
     sys = model.getSys();
 
@@ -102,10 +101,23 @@ public class Checker {
 
         PlayerModule partSys = new PlayerModule();
         partSys.conjunctTrans(transPart);
+        // initial states where the environment can force system to deadlock
         BDD sysDead = iniPart.impWith(env.controlStates(partSys, Env.FALSE()));
         partSys.free();
+        // initial environment assignment that can deadlock the system
         BDD envKillSys = env.initial().id().andWith(sysDead.forAll(sys.moduleUnprimeVars()));
         boolean win = !envKillSys.isZero();
+        if (win) {
+          BDD e = envKillSys.exist(sys.modulePrimeVars());
+          BDD e1 = e.exist(sys.moduleUnprimeVars());
+          e.free();
+          if (e1.isOne()) {
+            l.add("Any initial assignment.");
+          } else {
+            l.add(Env.toNiceSignleLineString(e1));
+          }
+          e1.free();
+        }
         envKillSys.free();
         return win;
       }

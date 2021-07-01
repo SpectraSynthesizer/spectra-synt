@@ -39,25 +39,50 @@ import tau.smlab.syntech.gameinput.model.Pattern;
 import tau.smlab.syntech.gameinput.spec.Operator;
 import tau.smlab.syntech.gameinput.spec.Spec;
 import tau.smlab.syntech.gameinput.spec.SpecExp;
+import tau.smlab.syntech.gameinput.spec.VariableReference;
 
 /**
- * iterate over all state invariants (in guarantees, assumptions, monitors, and patterns)
+ * This translator must run twice, once before most translators to replace alw
+ * with G.
  * 
- * state invariant is translated to initial an next() version safety constraint
+ * Then again after most translators to check whether any previous alw is a
+ * state invariant, i.e., has no primes. The state invariants in a former alw
+ * are translated to an initial and a safety constraint.
  * 
- * finally delete the state invariants
+ * Operates on traceIds in case other translators change object identities of
+ * constraints
  *
+ * Uses the operator PRIME internally, i.e., needs to run before
+ * RemovePrimesTranslator.
  */
-
 public class StateInvTranslator implements Translator {
+  /**
+   * translators first or second run
+   */
+  private boolean before;
+  /**
+   * constraints that are potential state invariants (or use of always instead of
+   * G)
+   */
+  private static List<Integer> potentialStateInvIDs;
+  private GameInput input;
+
+  public StateInvTranslator(boolean before) {
+    this.before = before;
+    if (before) {
+      potentialStateInvIDs = new ArrayList<>();
+    }
+  }
 
   @Override
   public void translate(GameInput input) {
-
+    this.input = input;
     // guarantees
     replaceStateInv(input.getSys().getConstraints());
     // assumptions
-    replaceStateInv(input.getEnv().getConstraints());
+    replaceStateInv(input.getEnv().getConstraints(), true);
+    // auxiliary created by other translators
+    replaceStateInv(input.getAux().getConstraints());
 
     // patterns
     for (Pattern patt : input.getPatterns()) {
@@ -71,27 +96,121 @@ public class StateInvTranslator implements Translator {
   }
 
   private void replaceStateInv(List<Constraint> cons) {
+    replaceStateInv(cons, false);
+  }
+
+  private void replaceStateInv(List<Constraint> cons, boolean assumption) {
     List<Constraint> stateInvs = new ArrayList<Constraint>();
     List<Constraint> translated = new ArrayList<Constraint>();
-    
+
     for (Constraint c : cons) {
       if (Kind.STATE_INV.equals(c.getKind())) {
+        // must be before; we simply change alw to G
+        potentialStateInvIDs.add(c.getTraceId());
+        translated.add(new Constraint(Kind.SAFETY, c.getSpec(), c.getName(), c.getTraceId()));
         stateInvs.add(c);
-        Constraint ini = new Constraint(Kind.INI, c.getSpec(), c.getName(), c.getTraceId());
-        translated.add(ini);
-        Spec clone = null;
-        try {
-          clone = c.getSpec().clone();
-        } catch (CloneNotSupportedException e) {
-          throw new RuntimeException(e);
+      } else if (!before && Kind.SAFETY.equals(c.getKind())) {
+        // after most other translators check for primes and translate true state
+        // invariants
+        if (!(assumption && containsSysVarRef(c.getSpec()))) {
+          if (potentialStateInvIDs.contains(c.getTraceId()) && !containsNextOrPrime(c.getSpec())) {
+            stateInvs.add(c);
+            Constraint ini = new Constraint(Kind.INI, c.getSpec(), c.getName(), c.getTraceId());
+            translated.add(ini);
+            Spec clone = null;
+            try {
+              clone = c.getSpec().clone();
+            } catch (CloneNotSupportedException e) {
+              throw new RuntimeException(e);
+            }
+            Constraint safety = null;
+            if ((assumption && containsSysVarRef(c.getSpec()) || (!assumption && containsEnvVarRef(c.getSpec())))){
+              safety = new Constraint(Kind.SAFETY, clone, c.getName(), c.getTraceId());
+            } else {
+              safety = new Constraint(Kind.SAFETY, new SpecExp(Operator.PRIME, clone), c.getName(), c.getTraceId());
+            }
+            translated.add(safety);
+          }
         }
-        Constraint safety = new Constraint(Kind.SAFETY, new SpecExp(Operator.PRIME, clone), c.getName(), c.getTraceId());
-        translated.add(safety);
       }
     }
-    
+
     cons.removeAll(stateInvs);
     cons.addAll(translated);
+  }
+
+  /**
+   * check whether the spec references a variable of the system module or aux
+   * module
+   * 
+   * @param spec
+   * @return
+   */
+  private boolean containsSysVarRef(Spec spec) {
+    if (spec instanceof SpecExp) {
+      SpecExp e = (SpecExp) spec;
+      for (int i = 0; i < e.getChildren().length; i++) {
+        if (containsSysVarRef(e.getChildren()[i])) {
+          return true;
+        }
+      }
+    } else if (spec instanceof VariableReference) {
+      VariableReference v = (VariableReference) spec;
+      if (input.getSys().getVars().contains(v.getVariable()) || input.getAux().getVars().contains(v.getVariable())) {
+        return true;
+      }
+    }
+    return false;
+  }
+  
+  /**
+   * check whether the spec references a variable of the environment module
+   * 
+   * @param spec
+   * @return
+   */
+  private boolean containsEnvVarRef(Spec spec) {
+    if (spec instanceof SpecExp) {
+      SpecExp e = (SpecExp) spec;
+      for (int i = 0; i < e.getChildren().length; i++) {
+        if (containsEnvVarRef(e.getChildren()[i])) {
+          return true;
+        }
+      }
+    } else if (spec instanceof VariableReference) {
+      VariableReference v = (VariableReference) spec;
+      if (input.getEnv().getVars().contains(v.getVariable())) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * recursively checks SpecExp or VariableReferences for primes
+   * 
+   * @param spec
+   * @return
+   */
+  private boolean containsNextOrPrime(Spec spec) {
+    if (spec instanceof SpecExp) {
+      SpecExp e = (SpecExp) spec;
+      if (Operator.PRIME.equals(e.getOperator())) {
+        return true;
+      } else {
+        for (int i = 0; i < e.getChildren().length; i++) {
+          if (containsNextOrPrime(e.getChildren()[i])) {
+            return true;
+          }
+        }
+      }
+    } else if (spec instanceof VariableReference) {
+      VariableReference v = (VariableReference) spec;
+      if (v.getReferenceName().endsWith("'")) {
+        return true;
+      }
+    }
+    return false;
   }
 
 }

@@ -187,7 +187,7 @@ public abstract class SyntechAction<T extends Enum<T> & ActionID> extends Contri
    * 
    * @return false if the user has chosen to abort
    */
-  private boolean savePage() {
+  protected boolean savePage() {
     IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
 
     // check if file is saved
@@ -204,7 +204,7 @@ public abstract class SyntechAction<T extends Enum<T> & ActionID> extends Contri
     return true;
   }
 
-  private MessageConsole getConsole() {
+  protected MessageConsole getConsole() {
     String name = "SYNTECH Console";
     ConsolePlugin plugin = ConsolePlugin.getDefault();
     IConsoleManager conMan = plugin.getConsoleManager();

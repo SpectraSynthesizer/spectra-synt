@@ -36,9 +36,11 @@ import java.util.Map;
 
 import tau.smlab.syntech.gameinput.model.Define;
 import tau.smlab.syntech.gameinput.model.Predicate;
+import tau.smlab.syntech.gameinput.model.TypeDef;
 import tau.smlab.syntech.gameinput.model.Variable;
 import tau.smlab.syntech.gameinput.spec.CounterReference;
 import tau.smlab.syntech.gameinput.spec.DefineReference;
+import tau.smlab.syntech.gameinput.spec.InExpSpec;
 import tau.smlab.syntech.gameinput.spec.MonitorReference;
 import tau.smlab.syntech.gameinput.spec.Operator;
 import tau.smlab.syntech.gameinput.spec.PredicateInstance;
@@ -68,6 +70,7 @@ import tau.smlab.syntech.spectra.TemporalBinaryExpr;
 import tau.smlab.syntech.spectra.TemporalExpression;
 import tau.smlab.syntech.spectra.TemporalIffExpr;
 import tau.smlab.syntech.spectra.TemporalImpExpr;
+import tau.smlab.syntech.spectra.TemporalInExpr;
 import tau.smlab.syntech.spectra.TemporalMultiplicativeExpr;
 import tau.smlab.syntech.spectra.TemporalOrExpr;
 import tau.smlab.syntech.spectra.TemporalPrimaryExpr;
@@ -85,12 +88,9 @@ import tau.smlab.syntech.typesystem.TypeSystemUtils;
 
 public class SpectraASTToSpecGenerator {
 	
-	private static final Map<String, Operator> ARRAY_OPERATORS = Collections.unmodifiableMap(new HashMap<String, Operator>() {/**
-		 * 
-		 */
-		private static final long serialVersionUID = -2838166172439236634L;
-
-	{
+	private static final Map<String, Operator> ARRAY_OPERATORS = Collections.unmodifiableMap(new HashMap<String, Operator>() {{
+			put(TypeSystemUtils.NUMERIC_ARRAY_MIN_OF, Operator.MIN);
+			put(TypeSystemUtils.NUMERIC_ARRAY_MAX_OF, Operator.MAX);
 			put(TypeSystemUtils.NUMERIC_ARRAY_SUM_OF, Operator.SUM_OF);
 			put(TypeSystemUtils.NUMERIC_ARRAY_PROD_OF, Operator.PROD_OF);
 			put(TypeSystemUtils.BOOL_ARRAY_AND_OF, Operator.AND_OF);
@@ -101,10 +101,12 @@ public class SpectraASTToSpecGenerator {
 	 * @param exp
 	 * @param entitiesMapper
 	 * @param tracer
-	 * @param predicateParamsList  pass null if it's not a predicate
-	 * @param patternVarsAndParams pass null if it's not a pattern
+	 * @param predicateParamsList
+	 *          pass null if it's not a predicate
+	 * @param patternVarsAndParams
+	 *          pass null if it's not a pattern
 	 * @return
-	 * @throws SpectraTranslationException
+	 * @throws SpectraTranslationException 
 	 */
 	static SpecWrapper getConstraintSpec(TemporalExpression exp, EntitiesMapper entitiesMapper, Tracer tracer,
 			List<Variable> predicateParamsList, List<Variable> patternVarsAndParams,
@@ -114,7 +116,10 @@ public class SpectraASTToSpecGenerator {
 			return getConstraintSpec((TemporalPrimaryExpr) exp, entitiesMapper, tracer, predicateParamsList,
 					patternVarsAndParams, constraintParamsValues);
 		} else if (exp instanceof QuantifierExpr) {
-			return getConstraintSpec((QuantifierExpr) exp, entitiesMapper, tracer, predicateParamsList,
+			return getConstraintSpec((QuantifierExpr)exp, entitiesMapper, tracer, predicateParamsList, 
+					patternVarsAndParams, constraintParamsValues);
+		} else if (exp instanceof TemporalInExpr) {
+			return getConstraintSpec((TemporalInExpr) exp, entitiesMapper, tracer, predicateParamsList,
 					patternVarsAndParams, constraintParamsValues);
 		} else if (exp instanceof TemporalImpExpr) {
 			return getConstraintSpec((TemporalImpExpr) exp, entitiesMapper, tracer, predicateParamsList,
@@ -166,23 +171,50 @@ public class SpectraASTToSpecGenerator {
 		Operator op = null;
 		if (exp.getOperator().equals("forall")) {
 			op = Operator.FORALL;
-		} else if (exp.getOperator().contentEquals("exists")) {
+		} else if(exp.getOperator().contentEquals("exists")) {
 			op = Operator.EXISTS;
 		} else {
-			// unsupported operator
+			//unsupported operator
 			throw new RuntimeException(exp.getClass().getCanonicalName());
 		}
 
-		// get exp's domain var from quantifierVars list
-		// Variable variable = findDomainVar(exp.getDomainVar().getName());
-		Variable variable = new Variable(exp.getDomainVar().getName(),
+		//get exp's domain var from quantifierVars list
+		//      Variable variable = findDomainVar(exp.getDomainVar().getName());  
+		Variable variable = new Variable(exp.getDomainVar().getName(), 
 				Spectra2GameInputTranslator.getTypeDef(exp.getDomainVar().getDomainType()), true);
 
-		// create new QuantifiedSpec for the current quantifier expression
+		//create new QuantifiedSpec for the current quantifier expression
 		QuantifiedSpec qSpec = new QuantifiedSpec(op, variable, spec.getSpec());
 		return new SpecWrapper(qSpec);
 	}
 
+	private static SpecWrapper getConstraintSpec(TemporalInExpr exp, EntitiesMapper entitiesMapper, Tracer tracer,
+			List<Variable> predicateParamsList, List<Variable> patternVarsAndParams, Map<String, PrimitiveValue> constraintParamsValues) throws SpectraTranslationException {
+		
+		List<String> values = new ArrayList<>();
+		for(ValueInRange value : exp.getValues()) {
+			if(value.getConst() != null) { //A single enum constant
+				values.add(value.getConst().getName());
+				
+			}
+			else if(value.getBooleanValue() != null) { //A single Boolean constant
+				values.add(value.getBooleanValue());
+			}
+			else if (value.isMulti()) { //A range of integer values: 'VALUE_FROM-VALUE_TO'
+				for(int intValue = value.getFrom(); intValue <= value.getTo() ; intValue++) {
+					values.add(String.valueOf(intValue));
+				}
+			}
+			else { //A single integer value
+				values.add(String.valueOf(value.getInt()));
+			}
+		}
+		
+		return new SpecWrapper(new InExpSpec(getConstraintSpec(exp.getLeft(), entitiesMapper, tracer, 
+				predicateParamsList, patternVarsAndParams, constraintParamsValues).getSpec(),
+				exp.isNot(), values));
+	}
+	
 	static SpecWrapper getConstraintSpec(TemporalImpExpr exp, EntitiesMapper entitiesMapper, Tracer tracer,
 			List<Variable> predicateParamsList, List<Variable> patternVarsAndParams,
 			Map<String, PrimitiveValue> constraintParamsValues) throws SpectraTranslationException {
@@ -418,24 +450,49 @@ public class SpectraASTToSpecGenerator {
 				spec = getConstraintSpec(temporalPrimaryExpr.getPointer(), entitiesMapper, tracer, predicateParamsList,
 						patternVarsAndParams, constraintParamsValues);
 
-				// During this phase, referance name of the array is not yet set because it
-				// might contain variables
+				// During this phase, referance name of the array is not yet set because it might contain variables
 				String arrayName = temporalPrimaryExpr.getPointer().getName();
-				Variable variable = entitiesMapper.getVariableNameToVariableMapping().get(arrayName);
-				// if arrayName does not point to a global variable, try to find it in
-				// parameters of predicate
-				if (variable == null && predicateParamsList != null) {
-					for (Variable v : predicateParamsList) {
-						if (arrayName.equals(v.getName())) {
-							variable = v;
-							break;
-						}
-					}
+				
+				
+				String varName;	
+				Define define = null;	
+				Variable variable = null;	
+					
+				if (temporalPrimaryExpr.getPointer() instanceof DefineDecl) {	
+					DefineDecl defineDecl = (DefineDecl) temporalPrimaryExpr.getPointer();	
+					define = entitiesMapper.getDefineNameToDefineMapping().get(defineDecl, entitiesMapper, tracer);	
+					varName = define.getName();	
+				} else {	
+					variable = entitiesMapper.getVariableNameToVariableMapping().get(arrayName);	
+					// if arrayName does not point to a global variable, try to find it in	
+					// parameters of predicate	
+					if (variable == null && predicateParamsList != null) {	
+						for (Variable v : predicateParamsList) {	
+							if (arrayName.equals(v.getName())) {	
+								variable = v;	
+								break;	
+							}	
+						}	
+					}	
+					varName = variable.getName();
 				}
-				String refName = variable.getName();
+				
+				
+				
+				
+//				Variable variable = entitiesMapper.getVariableNameToVariableMapping().get(arrayName);
+//				// if arrayName does not point to a global variable, try to find it in parameters of predicate
+//				if (variable == null && predicateParamsList != null) {
+//					for (Variable v : predicateParamsList) {
+//						if (arrayName.equals(v.getName())) {
+//							variable = v;
+//							break;
+//						}
+//					}
+//				}
+//				String refName = variable.getName();
 
-				// create an indexes list that contains all the complex (not Integer) indexes of
-				// the array
+				//create an indexes list that contains all the complex (not Integer) indexes of the array
 				Map<String, Variable> indexVars = new HashMap<String, Variable>();
 				List<Spec> indexSpecs = new ArrayList<Spec>();
 				List<Integer> indexDimensions = new ArrayList<>();
@@ -444,11 +501,16 @@ public class SpectraASTToSpecGenerator {
 				if (temporalPrimaryExpr.getPointer() instanceof VarDecl) {
 					VarDecl varDecl = (VarDecl) temporalPrimaryExpr.getPointer();
 					varType = TypeSystemUtils.getVarType(varDecl.getType());
+					indexDimensions = TypeSystemUtils.sizeDefineToInt(varType.getDimensions());
 				} else if (temporalPrimaryExpr.getPointer() instanceof TypedParam) {
-					TypedParam typedParam = (TypedParam) temporalPrimaryExpr.getPointer();
+					TypedParam typedParam = (TypedParam)temporalPrimaryExpr.getPointer();
 					varType = TypeSystemUtils.getVarType(typedParam.getType());
+					indexDimensions = TypeSystemUtils.sizeDefineToInt(varType.getDimensions());	
+				} else if (temporalPrimaryExpr.getPointer() instanceof DefineDecl) {	
+					DefineDecl defineDecl = (DefineDecl) temporalPrimaryExpr.getPointer();	
+					indexDimensions = TypeSystemUtils.sizeDefineToInt(defineDecl.getDimensions());
 				}
-				indexDimensions = TypeSystemUtils.sizeDefineToInt(varType.getDimensions());
+//				indexDimensions = TypeSystemUtils.sizeDefineToInt(varType.getDimensions());
 
 				for (TemporalExpression index : temporalPrimaryExpr.getIndex()) {
 					SpecWrapper indexSpec = getConstraintSpec(index, entitiesMapper, tracer, predicateParamsList,
@@ -456,15 +518,17 @@ public class SpectraASTToSpecGenerator {
 					SpecHelper.getUnderlyingVariables(indexSpec.getSpec(), indexVars);
 					indexSpecs.add(indexSpec.getSpec());
 				}
+				
+				String refName = varName;
 
 				try {
 					if (indexVars.isEmpty()) {
-						refName = variable.getName();
+//						refName = variable.getName();
 						for (int i = 0; i < indexSpecs.size(); i++) {
 							Integer indexValue = SpecHelper.calculateSpec(indexSpecs.get(i));
 							if (indexValue < 0 || indexValue >= indexDimensions.get(i)) {
-								throw new SpectraTranslationException(String.format(
-										"Index %d out of bounds for variable %s", indexValue, variable.getName()));
+								throw new SpectraTranslationException(String.format(	
+										"Index %d out of bounds for variable %s", indexValue, varName));
 							}
 							refName += String.format("[%d]", indexValue);
 						}
@@ -472,16 +536,37 @@ public class SpectraASTToSpecGenerator {
 				} catch (Exception e) {
 					throw new SpectraTranslationException(e.getMessage());
 				}
-
-				VariableReference varRef =  new VariableReference(variable, refName, indexVars, indexSpecs, indexDimensions);
-
-				if (TypeSystemUtils.ARRAY_FUNCTIONS.contains(temporalPrimaryExpr.getOperator())) {
-					spec = new SpecWrapper(new SpecExp(ARRAY_OPERATORS.get(temporalPrimaryExpr.getOperator()), varRef));
-				} else {
-					spec = new SpecWrapper(varRef);	
-				}				
-			}
-			else {
+				
+				
+				
+				if (define != null) {	
+					
+					// Defines currently support only a single dimension array	
+					DefineReference defRef = new DefineReference(define, indexVars, indexSpecs, indexDimensions);	
+					spec = new SpecWrapper(defRef);	
+					
+				} else {	
+					
+					VariableReference varRef = new VariableReference(variable, refName, indexVars, indexSpecs, indexDimensions);	
+					if (TypeSystemUtils.ARRAY_FUNCTIONS.contains(temporalPrimaryExpr.getOperator())) {	
+						spec = new SpecWrapper(new SpecExp(ARRAY_OPERATORS.get(temporalPrimaryExpr.getOperator()), varRef));	
+					} else {	
+						spec = new SpecWrapper(varRef);	
+					}	
+				}
+				
+				
+				
+//				VariableReference varRef =  new VariableReference(variable, refName, indexVars, indexSpecs, indexDimensions);
+//
+//				if (TypeSystemUtils.ARRAY_FUNCTIONS.contains(temporalPrimaryExpr.getOperator())) {
+//					spec = new SpecWrapper(new SpecExp(ARRAY_OPERATORS.get(temporalPrimaryExpr.getOperator()), varRef));
+//				} else {
+//					spec = new SpecWrapper(varRef);	
+//				}
+				
+				
+			} else {
 				spec = getConstraintSpec(temporalPrimaryExpr.getPointer(), entitiesMapper, tracer, predicateParamsList,
 						patternVarsAndParams, constraintParamsValues);
 			}
@@ -556,7 +641,7 @@ public class SpectraASTToSpecGenerator {
 					patternVarsAndParams, constraintParamsValues);
 		}
 
-		// TODO: add instanceof DefineRegExpDecl
+		//TODO: add instanceof DefineRegExpDecl
 		return spec;
 	}
 
@@ -690,7 +775,7 @@ public class SpectraASTToSpecGenerator {
 		}
 		return new SpecWrapper(new PrimitiveValue(c.getIntegerValue()));
 	}
-
+	
 	/**
 	 * 
 	 * Returns a SpecRegExp object that corresponds to the specified Xtext regular
@@ -702,21 +787,19 @@ public class SpectraASTToSpecGenerator {
 	 * 
 	 * @return A Spectra regular expression that corresponds to {@code regExp}
 	 * 
-	 * @throws SpectraTranslationException if the given regular expression cannot be
-	 *                                     translated
+	 * @throws SpectraTranslationException if the given regular expression cannot be translated
 	 */
-	public static SpecRegExp getConstraintSpecRegExp(EntitiesMapper entitiesMapper, Tracer tracer, RegExp regExp)
-			throws SpectraTranslationException {
+	public static SpecRegExp getConstraintSpecRegExp(EntitiesMapper entitiesMapper, Tracer tracer, RegExp regExp) throws SpectraTranslationException {
 
 		if (regExp.isEmpty()) {
 			// The empty string
 			return SpecRegExp.newEmptyStringRegExp();
 		}
 
-		if (regExp.getVal() != null) {
+		if(regExp.getVal() != null) {
 
 			PrimitiveValue val = new PrimitiveValue(regExp.getVal());
-			if (!val.isPropSpec()) {
+			if(!val.isPropSpec()) {
 				throw new SpectraTranslationException("The constant value: " + val.toString() + " is not Boolean.");
 			}
 			// A constant Boolean value
@@ -725,66 +808,37 @@ public class SpectraASTToSpecGenerator {
 
 		String varName;
 		Variable variable;
-		// if (regExp.getPointer() instanceof VarDecl) {
-		// varName = regExp.getPointer().getName();
-		// if(!entitiesMapper.getVariableNameToVariableMapping().containsKey(varName)) {
-		// throw new SpectraTranslationException("Couldn't find reference to variable: "
-		// + varName);
-		// }
-		// variable = entitiesMapper.getVariableNameToVariableMapping().get(varName);
-		// if(variable.getType().isBoolean()) {
-		// return SpecRegExp.newBooleanVariableRegExp(variable, regExp.isNeg());
-		// }
-		// throw new SpectraTranslationException("The referenced variable: " + varName +
-		// " must be of type Boolean");
-		// }
+		//		if (regExp.getPointer() instanceof VarDecl) {
+		//			varName = regExp.getPointer().getName();
+		//			if(!entitiesMapper.getVariableNameToVariableMapping().containsKey(varName)) {
+		//				throw new SpectraTranslationException("Couldn't find reference to variable: " + varName);
+		//			}
+		//			variable = entitiesMapper.getVariableNameToVariableMapping().get(varName);
+		//			if(variable.getType().isBoolean()) {			
+		//				return SpecRegExp.newBooleanVariableRegExp(variable, regExp.isNeg());
+		//			}
+		//			throw new SpectraTranslationException("The referenced variable: " + varName + " must be of type Boolean");
+		//		}
 		BooleanTerm predicate;
 		if ((predicate = regExp.getAssrt()) != null) {
-			if (predicate.getPointer() instanceof VarDecl) { // TODO: Add support for references to array variables:
-																// 'arrVar[2][3]...'
-				// A variable reference with a specified range of accepted/rejected values
-				// 'varName (!)?= [VALUE1 VALUE2 ...]'
-				varName = predicate.getPointer().getName();
-				if (!entitiesMapper.getVariableNameToVariableMapping().containsKey(varName)) {
-					throw new SpectraTranslationException("Couldn't find reference to variable: " + varName);
-				}
-				List<String> values = new ArrayList<>();
-				for (ValueInRange value : predicate.getValues()) {
-					if (value.getConst() != null) { // A single enum constant
-						values.add(value.getConst().getName());
-					} else if (value.getBooleanValue() != null) { // A single Boolean constant
-						values.add(value.getBooleanValue());
-					} else if (value.isMulti()) { // A range of integer values: 'VALUE_FROM-VALUE_TO'
-						for (int intValue = value.getFrom(); intValue <= value.getTo(); intValue++) {
-							values.add(String.valueOf(intValue));
-						}
-					} else { // A single integer value
-						values.add(String.valueOf(value.getInt()));
-					}
-				}
-				variable = entitiesMapper.getVariableNameToVariableMapping().get(varName);
-				return SpecRegExp.newVariableRegExp(new VariableReference(variable, varName), values,
-						!predicate.isNot());
-			} else if (predicate.getRelExpr() != null) {
-				SpecWrapper predSpec = getConstraintSpec(predicate.getRelExpr(), entitiesMapper, tracer, null, null,
-						null);
+			if (predicate.getRelExpr() != null) {
+				SpecWrapper predSpec = getConstraintSpec(predicate.getRelExpr(), entitiesMapper, tracer, null, null, null);
 				return SpecRegExp.newPredicateRegExp(predSpec.getSpec());
 			}
 			throw new SpectraTranslationException("Unsupported kind of regular expressions.");
 		}
 
-		if (regExp.getLeft() == null) {
-			// Should not happen: None of the above base cases holds and this regular
-			// expression has no left child (i.e., sub-expression)
+		if(regExp.getLeft() == null) {
+			//Should not happen: None of the above base cases holds and this regular expression has no left child (i.e., sub-expression)
 			throw new SpectraTranslationException("Unsupported kind of regular expressions.");
 		}
 
-		// Compute the left sub-expression (that exists in both unary and binary regular
-		// expressions)
+		//Compute the left sub-expression (that exists in both unary and binary regular expressions)
 		SpecRegExp left = getConstraintSpecRegExp(entitiesMapper, tracer, regExp.getLeft());
 
-		if (regExp instanceof UnaryRegExp) {
-			UnaryRegExp unaryRegExp = (UnaryRegExp) regExp;
+		if(regExp instanceof UnaryRegExp) {
+			UnaryRegExp unaryRegExp = (UnaryRegExp)regExp;
+
 
 			if (unaryRegExp.isKleened()) {
 				// A Kleene star
@@ -801,31 +855,51 @@ public class SpectraASTToSpecGenerator {
 				return SpecRegExp.newZeroOrOneRepRegExp(left);
 			}
 
-			if (unaryRegExp.isHaveExactRepetition()) {
+			if (unaryRegExp.isHaveExactRepetition()) { 
 				// An exact repetition : {n}
 				return SpecRegExp.newExactRepRegExp(left, unaryRegExp.getExactRepetition());
 			}
 
-			if (unaryRegExp.isHaveAtLeast()) {
+			if (unaryRegExp.isHaveAtLeast()) { 
 				// An at least repetitions: {n,}
-				return SpecRegExp.newAtLeastRepRegExp(left, unaryRegExp.getAtLeast());
+				return  SpecRegExp.newAtLeastRepRegExp(left, unaryRegExp.getAtLeast());
 			}
 
-			if (unaryRegExp.isHaveRange()) {
+			if (unaryRegExp.isHaveRange()) { 
 				// A range of repetitions: {n,m}
-				return SpecRegExp.newRepInRangeRegExp(left, unaryRegExp.getFrom(), unaryRegExp.getTo());
+				
+				int from = unaryRegExp.getFrom();
+				int to = unaryRegExp.getTo();
+				
+				if (unaryRegExp.getFromDefine() != null) {
+					try {
+						from = TypeSystemUtils.calcArithmeticExpression(unaryRegExp.getFromDefine().getSimpleExpr());
+					} catch (Exception e) {
+						e.printStackTrace();
+					} 
+				}
+				
+				if (unaryRegExp.getToDefine() != null) {
+					try {
+						to = TypeSystemUtils.calcArithmeticExpression(unaryRegExp.getToDefine().getSimpleExpr());
+					} catch (Exception e) {						
+						e.printStackTrace();
+					} 
+				}
+					
+				return SpecRegExp.newRepInRangeRegExp(left, from, to);
 			}
 
 			throw new SpectraTranslationException("Unsupported kind of unary regular expressions.");
 
 		}
 
-		if (regExp instanceof CompRegExp) {
+		if(regExp instanceof CompRegExp) {
 			// A complement: '~(left)'
 			return SpecRegExp.newComplementationRegExp(left);
 		}
 
-		if (regExp instanceof BinaryRegExp) {
+		if (regExp instanceof BinaryRegExp)	{
 			// A binary expression: concatenation, union, or intersection
 			BinaryRegExp binRegExp = (BinaryRegExp) regExp;
 			SpecRegExp right = null;
@@ -834,24 +908,24 @@ public class SpectraASTToSpecGenerator {
 				right = getConstraintSpecRegExp(entitiesMapper, tracer, binRegExp.getRight());
 			}
 
-			if (right == null) {
+			if(right == null) {
 				throw new SpectraTranslationException("Unsupported kind of binary regular expressions.");
 			}
 
 			String op = binRegExp.getOp();
-			if (op == null) {
+			if(op == null) {
 				return SpecRegExp.newConcatRegExp(left, right);
 			}
-			if ("|".equals(op)) {
+			if("|".equals(op)) {
 				return SpecRegExp.newUnionRegExp(left, right);
 			}
-			if ("&".equals(op)) {
+			if("&".equals(op)) {
 				return SpecRegExp.newIntersectionRegExp(left, right);
 			}
 			throw new SpectraTranslationException("Unsupported regular expression binary operator: " + op);
 
 		}
-		// None of the above cases holds
+		//None of the above cases holds
 		throw new SpectraTranslationException("Unsupported kind of regular expressions.");
 	}
 }

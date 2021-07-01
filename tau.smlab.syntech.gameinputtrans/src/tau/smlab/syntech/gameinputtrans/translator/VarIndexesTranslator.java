@@ -37,7 +37,7 @@ import tau.smlab.syntech.gameinput.model.ExistentialConstraint;
 import tau.smlab.syntech.gameinput.model.GameInput;
 import tau.smlab.syntech.gameinput.model.TriggerConstraint;
 import tau.smlab.syntech.gameinput.model.Variable;
-
+import tau.smlab.syntech.gameinput.spec.DefineReference;
 import tau.smlab.syntech.gameinput.spec.Operator;
 import tau.smlab.syntech.gameinput.spec.PrimitiveValue;
 import tau.smlab.syntech.gameinput.spec.Spec;
@@ -46,8 +46,13 @@ import tau.smlab.syntech.gameinput.spec.SpecHelper;
 import tau.smlab.syntech.gameinput.spec.SpecRegExp;
 import tau.smlab.syntech.gameinput.spec.VariableReference;
 import tau.smlab.syntech.gameinputtrans.TranslationException;
-import tau.smlab.syntech.gameinputtrans.translator.QuantifierTranslator;
 
+
+/**
+ * Depends on QuantifierTranslator
+ * 
+ *
+ */
 public class VarIndexesTranslator implements Translator {
 
 	@Override
@@ -210,6 +215,23 @@ public class VarIndexesTranslator implements Translator {
 					}
 				}
 			}
+			
+		} else if (spec instanceof DefineReference) {
+			DefineReference defRef = (DefineReference) spec;
+			
+			try {					
+				if (defRef.getIndexSpecs() != null && defRef.getIndexVars().containsKey(var.getName())) {
+					DefineReference newDefRef = defRef.clone();
+					
+					SpecHelper.updateDefineReference(newDefRef, var, primVal);
+
+					return newDefRef;
+				}
+			} catch (Exception e) {
+				throw new TranslationException(e.getMessage(), traceId);
+			}
+			
+			return defRef;
 		} else if (spec instanceof SpecExp) {
 			SpecExp specExp = ((SpecExp) spec).clone();
 			Operator op = specExp.getOperator();
@@ -278,7 +300,13 @@ public class VarIndexesTranslator implements Translator {
 					vars.addAll(vr.getIndexVars().values());
 				}
 			}
+		} else if (spec instanceof DefineReference) {
+			DefineReference dr = (DefineReference) spec;
+			if (dr.getIndexVars() != null) {
+				vars.addAll(dr.getIndexVars().values());
+			}
 		}
+		
 		if (spec instanceof SpecExp) {
 			SpecExp se = (SpecExp) spec;
 			Operator op = se.getOperator();

@@ -8,5 +8,5 @@ Export-Package: tau.smlab.syntech.gamemodel,
 Require-Bundle: tau.smlab.syntech.jtlv,
  tau.smlab.syntech.sfa;bundle-version="1.0.0",
  org.eclipse.xtext
-Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Import-Package: tau.smlab.syntech.spectragameinput.translator
+Automatic-Module-Name: tau.smlab.syntech.gamemodel
