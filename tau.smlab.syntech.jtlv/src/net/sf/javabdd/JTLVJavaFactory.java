@@ -2720,6 +2720,8 @@ public class JTLVJavaFactory extends BDDFactoryIntImpl {
 			applycache = BddCacheI_init(cachesize);
 		if (itecache == null)
 			itecache = BddCacheI_init(cachesize);
+		if (replacecache == null)
+			replacecache = BddCacheI_init(cachesize);
 
 		again: for (;;) {
 			try {
@@ -4287,6 +4289,7 @@ public class JTLVJavaFactory extends BDDFactoryIntImpl {
 	}
 
 	BddCacheDataI BddCache_lookupI(BddCache cache, int hash) {
+		System.out.println("lookup, " + cache.getClass());
 		return (BddCacheDataI) cache.table[Math.abs(hash % cache.tablesize)];
 	}
 

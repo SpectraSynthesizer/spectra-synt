@@ -31,7 +31,6 @@ package tau.smlab.syntech.gameinput.spec;
 import java.util.List;
 
 import tau.smlab.syntech.gameinput.model.Pattern;
-import tau.smlab.syntech.gameinput.spec.Spec;
 
 public class SpecWrapper {
 

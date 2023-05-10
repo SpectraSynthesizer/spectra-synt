@@ -46,109 +46,112 @@ import tau.smlab.syntech.ui.preferences.PreferencePage;
 
 public class SynthesizeSymbolicControllerJob extends SyntechJob {
 
-  @Override
-  protected void doWork() {
-    GR1Game gr1;
+	@Override
+	protected void doWork() {
+		GR1Game gr1;
 
-    // initialize game based on configuration
-    if (PreferencePage.getBDDPackageSelection().equals(BDDPackage.CUDD_ADD) && model.getWeights() != null) {
-      printToConsole("GR1GameEnergyADD (without optimizations)");
-      gr1 = new GR1GameEnergyADD(model, gi.getEnergyBound());
-    } else {
-      PreferencePage.setOptSelection();
-      if (PreferencePage.getBDDPackageSelection().equals(BDDPackage.CUDD)) {
-        printToConsole("GR1GameImplC with memory");
-        gr1 = new GR1GameImplC(model);
-      } else {
-        String GR1SolverMsg = "GR1GameExperiments (" + (PreferencePage.hasOptSelection() ? "with" : "without")
-            + " optimizations)";
-        printToConsole(GR1SolverMsg);
-        gr1 = new GR1GameExperiments(model);
-      }
-    }
+		// initialize game based on configuration
+		if (PreferencePage.getBDDPackageSelection().equals(BDDPackage.CUDD_ADD) && model.getWeights() != null) {
+			printToConsole("GR1GameEnergyADD (without optimizations)");
+			gr1 = new GR1GameEnergyADD(model, gi.getEnergyBound());
+		} else {
+			PreferencePage.setOptSelection();
+			if (PreferencePage.getBDDPackageSelection().equals(BDDPackage.CUDD)) {
+				printToConsole("GR1GameImplC with memory");
+				gr1 = new GR1GameImplC(model);
+			} else {
+				String GR1SolverMsg = "GR1GameExperiments (" + (PreferencePage.hasOptSelection() ? "with" : "without")
+						+ " optimizations)";
+				printToConsole(GR1SolverMsg);
+				gr1 = new GR1GameExperiments(model);
+			}
+		}
 
-    long start = System.currentTimeMillis();
+		long start = System.currentTimeMillis();
 
-    // play actual game
-    if (gr1.checkRealizability()) {
+		// play actual game
+		if (gr1.checkRealizability()) {
 
-      long time = System.currentTimeMillis() - start;
-      printToConsole("Realizability Check: " + time + "ms");
+			long time = System.currentTimeMillis() - start;
+			printToConsole("Realizability Check: " + time + "ms");
+			
+			if (gr1.getMem().isEmptyController()) {
+				
+				printToConsole("The controller to synthesize is invalid. Please make sure the specification is well-separated and satisfiable");
+				
+			} else {
+				this.isRealizable = true;
 
-      this.isRealizable = true;
+				if (PreferencePage.getBDDPackageSelection().equals(BDDPackage.CUDD_ADD) && model.getWeights() != null) {
+					((GR1GameEnergyADD) gr1).flattenGameMemoryTerminalsToVariables();
+					((GR1GameEnergyADD) gr1).updateSysTransWithEnergyConstraints();
+					((GR1GameEnergyADD) gr1).setSysWinningStatesWithFlatCredits();
+				}
 
-      if (PreferencePage.getBDDPackageSelection().equals(BDDPackage.CUDD_ADD) && model.getWeights() != null) {
-        ((GR1GameEnergyADD) gr1).flattenGameMemoryTerminalsToVariables();
-        ((GR1GameEnergyADD) gr1).updateSysTransWithEnergyConstraints();
-        ((GR1GameEnergyADD) gr1).setSysWinningStatesWithFlatCredits();
-      }
+				start = System.currentTimeMillis();
 
-      start = System.currentTimeMillis();
+				SymbolicControllerConstruction cc = new GR1SymbolicControllerConstruction(gr1.getMem(), model);
+				SymbolicController ctrl = cc.calculateSymbolicController();
 
-      SymbolicControllerConstruction cc = new GR1SymbolicControllerConstruction(gr1.getMem(), model);
-      SymbolicController ctrl = cc.calculateSymbolicController();
+				time = System.currentTimeMillis() - start;
+				printToConsole("Symbolic BDDs Preparation: " + time + "ms");
 
-      time = System.currentTimeMillis() - start;
-      printToConsole("Symbolic BDDs Preparation: " + time + "ms");
+				// if in Energy game then restrict initial states to minimum initial energy
+				// credit
+				if (model.getWeights() != null) {
+					BDD minWinCred;
+					if (PreferencePage.getBDDPackageSelection().equals(BDDPackage.CUDD_ADD)) {
+						minWinCred = Env.getBDDValue("energyVal", (int) ((GR1GameEnergyADD) gr1).getMinWinInitCred());
+					} else {
+						minWinCred = BDDEnergyReduction.getMinWinCred(model, gr1.sysWinningStates());
+					}
+					ctrl.initial().andWith(minWinCred);
+				}
 
-      // if in Energy game then restrict initial states to minimum initial energy
-      // credit
-      if (model.getWeights() != null) {
-        BDD minWinCred;
-        if (PreferencePage.getBDDPackageSelection().equals(BDDPackage.CUDD_ADD)) {
-          minWinCred = Env.getBDDValue("energyVal", (int) ((GR1GameEnergyADD) gr1).getMinWinInitCred());
-        } else {
-          minWinCred = BDDEnergyReduction.getMinWinCred(model, gr1.sysWinningStates());
-        }
-        ctrl.initial().andWith(minWinCred);
-      }
+				gr1.free();
 
-      gr1.free();
+				if (PreferencePage.isDeterminize()) {
+					printToConsole("Determinizing the controller.");
+					BDD tmp = ctrl.initial();
+					ctrl.setInit(det(tmp, model.getSys().moduleUnprimeVars()));
+					tmp.free();
 
-      if (PreferencePage.isDeterminize()) {
-        printToConsole("Determinizing the controller.");
-        BDD tmp = ctrl.initial();
-        ctrl.setInit(det(tmp, model.getSys().moduleUnprimeVars()));
-        tmp.free();
+					tmp = ctrl.trans();
+					ctrl.setTrans(det(tmp, model.getSys().modulePrimeVars()));
+					tmp.free();
+				}
 
-        tmp = ctrl.trans();
-        ctrl.setTrans(det(tmp, model.getSys().modulePrimeVars()));
-        tmp.free();
-      }
+				try {
 
-      try {
+					start = System.currentTimeMillis();
 
-        start = System.currentTimeMillis();
+					String location = specFile.getParent().getLocation().toOSString();
+					String outLocation = location + File.separator + "out" + File.separator + "static";
 
-        String location = specFile.getParent().getLocation().toOSString();
-        String outLocation = location + File.separator + "out";
+					SymbolicControllerReaderWriter.writeSymbolicController(ctrl, model, outLocation, gi.getName(),
+							PreferencePage.isReorderBeforeSave());
 
-        SymbolicControllerReaderWriter.writeSymbolicController(ctrl, model, outLocation,
-            PreferencePage.isReorderBeforeSave());
+					time = System.currentTimeMillis() - start;
+					printToConsole("Controller save to disk: " + time + "ms");
 
-        time = System.currentTimeMillis() - start;
-        printToConsole("Controller save to disk: " + time + "ms");
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
 
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
+				model.free();
+			}
+			
+		} else {
+			this.isRealizable = false;
+			printToConsole("The selected specification is unrealizable.");
+		}
 
-      model.free();
+		Env.resetEnv();
+	}
 
-      // clean up the BDDs
-      Env.resetEnv();
-      return;
-    }
-    this.isRealizable = false;
-
-    printToConsole("The selected specification is unrealizable.");
-    Env.resetEnv();
-  }
-
-  @Override
-  public boolean needsBound() {
-    return true;
-  }
-
+	@Override
+	public boolean needsBound() {
+		return true;
+	}
 
 }

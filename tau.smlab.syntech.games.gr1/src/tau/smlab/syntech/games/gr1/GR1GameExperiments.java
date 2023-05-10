@@ -113,12 +113,12 @@ public class GR1GameExperiments extends GR1Game {
 				cy = 0;
 				y = Env.FALSE();
 
-				BDD yieldZandJj = yield(z, forceTrue, forceFalse).andWith(sys.justiceAt(j).id());
+				BDD yieldZandJj = this.yield(z, forceTrue, forceFalse).andWith(sys.justiceAt(j).id());
 
 				for (iterY = new FixPoint(false); iterY.advance(y);) {
 					// System.out.println("y.equals(sys.justiceAt("+j+")) = " +
 					// y.equals(sys.justiceAt(j)));
-					BDD yieldY = yield(y, forceTrue, forceFalse);
+					BDD yieldY = this.yield(y, forceTrue, forceFalse);
 					// System.out.println("yieldY.isOne() = " + yieldY.isOne());
 					BDD start = yieldZandJj.or(yieldY);
 					// System.out.println("start.equals(sys.justiceAt("+j+")) = " +
@@ -147,7 +147,7 @@ public class GR1GameExperiments extends GR1Game {
 
 							xIters++;
 
-							BDD sysCtrl = yield(x, forceTrue, forceFalse);
+							BDD sysCtrl = this.yield(x, forceTrue, forceFalse);
 							BDD sysCtrlAndNotJustice = sysCtrl.and(negp);
 							sysCtrl.free();
 							x = sysCtrlAndNotJustice.or(start);

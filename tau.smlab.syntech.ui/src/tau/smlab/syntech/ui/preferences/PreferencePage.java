@@ -70,8 +70,10 @@ public class PreferencePage extends FieldEditorPreferencePage implements IWorkbe
 	private RadioGroupFieldEditor concCont;
 	private RadioGroupFieldEditor opts;
 	private RadioGroupFieldEditor reorder;
+	private RadioGroupFieldEditor synthesisMethod;
 	private BooleanFieldEditor determinize;
 	private BooleanFieldEditor reorderBeforeSave;
+	private BooleanFieldEditor isLoggerActive;
 
 	public void createFieldEditors() {
 		engine = new RadioGroupFieldEditor(PreferenceConstants.BDD_ENGINE_CHOICE, "BDD engine", 1,
@@ -82,15 +84,22 @@ public class PreferencePage extends FieldEditorPreferencePage implements IWorkbe
 
 		opts = new RadioGroupFieldEditor(PreferenceConstants.OPT_CHOICE, "Optimization options", 1,
 				new String[][] { { "Disable optimizations", "none" }, { "All optimizations", "all" },
-						{ "Algorithms optimizations", "fp_opts" },
+						{ "Algorithms optimizations", "fp_opts" }, { "Symmetry detection", "sym" },
 						{ "Controlled predecessors optimizations", "cp_opts" } },
 				getFieldEditorParent(), true);
 
-		reorder = new RadioGroupFieldEditor(PreferenceConstants.REORDER_CHOICE, "Reorder Strategy", 1,
+		reorder = new RadioGroupFieldEditor(PreferenceConstants.REORDER_CHOICE, "Reorder strategy", 1,
 				new String[][] { { "Disable reorder (not recommended)", "none" }, { "Enable reorder", "reorder" },
 						{ "Enable reorder with grouping (variables and their next state copies)", "group" },
 				// { "Special reorder strategy", "special"}
 				}, getFieldEditorParent(), true);
+		
+		synthesisMethod = new RadioGroupFieldEditor(PreferenceConstants.SYNTHESIS_METHOD, "Realizability checking method", 1, 
+				new String[][] {{"Original GR(1) (3-fixed-points)", PreferenceConstants.SYNTHESIS_METHOD_GR1}, 
+					{"Do not force justice assumption violations (4 fixed-points)", PreferenceConstants.SYNTHESIS_METHOD_PITERMAN},
+					{"Kind realizability: do not force any assumption violations (reduction plus 4 fixed-points)", PreferenceConstants.SYNTHESIS_METHOD_PITERMAN_REDUCTION}
+				},
+				getFieldEditorParent(), true);
 
 		determinize = new BooleanFieldEditor(PreferenceConstants.DETERMINIZE,
 				"Determinize static symbolic controllers (can be slow)", getFieldEditorParent());
@@ -98,6 +107,9 @@ public class PreferencePage extends FieldEditorPreferencePage implements IWorkbe
 		reorderBeforeSave = new BooleanFieldEditor(PreferenceConstants.REORDER_BEFORE_SAVE,
 				"Reorder BDD before save to reduce size", getFieldEditorParent());
 
+		isLoggerActive = new BooleanFieldEditor(PreferenceConstants.IS_LOGGER_ACTIVE,
+				"Use Spectra Logger", getFieldEditorParent());
+				
 		concCont = new RadioGroupFieldEditor(PreferenceConstants.CONC_CONT_FORMAT, "Concrete Controller Format", 1,
 				new String[][] { { "CMP automaton (Mealy)", "CMP" }, { "JTLV text format", "JTLV" } },
 				getFieldEditorParent(), true);
@@ -108,6 +120,8 @@ public class PreferencePage extends FieldEditorPreferencePage implements IWorkbe
 		addField(determinize);
 		addField(reorderBeforeSave);
 		addField(concCont);
+		addField(isLoggerActive);
+		addField(synthesisMethod);
 
 		// String engineChoice =
 		// this.getPreferenceStore().getString(PreferenceConstants.BDD_ENGINE_CHOICE);
@@ -145,8 +159,13 @@ public class PreferencePage extends FieldEditorPreferencePage implements IWorkbe
 		return Activator.getDefault().getPreferenceStore().getBoolean(PreferenceConstants.REORDER_BEFORE_SAVE);
 	}
 
+	public static boolean isLoggerActive() {
+		return Activator.getDefault().getPreferenceStore().getBoolean(PreferenceConstants.IS_LOGGER_ACTIVE);
+	}
+
 	public static BDDPackage getBDDPackageSelection() {
 		String val = Activator.getDefault().getPreferenceStore().getString(PreferenceConstants.BDD_ENGINE_CHOICE);
+		
 		if (val.equals("JTLV")) {
 			return BDDPackage.JTLV;
 		} else if (val.equals("CUDD")) {
@@ -155,7 +174,8 @@ public class PreferencePage extends FieldEditorPreferencePage implements IWorkbe
 			return BDDPackage.CUDD_ADD;
 		}
 
-		return null;
+		System.out.println("No preference for BDD engine choice was found. Using as default the CUDD library");
+		return BDDPackage.CUDD;
 	}
 
 	public static BBDPackageVersion getBDDPackageVersionSelection() {
@@ -166,6 +186,11 @@ public class PreferencePage extends FieldEditorPreferencePage implements IWorkbe
 
 		// CUDD BDD package has been selected
 		return BBDPackageVersion.CUDD_3_0;
+	}
+	
+	public static boolean hasSymmetryDetection() {
+		String val = Activator.getDefault().getPreferenceStore().getString(PreferenceConstants.OPT_CHOICE);
+		return val.equals("sym");
 	}
 
 	public static boolean hasOptSelection() {
@@ -213,5 +238,9 @@ public class PreferencePage extends FieldEditorPreferencePage implements IWorkbe
 
 	public static String getConcreteControllerFormat() {
 		return Activator.getDefault().getPreferenceStore().getString(PreferenceConstants.CONC_CONT_FORMAT);
+	}
+	
+	public static String getSynthesisMethod() {
+		return Activator.getDefault().getPreferenceStore().getString(PreferenceConstants.SYNTHESIS_METHOD);
 	}
 }

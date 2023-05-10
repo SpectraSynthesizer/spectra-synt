@@ -34,6 +34,12 @@ import java.util.List;
 import net.sf.javabdd.BDD;
 import net.sf.javabdd.BDDDomain;
 import tau.smlab.syntech.gamemodel.BehaviorInfo;
+import tau.smlab.syntech.gamemodel.GameModel;
+import tau.smlab.syntech.gamemodel.PlayerModule;
+import tau.smlab.syntech.gamemodel.PlayerModule.TransFuncType;
+import tau.smlab.syntech.gamemodel.util.GameBuilderUtil;
+import tau.smlab.syntech.games.gr1.GR1GameExperiments;
+import tau.smlab.syntech.games.gr1.GR1GameImplC;
 import tau.smlab.syntech.jtlv.Env;
 import tau.smlab.syntech.jtlv.lib.FixPoint;
 
@@ -45,6 +51,42 @@ import tau.smlab.syntech.jtlv.lib.FixPoint;
  */
 
 public class GR1Implication {
+	
+	/**
+	 *  GameModel for a reduction of the win region computation to C implementation of realizability
+	 */
+	private static GameModel gm = null;
+	
+	/**
+	 * Create a clean game model in which all variables are system variables from the relevant model
+	 * This model will be used for winning region computations using a reduction to the C code
+	 * The existence of the game model is a flag for the use of the reduction
+	 * 
+	 * @param original 	The original game model
+	 */
+	public static void createCReductionGameModel(GameModel original) {
+		if (gm!=null) { // nullify old gm if exists
+			gm = null;
+		}
+		
+		gm = new GameModel();
+
+		PlayerModule sysPlusEnv = original.getSys().compose(original.getEnv());
+		sysPlusEnv.reset(); // remove all useless BDDs
+		sysPlusEnv.setTransFuncType(TransFuncType.SINGLE_FUNC);
+		gm.setSys(sysPlusEnv);
+		PlayerModule emptyEnv = new PlayerModule();
+		emptyEnv.setTransFuncType(TransFuncType.SINGLE_FUNC);
+		gm.setEnv(emptyEnv);		
+	}
+	
+	/**
+	 * Clear the game model
+	 */
+	public static void freeCReductionGameModel() {
+		gm.free();
+		gm = null;		
+	}
 	
 	/**
 	 * Imply all suffix behaviors
@@ -143,10 +185,18 @@ public class GR1Implication {
 	private static boolean checkImpJust(List<BehaviorInfo> pref, BDD just) {
 		BDD origTrans = BDDBuilder.getTrans(pref);
 		BDD notJust = just.notWithDoms();
-		BDD trans = origTrans.and(notJust);
-		notJust.free();
-		BDD winWhileNotJust = genBuchiWin(trans, collectJust(pref));
-		trans.free();
+		BDD winWhileNotJust = null;
+		if (gm==null) { // use the Java version for the winning region
+			BDD trans = origTrans.and(notJust);
+			notJust.free();
+			winWhileNotJust = genBuchiWin(trans, collectJust(pref));
+			trans.free();
+		} else { // use the C version for the winning region
+			List<BehaviorInfo> cImpPref = new ArrayList<BehaviorInfo>(pref);
+			cImpPref.add(new BehaviorInfo(null, notJust, null , null, null, 0, false));
+			winWhileNotJust = cWinCompute(cImpPref);
+			notJust.free();
+		}
 		BDD ini = BDDBuilder.getIni(pref);
 		boolean result = !canReach(ini, origTrans, winWhileNotJust);
 		ini.free();
@@ -154,7 +204,6 @@ public class GR1Implication {
 		origTrans.free();
 		return result;
 	}
-	
 	
 	/** compute win region according to a set of safeties and justices
 	 * 
@@ -263,4 +312,38 @@ public class GR1Implication {
 		both.free();
 		return r;
 	}
+	
+	/**
+	 * Compute a winning region using the C reduction
+	 * 
+	 * @param b		The behaviors - we use the justices and safeties
+	 * @return		Generalized Buchi Winning region
+	 */
+	static private BDD cWinCompute(List<BehaviorInfo> b) {
+		boolean mem = GR1GameExperiments.WITH_MEMORY;
+		boolean recycle = GR1GameExperiments.USE_FIXPOINT_RECYCLE;
+		boolean stop = GR1GameExperiments.STOP_WHEN_INITIALS_LOST;
+		boolean detect = GR1GameExperiments.DETECT_FIX_POINT_EARLY;
+		boolean sim = GR1GameExperiments.SIMULTANEOUS_CONJUNCTION_ABSTRACTION;
+		
+		GR1GameExperiments.WITH_MEMORY = false;
+		GR1GameExperiments.USE_FIXPOINT_RECYCLE = true;
+		GR1GameExperiments.STOP_WHEN_INITIALS_LOST = false; // trun off so initials won't matter
+		GR1GameExperiments.DETECT_FIX_POINT_EARLY = true;
+		GR1GameExperiments.SIMULTANEOUS_CONJUNCTION_ABSTRACTION = true;
+
+		GameBuilderUtil.buildSys(gm, b);
+
+		GR1GameExperiments game = new GR1GameImplC(gm);
+		game.checkRealizability();
+		
+		GR1GameExperiments.WITH_MEMORY = mem;
+		GR1GameExperiments.USE_FIXPOINT_RECYCLE = recycle;
+		GR1GameExperiments.STOP_WHEN_INITIALS_LOST = stop;		
+		GR1GameExperiments.DETECT_FIX_POINT_EARLY = detect;
+		GR1GameExperiments.SIMULTANEOUS_CONJUNCTION_ABSTRACTION = sim;
+		return game.sysWinningStates();
+
+	}
+
 }

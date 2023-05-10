@@ -71,7 +71,7 @@ import tau.smlab.syntech.sfa.SFA;
 public class BDDGenerator {
 
 	private static final String CUDDADD_FACTORY = "CUDDFactory$CUDDADDFactory";
-
+	
 	/**
 	 * part of spec to create trace info for (BehaviorInfo)
 	 *
@@ -154,9 +154,10 @@ public class BDDGenerator {
 		}
 
 		// first create all variables (might be used in expressions)
-		createModuleVars(envMod, env, false);
-		createModuleVars(sysMod, sys, false);
-		createModuleVars(sysMod, aux, true);
+		createModuleVars(envMod, env, false, debugLog);
+		createModuleVars(sysMod, sys, false, debugLog);
+		createModuleVars(sysMod, aux, true, debugLog);
+		
 
 		int env_vars_all = 0;
 		int sys_vars_all = 0;
@@ -608,7 +609,6 @@ public class BDDGenerator {
 		} else if (spec instanceof SpecExp) {
 			SpecExp e = (SpecExp) spec;
 			Operator op = e.getOperator();
-
 			if (Operator.EQUALS.equals(op)) { /* equality expression */
 				return createEqualsExpression(e.getChildren()[0], e.getChildren()[1], traceId, useLinearExpAlg);
 			}
@@ -1576,12 +1576,12 @@ public class BDDGenerator {
 		return eq;
 	}
 
-	private static void createModuleVars(PlayerModule m, Player p, boolean aux) {
+	private static void createModuleVars(PlayerModule m, Player p, boolean aux, boolean debugLog) {
 		for (Variable v : p.getVars()) {
 			if (v.getType().isArray()) {
-				addArrayVars(m, v.getName(), v.getType().getDimensions(), v.getType(), aux, v.getTraceId());
+				addArrayVars(m, v.getName(), v.getType().getDimensions(), v.getType(), aux, v.getTraceId(), debugLog);
 			} else {
-				addVar(m, v.getName(), v.getType(), aux, v.getTraceId());
+				addVar(m, v.getName(), v.getType(), aux, v.getTraceId(), debugLog);
 			}
 		}
 	}
@@ -1594,9 +1594,9 @@ public class BDDGenerator {
 	 * @param dimensions
 	 * @param type
 	 */
-	private static void addArrayVars(PlayerModule m, String name, List<Integer> dimensions, TypeDef type, boolean aux, int traceId) {
+	private static void addArrayVars(PlayerModule m, String name, List<Integer> dimensions, TypeDef type, boolean aux, int traceId, boolean debugLog) {
 		if (dimensions.isEmpty()) {
-			addVar(m, name, type, aux, traceId);
+			addVar(m, name, type, aux, traceId, debugLog);
 		} else {
 			List<Integer> remainingDimensions = new ArrayList<Integer>();
 			for (int i = 1; i < dimensions.size(); i++) {
@@ -1604,7 +1604,7 @@ public class BDDGenerator {
 			}
 			for (int i = 0; i < dimensions.get(0); i++) {
 				String suffix = "[" + i + "]";
-				addArrayVars(m, name + suffix, remainingDimensions, type, aux, traceId);
+				addArrayVars(m, name + suffix, remainingDimensions, type, aux, traceId, debugLog);
 			}
 		}
 	}
@@ -1616,7 +1616,9 @@ public class BDDGenerator {
 	 * @param name
 	 * @param type
 	 */
-	private static void addVar(PlayerModule m, String name, TypeDef type, boolean aux, int traceId) {
+	private static void addVar(PlayerModule m, String name, TypeDef type, boolean aux, int traceId, boolean debugLog) {
+		if (debugLog)
+			System.out.println("trying to add var " + name + ", traceid is " + traceId);
 		try {
 			if (type.isBoolean()) {
 				m.addVar(name, aux).setTraceId(traceId);

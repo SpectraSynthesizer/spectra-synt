@@ -3,8 +3,6 @@ Bundle-ManifestVersion: 2
 Bundle-Name: sfa
 Bundle-SymbolicName: tau.smlab.syntech.sfa
 Bundle-Version: 1.0.0.qualifier
-Require-Bundle: tau.smlab.syntech.jtlv;bundle-version="1.0.0",
- org.eclipse.gef.graph,
- org.eclipse.gef.dot
+Require-Bundle: tau.smlab.syntech.jtlv
 Export-Package: tau.smlab.syntech.sfa
 Automatic-Module-Name: tau.smlab.syntech.sfa

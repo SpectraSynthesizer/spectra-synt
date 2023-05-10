@@ -13,3 +13,4 @@ Export-Package: tau.smlab.syntech.games.gr1,
  tau.smlab.syntech.games.gr1.jit
 Import-Package: tau.smlab.syntech.games.rabin
 Automatic-Module-Name: tau.smlab.syntech.games.gr1
+Bundle-ClassPath: .

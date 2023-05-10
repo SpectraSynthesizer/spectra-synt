@@ -42,11 +42,11 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.Stack;
 
-//imports for toString() method (returns a DOT representation of the SFA)
-import org.eclipse.gef.dot.internal.DotAttributes;
-import org.eclipse.gef.dot.internal.DotExport;
-import org.eclipse.gef.dot.internal.language.dot.GraphType;
-import org.eclipse.gef.graph.Graph;
+////imports for toString() method (returns a DOT representation of the SFA)
+//import org.eclipse.gef.dot.internal.DotAttributes;
+//import org.eclipse.gef.dot.internal.DotExport;
+//import org.eclipse.gef.dot.internal.language.dot.GraphType;
+//import org.eclipse.gef.graph.Graph;
 
 import net.sf.javabdd.BDD;
 import tau.smlab.syntech.jtlv.Env;
@@ -482,7 +482,7 @@ public abstract class BaseSFA<T extends BaseSFAState<T>> implements SFA {
 		BaseSFA<T> deterministicAutomaton = this.determinize();
 		deterministicAutomaton.completeTransitionFunction();
 
-		// Mooreï¿½s minimization algorithm (a.k.a. the standard algorithm) lifted to SFAs
+		// Moore’s minimization algorithm (a.k.a. the standard algorithm) lifted to SFAs
 		
 		// find all reachable states
 		List<T> reachableStates = deterministicAutomaton.reachableStates();
@@ -793,44 +793,44 @@ public abstract class BaseSFA<T extends BaseSFAState<T>> implements SFA {
 	/*
 	 * Creates a string representation of this SFA in the DOT language.
 	 */
-	@Override
-	public String toString() {
-		if(ini == null) {return super.toString(); }
-		
-		Graph.Builder builder = new Graph.Builder().attr(DotAttributes::_setType, GraphType.DIGRAPH).attr(DotAttributes::setRankdir, "LR");
-		
-		Queue<T> worklist = new LinkedList<>();
-		List<T> seen = new ArrayList<>();
-		worklist.add(ini);
-		seen.add(ini);
-		addDotNode(builder, ini, 0);
-		
-		while (!worklist.isEmpty()) {
-			T s = worklist.remove();
-			
-			// add successors not checked yet
-			for (Map.Entry<T, BDD> transition : s.getSucc().entrySet()) {
-				if (!seen.contains(transition.getKey())) {
-					worklist.add(transition.getKey());
-					seen.add(transition.getKey());
-					addDotNode(builder, transition.getKey(), seen.size()-1);
-				}
-				builder.edge(s, transition.getKey()).attr(DotAttributes::setLabel, Env.toNiceString(transition.getValue()));
-			}
-			
-			if(s.hasEpsSuccessors()) {
-				for(T epsSucc : s.getEpsSucc()) {
-					if (!seen.contains(epsSucc)) {
-						worklist.add(epsSucc);
-						seen.add(epsSucc);
-						addDotNode(builder, epsSucc, seen.size()-1);
-					}
-					builder.edge(s, epsSucc).attr(DotAttributes::setLabel, BaseSFA.EPS_LABEL);
-				}
-			}
-		}
-		return new DotExport().exportDot(builder.build());
-	}
+//	@Override
+//	public String toString() {
+//		if(ini == null) {return super.toString(); }
+//		
+//		Graph.Builder builder = new Graph.Builder().attr(DotAttributes::_setType, GraphType.DIGRAPH).attr(DotAttributes::setRankdir, "LR");
+//		
+//		Queue<T> worklist = new LinkedList<>();
+//		List<T> seen = new ArrayList<>();
+//		worklist.add(ini);
+//		seen.add(ini);
+//		addDotNode(builder, ini, 0);
+//		
+//		while (!worklist.isEmpty()) {
+//			T s = worklist.remove();
+//			
+//			// add successors not checked yet
+//			for (Map.Entry<T, BDD> transition : s.getSucc().entrySet()) {
+//				if (!seen.contains(transition.getKey())) {
+//					worklist.add(transition.getKey());
+//					seen.add(transition.getKey());
+//					addDotNode(builder, transition.getKey(), seen.size()-1);
+//				}
+//				builder.edge(s, transition.getKey()).attr(DotAttributes::setLabel, Env.toNiceString(transition.getValue()));
+//			}
+//			
+//			if(s.hasEpsSuccessors()) {
+//				for(T epsSucc : s.getEpsSucc()) {
+//					if (!seen.contains(epsSucc)) {
+//						worklist.add(epsSucc);
+//						seen.add(epsSucc);
+//						addDotNode(builder, epsSucc, seen.size()-1);
+//					}
+//					builder.edge(s, epsSucc).attr(DotAttributes::setLabel, BaseSFA.EPS_LABEL);
+//				}
+//			}
+//		}
+//		return new DotExport().exportDot(builder.build());
+//	}
 	
 	/*
 	 * 
@@ -852,19 +852,19 @@ public abstract class BaseSFA<T extends BaseSFAState<T>> implements SFA {
 	 * 
 	 * 
 	 */
-	private void addDotNode(Graph.Builder builder, T sfaState, int stateIdx) {
-		if(sfaState.isAccepting()) {
-			builder.node(sfaState).attr(DotAttributes::_setName, "s" + stateIdx).attr(DotAttributes::setLabel, "s" + stateIdx).attr(DotAttributes::setShape, "doublecircle");
-		}
-		else {
-			builder.node(sfaState).attr(DotAttributes::_setName, "s" + stateIdx).attr(DotAttributes::setLabel, "s" + stateIdx).attr(DotAttributes::setShape, "circle"); 
-		}
-		if(sfaState == ini) {
-			T dummyState = this.newSfaState(false);
-			builder.node(dummyState).attr(DotAttributes::_setName, "start").attr(DotAttributes::setShape, "point");
-			builder.edge(dummyState, sfaState);
-		}
-	}
+//	private void addDotNode(Graph.Builder builder, T sfaState, int stateIdx) {
+//		if(sfaState.isAccepting()) {
+//			builder.node(sfaState).attr(DotAttributes::_setName, "s" + stateIdx).attr(DotAttributes::setLabel, "s" + stateIdx).attr(DotAttributes::setShape, "doublecircle");
+//		}
+//		else {
+//			builder.node(sfaState).attr(DotAttributes::_setName, "s" + stateIdx).attr(DotAttributes::setLabel, "s" + stateIdx).attr(DotAttributes::setShape, "circle"); 
+//		}
+//		if(sfaState == ini) {
+//			T dummyState = this.newSfaState(false);
+//			builder.node(dummyState).attr(DotAttributes::_setName, "start").attr(DotAttributes::setShape, "point");
+//			builder.edge(dummyState, sfaState);
+//		}
+//	}
 	
 	
 	/**

@@ -41,7 +41,6 @@ import tau.smlab.syntech.gameinput.spec.SpecExp;
 import tau.smlab.syntech.gameinput.spec.VariableReference;
 import tau.smlab.syntech.gamemodel.GameModel;
 import tau.smlab.syntech.jtlv.lib.FixPoint;
-import tau.smlab.syntech.games.gr1.BoundedEnergyLattice;
 
 public class GR1GameEnergyADD extends GR1Game {
 

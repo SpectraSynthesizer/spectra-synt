@@ -351,6 +351,13 @@ public class CUDDFactory extends BDDFactory {
 			long envTrans, long sysUnprime, long envUnprime, long sysPrime, long envPrime, long pairs,
 			long[] sysTransList, long[] envTransList, long[] sysQuantSets, long[] envQuantSets, boolean efp,
 			boolean eun, boolean fpr, boolean sca);
+	
+	private static native boolean gr1SeparatedGame0(long[] sysJ, long[] envJ, long sysIni, long envIni, long sysTrans,
+			long envTrans, long sysUnprime, long envUnprime, long sysPrime, long envPrime, long pairs,
+			long[] sysTransList, long[] envTransList, long[] sysQuantSets, long[] envQuantSets, boolean efp,
+			boolean eun, boolean fpr, boolean sca);
+	
+	private static native boolean vacuity0(long[] jJust, long jIni, long jTrans, long jPrime, long jPairs, long jTargetJust);
 
 	private static native boolean gr1GameInc0(long[] sysJ, long[] envJ, long sysIni, long envIni, long sysTrans,
 			long envTrans, long sysUnprime, long envUnprime, long sysPrime, long envPrime, long pairs, boolean efp,
@@ -2552,6 +2559,82 @@ public class CUDDFactory extends BDDFactory {
 		return gr1Game0(sysJPtrArr, envJPtrArr, sysIniBDD._ddnode_ptr, envIniBDD._ddnode_ptr, sysTransBDD._ddnode_ptr,
 				envTransBDD._ddnode_ptr, sysUnp._ddnode_ptr, envUnp._ddnode_ptr, sysP._ddnode_ptr, envP._ddnode_ptr,
 				p._ptr, sysTransListArr, envTransListArr, sysQuantSetsArr, envQuantSetsArr, efp, eun, fpr, sca);
+	}
+	
+	public boolean gr1SeparatedGame(BDD[] sysJ, BDD[] envJ, BDD sysIni, BDD envIni, BDD sysTrans, BDD envTrans,
+			BDDVarSet sysUnprimeVars, BDDVarSet envUnprimeVars, BDDVarSet sysPrimeVars, BDDVarSet envPrimeVars,
+			BDDPairing pairs, BDD[] sysTransList, BDD[] envTransList, BDDVarSet[] sysQuantSets,
+			BDDVarSet[] envQuantSets, boolean efp, boolean eun, boolean fpr, boolean sca) {
+		System.out.println("gr1 separated game in CUDD");
+
+		CUDDBDDPairing p = (CUDDBDDPairing) pairs;
+
+		CUDDBDD sysIniBDD = (CUDDBDD) sysIni;
+		CUDDBDD envIniBDD = (CUDDBDD) envIni;
+
+		CUDDBDD sysTransBDD = (CUDDBDD) sysTrans;
+		CUDDBDD envTransBDD = (CUDDBDD) envTrans;
+
+		long[] sysJPtrArr = new long[sysJ.length];
+		for (int i = 0; i < sysJ.length; i++) {
+			sysJPtrArr[i] = ((CUDDBDD) sysJ[i])._ddnode_ptr;
+		}
+
+		long[] envJPtrArr = new long[envJ.length];
+		for (int i = 0; i < envJ.length; i++) {
+			envJPtrArr[i] = ((CUDDBDD) envJ[i])._ddnode_ptr;
+		}
+
+		CUDDBDD sysUnp = (CUDDBDD) ((BDDVarSet.DefaultImpl) sysUnprimeVars).b;
+		CUDDBDD envUnp = (CUDDBDD) ((BDDVarSet.DefaultImpl) envUnprimeVars).b;
+
+		CUDDBDD sysP = (CUDDBDD) ((BDDVarSet.DefaultImpl) sysPrimeVars).b;
+		CUDDBDD envP = (CUDDBDD) ((BDDVarSet.DefaultImpl) envPrimeVars).b;
+
+		long[] sysTransListArr = new long[sysTransList.length];
+		for (int i = 0; i < sysTransList.length; i++) {
+			sysTransListArr[i] = ((CUDDBDD) sysTransList[i])._ddnode_ptr;
+		}
+
+		long[] envTransListArr = new long[envTransList.length];
+		for (int i = 0; i < envTransList.length; i++) {
+			envTransListArr[i] = ((CUDDBDD) envTransList[i])._ddnode_ptr;
+		}
+
+		long[] sysQuantSetsArr = new long[sysQuantSets.length];
+		for (int i = 0; i < sysQuantSets.length; i++) {
+			sysQuantSetsArr[i] = ((CUDDBDD) ((BDDVarSet.DefaultImpl) sysQuantSets[i]).b)._ddnode_ptr;
+		}
+
+		long[] envQuantSetsArr = new long[envQuantSets.length];
+		for (int i = 0; i < envQuantSets.length; i++) {
+			envQuantSetsArr[i] = ((CUDDBDD) ((BDDVarSet.DefaultImpl) envQuantSets[i]).b)._ddnode_ptr;
+		}
+
+		return gr1SeparatedGame0(sysJPtrArr, envJPtrArr, sysIniBDD._ddnode_ptr, envIniBDD._ddnode_ptr, sysTransBDD._ddnode_ptr,
+				envTransBDD._ddnode_ptr, sysUnp._ddnode_ptr, envUnp._ddnode_ptr, sysP._ddnode_ptr, envP._ddnode_ptr,
+				p._ptr, sysTransListArr, envTransListArr, sysQuantSetsArr, envQuantSetsArr, efp, eun, fpr, sca);
+		
+	}
+	
+	public boolean vacuityC(BDD[] justices, BDD ini, BDD trans, BDDVarSet primeVars, BDDPairing pairs, BDD targetJustice) {
+		System.out.println("vacuity in CUDD");
+
+		CUDDBDDPairing p = (CUDDBDDPairing) pairs;
+
+		CUDDBDD iniBDD = (CUDDBDD) ini;
+		CUDDBDD transBDD = (CUDDBDD) trans;
+		CUDDBDD targetJustBDD = (CUDDBDD) targetJustice;
+
+		long[] justPtrArr = new long[justices.length];
+		for (int i = 0; i < justices.length; i++) {
+			justPtrArr[i] = ((CUDDBDD) justices[i])._ddnode_ptr;
+		}
+		
+		CUDDBDD vars = (CUDDBDD) ((BDDVarSet.DefaultImpl) primeVars).b;
+
+		return vacuity0(justPtrArr, iniBDD._ddnode_ptr, transBDD._ddnode_ptr,vars._ddnode_ptr, 
+				p._ptr, targetJustBDD._ddnode_ptr);
 	}
 
 	public boolean gr1GameWithIncData(BDD[] sysJ, BDD[] envJ, BDD sysIni, BDD envIni, BDD sysTrans, BDD envTrans,

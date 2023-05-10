@@ -59,7 +59,7 @@ public class ChecksJob extends SyntechJob {
       return;
     }
     
-    badPrimes = c.computeEnvBadIniPrimesSpecs(model);
+    badPrimes = c.computeBadIniPrimesSpecs(model);
     if (!badPrimes.isEmpty()) {
       this.issuesKind = "Bad primes specs";
       this.numIssues = badPrimes.size();
@@ -103,7 +103,13 @@ public class ChecksJob extends SyntechJob {
 
       openView();
       printToConsole("Found constraints that are trivially TRUE or FALSE. See highlighting in editor.");
-      createMarker(trivial, MarkerKind.CUSTOM_TEXT_MARKER);
+      for (BehaviorInfo bi : trivial) {
+    	  if (bi.getBdd().isZero()) {
+    		  createMarker(bi.traceId, MarkerKind.TRIVIALLY_FALSE.getMessage(), MarkerKind.TRIVIALLY_FALSE);
+    	  } else {
+    		  createMarker(bi.traceId, MarkerKind.TRIVIALLY_TRUE.getMessage(), MarkerKind.TRIVIALLY_TRUE);  
+    	  }
+      }
       model.free();
       return;
     }

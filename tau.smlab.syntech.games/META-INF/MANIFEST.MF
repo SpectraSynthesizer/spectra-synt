@@ -4,13 +4,16 @@ Bundle-Name: Games
 Bundle-SymbolicName: tau.smlab.syntech.games
 Bundle-Version: 1.0.0.qualifier
 Export-Package: tau.smlab.syntech.games,
+ tau.smlab.syntech.games.controller,
  tau.smlab.syntech.games.controller.enumerate,
  tau.smlab.syntech.games.controller.enumerate.printers,
+ tau.smlab.syntech.games.controller.jits,
  tau.smlab.syntech.games.controller.symbolic,
  tau.smlab.syntech.games.controller.util,
  tau.smlab.syntech.games.util
 Require-Bundle: tau.smlab.syntech.gamemodel,
  tau.smlab.syntech.jtlv;bundle-version="1.0.0",
+ tau.smlab.syntech.logs;bundle-version="1.0.0",
  tau.smlab.syntech.gameinput;bundle-version="1.0.0",
  tau.smlab.syntech.modelchecker;bundle-version="1.0.0"
 Automatic-Module-Name: tau.smlab.syntech.games

@@ -42,8 +42,11 @@ import tau.smlab.syntech.games.gr1.GR1Game;
 import tau.smlab.syntech.games.gr1.GR1GameEnergyADD;
 import tau.smlab.syntech.games.gr1.GR1GameExperiments;
 import tau.smlab.syntech.games.gr1.GR1GameImplC;
+import tau.smlab.syntech.games.gr1.GR1SeparatedGame;
+import tau.smlab.syntech.games.gr1.GR1SeparatedGameImplC;
 import tau.smlab.syntech.jtlv.BDDPackage;
 import tau.smlab.syntech.jtlv.Env;
+import tau.smlab.syntech.ui.preferences.PreferenceConstants;
 import tau.smlab.syntech.ui.preferences.PreferencePage;
 
 public class SynthesizeConcreteControllerJob extends SyntechJob {
@@ -53,77 +56,103 @@ public class SynthesizeConcreteControllerJob extends SyntechJob {
 		GR1Game gr1;
 
 		// initialize game based on configuration
-		if (PreferencePage.getBDDPackageSelection().equals(BDDPackage.CUDD_ADD) &&
-				model.getWeights() != null) {
+		if (PreferencePage.getBDDPackageSelection().equals(BDDPackage.CUDD_ADD) && model.getWeights() != null) {
 			printToConsole("GR1GameEnergyADD (without optimizations)");
 			gr1 = new GR1GameEnergyADD(model, gi.getEnergyBound());
-		}
-		else {
+		} else {
 			PreferencePage.setOptSelection();
-			if (PreferencePage.getBDDPackageSelection().equals(BDDPackage.CUDD)) {
-				printToConsole("GR1GameImplC with memory");
-				gr1 = new GR1GameImplC(model);
+			if (PreferencePage.getSynthesisMethod().equals(PreferenceConstants.SYNTHESIS_METHOD_PITERMAN) ||
+					PreferencePage.getSynthesisMethod().equals(PreferenceConstants.SYNTHESIS_METHOD_PITERMAN_REDUCTION)) {
+				if (PreferencePage.getBDDPackageSelection().equals(BDDPackage.CUDD)) {
+					printToConsole("GR1SeparatedGameImplC with memory");
+					gr1 = new GR1SeparatedGameImplC(model);
+				}  else {
+					printToConsole("GR1SeparatedGame");
+					gr1 = new GR1SeparatedGame(model);
+				}
 			}
 			else {
-				String GR1SolverMsg = "GR1GameExperiments (" + (PreferencePage.hasOptSelection() ? "with" : "without") + " optimizations)";
-				printToConsole(GR1SolverMsg);
-				gr1 = new GR1GameExperiments(model);
+				if (PreferencePage.getBDDPackageSelection().equals(BDDPackage.CUDD)) {
+					printToConsole("GR1GameImplC with memory");
+					gr1 = new GR1GameImplC(model);
+				} else {
+					String GR1SolverMsg = "GR1GameExperiments (" + (PreferencePage.hasOptSelection() ? "with" : "without")
+							+ " optimizations)";
+					printToConsole(GR1SolverMsg);
+					gr1 = new GR1GameExperiments(model);
 			}
 		}
 
 		if (gr1.checkRealizability()) {
 			this.isRealizable = true;
-
+			
 			Env.disableReorder();
 
 			if (PreferencePage.getBDDPackageSelection().equals(BDDPackage.CUDD_ADD) &&
 					model.getWeights() != null) {
+				printToConsole("one");
 				((GR1GameEnergyADD)gr1).flattenGameMemoryTerminalsToVariables();
 				((GR1GameEnergyADD)gr1).updateSysTransWithEnergyConstraints();
 				((GR1GameEnergyADD)gr1).setSysWinningStatesWithFlatCredits();
 			}
 			
-			// if in Energy game then restrict initial states to minimum initial energy credit 
-			if (model.getWeights() != null) {
-				BDD minWinCred;
-				if (PreferencePage.getBDDPackageSelection().equals(BDDPackage.CUDD_ADD)) {
-					minWinCred = Env.getBDDValue("energyVal", (int)((GR1GameEnergyADD)gr1).getMinWinInitCred());
+			if (gr1.getMem().isEmptyController()) {
+				
+				printToConsole("The controller to synthesize is invalid. Please make sure the specification is well-separated and satisfiable");
+			} else {
+				
+				this.isRealizable = true;
+
+				Env.disableReorder();
+
+				if (PreferencePage.getBDDPackageSelection().equals(BDDPackage.CUDD_ADD) && model.getWeights() != null) {
+					((GR1GameEnergyADD) gr1).flattenGameMemoryTerminalsToVariables();
+					((GR1GameEnergyADD) gr1).updateSysTransWithEnergyConstraints();
+					((GR1GameEnergyADD) gr1).setSysWinningStatesWithFlatCredits();
 				}
-				else {
-					minWinCred = BDDEnergyReduction.getMinWinCred(model, gr1.sysWinningStates());					
+
+				// if in Energy game then restrict initial states to minimum initial energy
+				// credit
+				if (model.getWeights() != null) {
+					BDD minWinCred;
+					if (PreferencePage.getBDDPackageSelection().equals(BDDPackage.CUDD_ADD)) {
+						minWinCred = Env.getBDDValue("energyVal", (int) ((GR1GameEnergyADD) gr1).getMinWinInitCred());
+					} else {
+						minWinCred = BDDEnergyReduction.getMinWinCred(model, gr1.sysWinningStates());
+					}
+					model.getSys().conjunctInitial(minWinCred);
 				}
-				model.getSys().conjunctInitial(minWinCred);
+
+				ConcreteControllerConstruction cc = new GR1ConceteControllerConstructionSkip(gr1.getMem(), model);
+				IOConsoleOutputStream cout = console.newOutputStream();
+				PrintStream out = new PrintStream(cout);
+				try {
+					if ("CMP".equals(PreferencePage.getConcreteControllerFormat())) {
+						MAAMinimizeAutomatonPrinter.REMOVE_DEAD_STATES = true;
+						new MAAMinimizeAutomatonPrinter(model).printController(out, cc.calculateConcreteController());
+					} else if ("JTLV".equals(PreferencePage.getConcreteControllerFormat())) {
+						new SimpleTextPrinter().printController(out, cc.calculateConcreteController());
+					}
+					out.close();
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 
-			ConcreteControllerConstruction cc = new GR1ConceteControllerConstructionSkip(gr1.getMem(), model);
-			IOConsoleOutputStream cout = console.newOutputStream();
-			PrintStream out = new PrintStream(cout);
-			try {
-				if ("CMP".equals(PreferencePage.getConcreteControllerFormat())) {
-					MAAMinimizeAutomatonPrinter.REMOVE_DEAD_STATES = true;
-					new MAAMinimizeAutomatonPrinter(model).printController(out, cc.calculateConcreteController());
-				} else if ("JTLV".equals(PreferencePage.getConcreteControllerFormat())) {
-					new SimpleTextPrinter().printController(out, cc.calculateConcreteController());
-				}
-				out.close();
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			model.free();
-			gr1.free();
-			return;
+		} else {
+			this.isRealizable = false;
+			printToConsole("The selected specification is unrealizable.");	
 		}
-		this.isRealizable = false;
-		printToConsole("The selected specification is unrealizable.");
+
 		model.free();
 		gr1.free();
+		}
 	}
 
 	@Override
 	public boolean needsBound() {
 		return true;
 	}
-
 
 }

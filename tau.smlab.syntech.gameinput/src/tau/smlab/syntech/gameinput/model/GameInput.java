@@ -56,6 +56,7 @@ public class GameInput implements Serializable {
 	private List<WeightDefinition> weightDefs = new ArrayList<>();
 	private List<TriggerConstraint> triggers = new ArrayList<>();
 	private List<Variable> domainVars = new ArrayList<>();
+	private List<RegexpTestModel> regtestExpressions = new ArrayList<>();
 	private int bound;
 
 	public GameInput(String name)
@@ -191,5 +192,18 @@ public class GameInput implements Serializable {
 		public NonDomainVarException(String msg) {
 			super(msg);
 		}
+	}
+	
+	public void setRegtestExpressions(List<RegexpTestModel> regtestExpressions) {
+		this.regtestExpressions = regtestExpressions;
+	}
+
+	public List<RegexpTestModel> getRegtestExpressions() {
+		return regtestExpressions;
+	}
+	
+	public void addregtestExperssion(RegexpTestModel regtestExpression)
+	{
+		this.regtestExpressions.add(regtestExpression);
 	}
 }

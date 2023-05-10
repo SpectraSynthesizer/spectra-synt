@@ -31,6 +31,8 @@ package tau.smlab.syntech.gameinputtrans.translator;
 import java.util.ArrayList;
 import java.util.List;
 
+import tau.smlab.syntech.gameinput.model.GameInput;
+
 public class DefaultTranslators {
   public static List<Translator> getDefaultTranslators() {
     List<Translator> ts = new ArrayList<Translator>();
@@ -52,4 +54,5 @@ public class DefaultTranslators {
     ts.add(new PrimesInJusticeTranslator());
     return ts;
   }
+  
 }

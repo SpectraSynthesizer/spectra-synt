@@ -93,8 +93,13 @@ public class EnumStateImpl implements EnumStateI {
 			return false;
 		EnumStateImpl other_raw = (EnumStateImpl) other;
 
-		return ((this.just == other_raw.just) & (this.ini == other_raw.ini) & (this.state
+		return ((this.just == other_raw.just) && (this.ini == other_raw.ini) && (this.state
 				.equals(other_raw.state)));
+	}
+	
+	@Override
+	public int hashCode() {
+		return this.just.hashCode() * this.state.hashCode() + (this.ini?1:0);
 	}
 
 	@Override

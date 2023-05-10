@@ -28,10 +28,15 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package tau.smlab.syntech.ui.extension;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.core.resources.IFile;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jface.action.ContributionItem;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.text.TextSelection;
@@ -55,166 +60,217 @@ import org.eclipse.ui.console.IConsoleManager;
 import org.eclipse.ui.console.MessageConsole;
 import org.eclipse.ui.part.FileEditorInput;
 
-import tau.smlab.syntech.ui.console.ConsolePrinter;
+import tau.smlab.syntech.jtlv.Env;
+import tau.smlab.syntech.ui.extension.console.ConsolePrinter;
+import tau.smlab.syntech.ui.jobs.SyntechBDDEngineExclusiveRule;
+import tau.smlab.syntech.ui.logger.SpectraLogger;
+import tau.smlab.syntech.ui.preferences.PreferencePage;
 
 public abstract class SyntechAction<T extends Enum<T> & ActionID> extends ContributionItem {
 
-  protected IFile specFile;
-  protected IWorkbench workbench;
-  protected IWorkbenchWindow window;
-  protected IWorkbenchPage activePage;
-  protected Shell shell;
-  protected MessageConsole console;
-  protected ConsolePrinter consolePrinter;
+	protected IFile specFile;
+	protected IWorkbench workbench;
+	protected IWorkbenchWindow window;
+	protected IWorkbenchPage activePage;
+	protected Shell shell;
+	protected MessageConsole console;
+	protected ConsolePrinter consolePrinter;
 
-  /**
-   * name of the plug-in to identify it on the console
-   * 
-   * @return
-   */
-  public abstract String getPluginName();
+	/**
+	 * name of the plug-in to identify it on the console
+	 * 
+	 * @return
+	 */
+	public abstract String getPluginName();
 
-  /**
-   * basically the items in T.getValues()
-   * 
-   * @return
-   */
-  public abstract T[] getActionItems();
+	/**
+	 * basically the items in T.getValues()
+	 * 
+	 * @return
+	 */
+	public abstract T[] getActionItems();
 
-  /**
-   * method that is executed on a click of the user
-   * 
-   * @param actionID
-   * @param specFile
-   */
-  public abstract void run(T actionID, IFile specFile);
+	/**
+	 * method that is executed on a click of the user
+	 * 
+	 * @param actionID
+	 * @param specFile
+	 */
+	public abstract void run(T actionID, IFile specFile);
 
-  @Override
-  public void fill(Menu menu, int index) {
-    // fill menu from enumeration values
-    for (T aid : getActionItems()) {
-      MenuItem menuItem = new MenuItem(menu, SWT.CHECK, index);
-      menuItem.setText(aid.getMenuText());
-      menuItem.addSelectionListener(new SelectionAdapter() {
-        public void widgetSelected(SelectionEvent e) {
-          //what to do when menu is subsequently selected.
-          prepareAndRun(aid);
-        }
-      });
+	/**
+	 * Indicate whether the run-method of this action may be run as a job.
+	 * 
+	 * default is <code>true</code> and must be overriden for <code>false</code>,
+	 * e.g., if access to UI is needed.
+	 * 
+	 * @return
+	 */
+	protected boolean runAsJob() {
+		return true;
+	}
 
-    }
-  }
+	@Override
+	public void fill(Menu menu, int index) {
+		// fill menu from enumeration values
+		for (T aid : getActionItems()) {
+			MenuItem menuItem = new MenuItem(menu, SWT.CHECK, index);
+			menuItem.setText(aid.getMenuText());
+			menuItem.addSelectionListener(new SelectionAdapter() {
+				public void widgetSelected(SelectionEvent e) {
+					// what to do when menu is subsequently selected.
+					prepareAndRun(aid);
+				}
+			});
 
-  /**
-   * find the selected specFile and check if it requires saving <br>
-   * then run run()
-   * 
-   * @param actionID
-   */
-  public void prepareAndRun(T actionID) {
-    if (!setSpecFileAndEnvironmentFields()) {
-      return;
-    }
+		}
+	}
 
-    if (!savePage()) {
-      return;
-    }
+	/**
+	 * find the selected specFile and check if it requires saving <br>
+	 * then run run()
+	 * 
+	 * @param actionID
+	 */
+	public void prepareAndRun(T actionID) {
+		if (!setSpecFileAndEnvironmentFields()) {
+			return;
+		}
 
-    console = getConsole();
-    try {
-      consolePrinter = new ConsolePrinter(getPluginName(), ConsolePrinter.CLEAR_CONSOLE);
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
+		if (!savePage()) {
+			return;
+		}
 
-    run(actionID, specFile);
-  }
+		console = getConsole();
+		try {
+			consolePrinter = new ConsolePrinter(getPluginName(), ConsolePrinter.CLEAR_CONSOLE);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 
-  /**
-   * @return true if setting succeeded, false otherwise.
-   */
-  private boolean setSpecFileAndEnvironmentFields() {
-    workbench = PlatformUI.getWorkbench();
-    window = workbench.getActiveWorkbenchWindow();
-    shell = window.getShell();
-    activePage = window.getActivePage();
-    List<IFile> selectedFiles = new ArrayList<>();
+		SpectraLogger.logOperationStart(specFile, actionID.toString());
 
-    if (window == null) {
-      return false;
-    }
+		// copy optimization preferences
+		PreferencePage.setOptSelection();
 
-    ISelectionService selectionService = window.getSelectionService();
-    if (selectionService == null) {
-      return false;
-    }
+		if (runAsJob()) {
+			Thread t = new Thread(() -> SyntechAction.this.run(actionID, specFile));
 
-    ISelection selection = selectionService.getSelection();
-    if (selection == null) {
-      return false;
-    }
+			Job job = new Job(getPluginName() + " Job") {
+				@Override
+				protected IStatus run(IProgressMonitor monitor) {
+					t.start();
 
-    // selected on text view (the code window)
-    if (selection instanceof TextSelection) {
-      IEditorPart editor = activePage.getActiveEditor();
-      IFile original = ((FileEditorInput) editor.getEditorInput()).getFile();
-      specFile = original;
-    }
+					while (t.isAlive()) {
+						if (monitor.isCanceled()) {
+							t.stop();
+							consolePrinter.println("User cancelled job.");
+							Env.resetEnv();
+							return Status.CANCEL_STATUS;
+						}
+						try {
+							Thread.sleep(10);
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+					}
 
-    // selected on explorer view
-    else if (selection instanceof IStructuredSelection) {
-      IStructuredSelection structSelection = (IStructuredSelection) selection;
-      List<?> selected = structSelection.toList();
-      for (Object object : selected) {
-        if (object instanceof IFile) {
-          IFile file = (IFile) object;
-          selectedFiles.add(file);
-        }
-      }
-      if (selectedFiles == null || selectedFiles.size() == 0 || selectedFiles.size() >= 2) {
-        MessageDialog.openInformation(shell, getPluginName(), "Please select only one .spectra file.");
-        return false;
-      } else {
-        specFile = selectedFiles.get(0);
-      }
-    }
+					return Status.OK_STATUS;
+				}
+			};
+			job.setPriority(Job.SHORT);
+			job.setRule(new SyntechBDDEngineExclusiveRule());
+			job.schedule();
+		} else {
+			run(actionID, specFile);
+		}
+	}
 
-    return true;
-  }
+	/**
+	 * @return true if setting succeeded, false otherwise.
+	 */
+	private boolean setSpecFileAndEnvironmentFields() {
+		workbench = PlatformUI.getWorkbench();
+		window = workbench.getActiveWorkbenchWindow();
+		shell = window.getShell();
+		activePage = window.getActivePage();
+		List<IFile> selectedFiles = new ArrayList<>();
 
-  /**
-   * If the page is unsaved, ask user if he wants to save it first
-   * 
-   * @return false if the user has chosen to abort
-   */
-  protected boolean savePage() {
-    IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
+		if (window == null) {
+			return false;
+		}
 
-    // check if file is saved
-    IEditorPart editorPart = page.getActiveEditor();
-    if (editorPart != null && editorPart.isDirty()) {
-      boolean isYes = MessageDialog.openQuestion(shell, getPluginName(),
-          "The file is not saved. Select 'Yes' to save and 'No' to abort.");
-      if (isYes) {
-        editorPart.doSave(null);
-      } else {
-        return false;
-      }
-    }
-    return true;
-  }
+		ISelectionService selectionService = window.getSelectionService();
+		if (selectionService == null) {
+			return false;
+		}
 
-  protected MessageConsole getConsole() {
-    String name = "SYNTECH Console";
-    ConsolePlugin plugin = ConsolePlugin.getDefault();
-    IConsoleManager conMan = plugin.getConsoleManager();
-    IConsole[] existing = conMan.getConsoles();
-    for (int i = 0; i < existing.length; i++)
-      if (name.equals(existing[i].getName()))
-        return (MessageConsole) existing[i];
-    // no console found, so create a new one
-    MessageConsole myConsole = new MessageConsole(name, null);
-    conMan.addConsoles(new IConsole[] { myConsole });
-    return myConsole;
-  }
+		ISelection selection = selectionService.getSelection();
+		if (selection == null) {
+			return false;
+		}
+
+		// selected on text view (the code window)
+		if (selection instanceof TextSelection) {
+			IEditorPart editor = activePage.getActiveEditor();
+			IFile original = ((FileEditorInput) editor.getEditorInput()).getFile();
+			specFile = original;
+		}
+
+		// selected on explorer view
+		else if (selection instanceof IStructuredSelection) {
+			IStructuredSelection structSelection = (IStructuredSelection) selection;
+			List<?> selected = structSelection.toList();
+			for (Object object : selected) {
+				if (object instanceof IFile) {
+					IFile file = (IFile) object;
+					selectedFiles.add(file);
+				}
+			}
+			if (selectedFiles == null || selectedFiles.size() == 0 || selectedFiles.size() >= 2) {
+				MessageDialog.openInformation(shell, getPluginName(), "Please select only one .spectra file.");
+				return false;
+			} else {
+				specFile = selectedFiles.get(0);
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * If the page is unsaved, ask user if he wants to save it first
+	 * 
+	 * @return false if the user has chosen to abort
+	 */
+	protected boolean savePage() {
+		IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
+
+		// check if file is saved
+		IEditorPart editorPart = page.getActiveEditor();
+		if (editorPart != null && editorPart.isDirty()) {
+			boolean isYes = MessageDialog.openQuestion(shell, getPluginName(),
+					"The file is not saved. Select 'Yes' to save and 'No' to abort.");
+			if (isYes) {
+				editorPart.doSave(null);
+			} else {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	protected MessageConsole getConsole() {
+		String name = "SYNTECH Console";
+		ConsolePlugin plugin = ConsolePlugin.getDefault();
+		IConsoleManager conMan = plugin.getConsoleManager();
+		IConsole[] existing = conMan.getConsoles();
+		for (int i = 0; i < existing.length; i++)
+			if (name.equals(existing[i].getName()))
+				return (MessageConsole) existing[i];
+		// no console found, so create a new one
+		MessageConsole myConsole = new MessageConsole(name, null);
+		conMan.addConsoles(new IConsole[] { myConsole });
+		return myConsole;
+	}
 }

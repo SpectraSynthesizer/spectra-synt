@@ -52,13 +52,7 @@ public class DdminUNSAT extends AbstractDdmin<BehaviorInfo> {
   protected boolean check(List<BehaviorInfo> part) {
     BDD res = Env.TRUE();
     for (BehaviorInfo info : part) {
-      if (info.isInitial()) {
-        res.andWith(info.initial.id());
-      } else if (info.isSafety()) {
-        res.andWith(info.safety.id());
-      } else if (info.isJustice()) {
-        res.andWith(info.justice.id());
-      }
+      res.andWith(info.getBdd().id());
     }
     boolean unsat = res.isZero();
     res.free();

@@ -37,6 +37,7 @@ import tau.smlab.syntech.gameinput.spec.Operator;
 import tau.smlab.syntech.gameinput.spec.Spec;
 import tau.smlab.syntech.gameinput.spec.SpecExp;
 import tau.smlab.syntech.gameinput.spec.VariableReference;
+import tau.smlab.syntech.gameinputtrans.AuxVariableGenerator;
 
 /**
  * Replaces Justice asm and gar with primes by aux variables
@@ -92,7 +93,7 @@ public class PrimesInJusticeTranslator implements Translator {
   private Spec replacePrimes(Spec spec, int traceId, GameInput input) {
 
     // create new var
-    String varName = "PRIMED_JUSTICE_" + traceId;
+    String varName = "PRIMED_JUSTICE_" + AuxVariableGenerator.useVar();
     Variable aux = new Variable(varName, new TypeDef());
     input.getAux().addVar(aux);
 

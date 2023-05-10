@@ -52,7 +52,10 @@ import org.eclipse.xtext.validation.CheckMode;
 import org.eclipse.xtext.validation.IResourceValidator;
 import org.eclipse.xtext.validation.Issue;
 
+import com.google.common.collect.Iterators;
+
 import tau.smlab.syntech.gameinput.model.GameInput;
+import tau.smlab.syntech.spectra.LTLAsm;
 import tau.smlab.syntech.spectra.Model;
 import tau.smlab.syntech.spectragameinput.translator.Spectra2GameInputTranslator;
 
@@ -63,6 +66,8 @@ import tau.smlab.syntech.spectragameinput.translator.Spectra2GameInputTranslator
 public class SpectraInputProvider {
 
 	private static List<Issue> issues;
+	
+	public static XtextResource resource;
 
 	/**
 	 * Loads a spectra model from a file and returns its represenation in GameInput
@@ -133,7 +138,7 @@ public class SpectraInputProvider {
 				.get(IResourceSetProvider.class);
 		XtextResourceSet resourceSet = (XtextResourceSet) resourceSetProvider.get(project);
 
-		Resource resource = resourceSet.createResource(uri);
+		resource = (XtextResource)resourceSet.createResource(uri);
 		resource.load(new ByteArrayInputStream(content), resourceSet.getLoadOptions());
 		
 		Model spectraModel = (Model) resource.getContents().get(0);
@@ -177,11 +182,11 @@ public class SpectraInputProvider {
 				.get(IResourceSetProvider.class);
 		XtextResourceSet rs = (XtextResourceSet) rsp.get(project);
 
-		Resource r = rs.getResource(uri, true);
-		Model m = (Model) r.getContents().get(0);
+		resource = (XtextResource)rs.getResource(uri, true);
+		Model m = (Model) resource.getContents().get(0);
 
-		IResourceValidator validator = ((XtextResource) r).getResourceServiceProvider().getResourceValidator();
-		issues = validator.validate(r, CheckMode.ALL, CancelIndicator.NullImpl);
+		IResourceValidator validator = ((XtextResource) resource).getResourceServiceProvider().getResourceValidator();
+		issues = validator.validate(resource, CheckMode.ALL, CancelIndicator.NullImpl);
 		if (!issues.isEmpty()) {
 			issues = errorsOnly(issues);
 		}

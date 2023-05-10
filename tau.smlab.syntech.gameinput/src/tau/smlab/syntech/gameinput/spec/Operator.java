@@ -165,7 +165,8 @@ public enum Operator {
 	 * @return true, if this a Temporal operator.
 	 */
 	public boolean isTemporalOp() {
-		return this.in(PastLTLOp);
+		//return this.in(PastLTLOp);
+		return isLTLOp();
 	}
 
 	/**

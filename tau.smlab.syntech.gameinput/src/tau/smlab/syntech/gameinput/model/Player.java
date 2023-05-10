@@ -44,7 +44,6 @@ public class Player implements Serializable {
 	private List<TriggerConstraint> triggers = new ArrayList<>();
 	private List<ExistentialConstraint> existentialConstraints = new ArrayList<>();
 
-
 	public Player() {
 		this.vars = new  ArrayList<>();
 		this.constraints = new ArrayList<>();

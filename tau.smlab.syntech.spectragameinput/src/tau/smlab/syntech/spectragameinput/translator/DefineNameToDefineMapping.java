@@ -58,7 +58,7 @@ public class DefineNameToDefineMapping {
 	 * @return GameInput Define
 	 * @throws SpectraTranslationException
 	 */
-	public Define get(DefineDecl defineDecl, EntitiesMapper entitiesMapper, Tracer tracer)
+	synchronized public Define get(DefineDecl defineDecl, EntitiesMapper entitiesMapper, Tracer tracer)
 			throws SpectraTranslationException {
 		String defineName = defineDecl.getName();
 		if (defineNameToDefineObjectMapping.containsKey(defineName)) {
@@ -66,9 +66,12 @@ public class DefineNameToDefineMapping {
 		} else {
 			// Compute the define
 			Define giDefine = Spectra2GameInputTranslator.computeDefine(entitiesMapper, tracer, defineDecl);
-			// Store it for future look ups
-			defineNameToDefineObjectMapping.put(defineName, giDefine);
-			return giDefine;
+			// check again if we have computed it already (the above call might have recursively done so)
+			if (!defineNameToDefineObjectMapping.containsKey(defineName)) {
+				// Store it for future look ups
+				defineNameToDefineObjectMapping.put(defineName, giDefine);
+			}
+			return defineNameToDefineObjectMapping.get(defineName);				
 		}
 	}
 

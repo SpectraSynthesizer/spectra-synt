@@ -35,6 +35,8 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 
 import tau.smlab.syntech.gamemodel.GameModel;
+import tau.smlab.syntech.games.controller.jits.SymbolicControllerExistentialJitInfo;
+import tau.smlab.syntech.games.controller.jits.SymbolicControllerJitInfo;
 import tau.smlab.syntech.games.util.SaveLoadWithDomains;
 import tau.smlab.syntech.jtlv.Env;
 
@@ -69,6 +71,10 @@ public class SymbolicControllerReaderWriter {
 		// TODO: not implemented yet
 		return null;
 	}
+	
+	public static void writeSymbolicController(SymbolicController ctrl, GameModel model, String path, boolean reorderBeforeSave) throws IOException {
+		writeSymbolicController(ctrl, model, path, null, reorderBeforeSave);
+	}
 
 	/**
 	 * stores a symbolic controller to a file path
@@ -76,8 +82,9 @@ public class SymbolicControllerReaderWriter {
 	 * @param ctrl
 	 * @param model
 	 * @param path  needs to be a folder name (folder will be created if not exists)
+	 * @param name  name of the controller
 	 */
-	public static void writeSymbolicController(SymbolicController ctrl, GameModel model, String path, boolean reorderBeforeSave) throws IOException {
+	public static void writeSymbolicController(SymbolicController ctrl, GameModel model, String path, String name, boolean reorderBeforeSave) throws IOException {
 
 		// write the actual symbolic controller BDDs and doms
 
@@ -85,15 +92,24 @@ public class SymbolicControllerReaderWriter {
 
 		File folder = new File(path);
 		if (!folder.exists()) {
-			folder.mkdir();
+			folder.mkdirs();
 		}
 		
-		String prefix = path + File.separator;
+		String prefix;
+		if (name == null) {
+			prefix = path + File.separator;
+		} else {
+			prefix = path + File.separator + name + ".";
+		}
 		
 		SaveLoadWithDomains.saveStructureAndDomains(prefix + VARS, model);
 
 		Env.saveBDD(prefix + CONTROLLER_INIT, ctrl.initial(), reorderBeforeSave);
 		Env.saveBDD(prefix + CONTROLLER_TRANS, ctrl.trans(), reorderBeforeSave);
+	}
+	
+	public static void writeJitSymbolicController(SymbolicControllerJitInfo jitInfo, GameModel model, String path, boolean reorderBeforeSave) throws IOException {
+		writeJitSymbolicController(jitInfo, model, path, null, reorderBeforeSave);
 	}
 	
 	/**
@@ -102,17 +118,23 @@ public class SymbolicControllerReaderWriter {
 	 * @param jitInfo
 	 * @param model
 	 * @param path
+	 * @param name of the controller
 	 * @param reorderBeforeSave
 	 * @throws IOException
 	 */
-	public static void writeJitSymbolicController(SymbolicControllerJitInfo jitInfo, GameModel model, String path, boolean reorderBeforeSave) throws IOException {
+	public static void writeJitSymbolicController(SymbolicControllerJitInfo jitInfo, GameModel model, String path, String name, boolean reorderBeforeSave) throws IOException {
 		
 		File folder = new File(path);
 		if (!folder.exists()) {
-			folder.mkdir();
+			folder.mkdirs();
 		}
 		
-		String prefix = path + File.separator;
+		String prefix;
+		if (name == null) {
+			prefix = path + File.separator;
+		} else {
+			prefix = path + File.separator + name + ".";
+		}
         
         FileWriter sizesWriter = new FileWriter(prefix + SIZES);
         sizesWriter.write(model.getSys().justiceNum() + System.lineSeparator() + model.getEnv().justiceNum() + System.lineSeparator());
@@ -126,9 +148,9 @@ public class SymbolicControllerReaderWriter {
         
         SaveLoadWithDomains.saveStructureAndDomains(prefix + VARS, model);
         
-        Env.saveBDD(prefix + File.separator + FIXPOINTS, jitInfo.fixpoints(), reorderBeforeSave);
-        Env.saveBDD(prefix + File.separator + TRANS, jitInfo.safeties(), reorderBeforeSave);
-        Env.saveBDD(prefix + File.separator + JUSTICE, jitInfo.justices(), reorderBeforeSave);
+        Env.saveBDD(prefix + FIXPOINTS, jitInfo.fixpoints(), reorderBeforeSave);
+        Env.saveBDD(prefix + TRANS, jitInfo.safeties(), reorderBeforeSave);
+        Env.saveBDD(prefix + JUSTICE, jitInfo.justices(), reorderBeforeSave);
         
         if (model.getSys().hasExistReqs()) {
         	
@@ -149,9 +171,9 @@ public class SymbolicControllerReaderWriter {
             
             sizesWriter.close();
             
-            Env.saveBDD(prefix + File.separator + FULFILL, extJitInfo.fulfill(), reorderBeforeSave);
-            Env.saveBDD(prefix + File.separator + TOWARDS, extJitInfo.towards(), reorderBeforeSave);
-            Env.saveBDD(prefix + File.separator + ENV_VIOLATION, extJitInfo.envViolation(), reorderBeforeSave);
+            Env.saveBDD(prefix + FULFILL, extJitInfo.fulfill(), reorderBeforeSave);
+            Env.saveBDD(prefix + TOWARDS, extJitInfo.towards(), reorderBeforeSave);
+            Env.saveBDD(prefix + ENV_VIOLATION, extJitInfo.envViolation(), reorderBeforeSave);
         }
 
 	}

@@ -44,6 +44,7 @@ import tau.smlab.syntech.gameinput.model.ExistentialConstraint;
 import tau.smlab.syntech.gameinput.model.GameInput;
 import tau.smlab.syntech.gameinput.model.Monitor;
 import tau.smlab.syntech.gameinput.model.PatternConstraint;
+import tau.smlab.syntech.gameinput.model.RegexpTestModel;
 import tau.smlab.syntech.gameinput.model.TriggerConstraint;
 import tau.smlab.syntech.gameinput.model.TypeDef;
 import tau.smlab.syntech.gameinput.model.Variable;
@@ -77,22 +78,29 @@ public class CounterTranslator implements Translator {
 		for (Constraint c : input.getSys().getConstraints()) {
 			c.setSpec(replaceCounterRefs(counterVars, c.getSpec()));
 		}
-		
+
 		// sys triggers
 		replaceCounterRefsInTriggers(counterVars, input.getSys().getTriggers());
-		
+
 		// sys existential constraints
 		for (ExistentialConstraint exC : input.getSys().getExistentialConstraints()) {
-			if(exC.isRegExp()) {
+			if (exC.isRegExp()) {
 				SpecRegExp regExp = exC.getRegExp();
-				for(SpecRegExp predRegExp : regExp.getPredicateSubExps()) {
+				for (SpecRegExp predRegExp : regExp.getPredicateSubExps()) {
 					predRegExp.setPredicate(replaceCounterRefs(counterVars, predRegExp.getPredicate()));
 				}
-			}
-			else {
-				for(int i = 0; i < exC.getSize() ; i++) {
+			} else {
+				for (int i = 0; i < exC.getSize(); i++) {
 					exC.replaceSpec(i, replaceCounterRefs(counterVars, exC.getSpec(i)));
 				}
+			}
+		}
+
+		// regexp tests
+		for (RegexpTestModel reT : input.getRegtestExpressions()) {
+			SpecRegExp regExp = reT.getRegExp();
+			for (SpecRegExp predRegExp : regExp.getPredicateSubExps()) {
+				predRegExp.setPredicate(replaceCounterRefs(counterVars, predRegExp.getPredicate()));
 			}
 		}
 
@@ -100,7 +108,7 @@ public class CounterTranslator implements Translator {
 		for (Constraint c : input.getEnv().getConstraints()) {
 			c.setSpec(replaceCounterRefs(counterVars, c.getSpec()));
 		}
-		
+
 		// env triggers
 		replaceCounterRefsInTriggers(counterVars, input.getEnv().getTriggers());
 
@@ -111,7 +119,7 @@ public class CounterTranslator implements Translator {
 
 		// defines
 		for (Define d : input.getDefines()) {
-			
+
 			if (d.getExpression() != null) {
 				d.setExpression(replaceCounterRefs(counterVars, d.getExpression()));
 			} else {
@@ -124,7 +132,6 @@ public class CounterTranslator implements Translator {
 			Constraint c = wd.getDefinition();
 			c.setSpec(replaceCounterRefs(counterVars, c.getSpec()));
 		}
-
 
 		// going over monitors
 		for (Monitor mon : input.getMonitors()) {
@@ -174,7 +181,8 @@ public class CounterTranslator implements Translator {
 	}
 
 	/**
-	 * Translate all counters by creating auxiliary variables and creating auxiliary constraints.
+	 * Translate all counters by creating auxiliary variables and creating auxiliary
+	 * constraints.
 	 * 
 	 * @param input
 	 * @return
@@ -186,7 +194,7 @@ public class CounterTranslator implements Translator {
 
 		for (Counter count : input.getCounters()) {
 
-			//maintain a list of all counter names
+			// maintain a list of all counter names
 			counterNameList.add(count.getName());
 
 			// create auxiliary variable for counter
@@ -195,7 +203,7 @@ public class CounterTranslator implements Translator {
 			input.getAux().addVar(counterVar);
 			counterVars.put(count.getName(), counterVar);
 
-			//maintain a traceIds set of the counter's constraints
+			// maintain a traceIds set of the counter's constraints
 			traceIdsSet = new HashSet<>();
 			traceIdsByCounter.put(count.getName(), traceIdsSet);
 			traceIdsSet.add(count.getTraceId()); // safety constraints have the TraceId of the counter
@@ -221,7 +229,7 @@ public class CounterTranslator implements Translator {
 				// add counter's initial constraints to AUX player
 				input.getAux().addConstraint(c);
 
-				//add the current constraint c and its traceId
+				// add the current constraint c and its traceId
 				traceIdsSet.add(c.getTraceId());
 			}
 
@@ -258,7 +266,8 @@ public class CounterTranslator implements Translator {
 				Spec incPred = count.getIncPred().getContent();
 				Spec spIncFinalExp = new SpecExp(Operator.IMPLIES, incPred,
 						new SpecExp(Operator.OR, specIncVal, overflow));
-				Constraint incConst = new Constraint(Kind.SAFETY, spIncFinalExp, count.getName() + ".inc", count.getIncPred().getTraceId());
+				Constraint incConst = new Constraint(Kind.SAFETY, spIncFinalExp, count.getName() + ".inc",
+						count.getIncPred().getTraceId());
 				input.getAux().addConstraint(incConst);
 			}
 
@@ -289,7 +298,8 @@ public class CounterTranslator implements Translator {
 				Spec decPred = count.getDecPred().getContent();
 				Spec spDecFinalExp = new SpecExp(Operator.IMPLIES, decPred,
 						new SpecExp(Operator.OR, specDecVal, underflow));
-				Constraint decConst = new Constraint(Kind.SAFETY, spDecFinalExp, count.getName() + ".dec", count.getDecPred().getTraceId());
+				Constraint decConst = new Constraint(Kind.SAFETY, spDecFinalExp, count.getName() + ".dec",
+						count.getDecPred().getTraceId());
 				input.getAux().addConstraint(decConst);
 			}
 
@@ -297,12 +307,15 @@ public class CounterTranslator implements Translator {
 			if (count.getResetPred() != null) {
 				Spec spReset = new SpecExp(Operator.IMPLIES, count.getResetPred().getContent(),
 						new SpecExp(Operator.EQUALS, nextCounterVarRef, min));
-				Constraint resetConst = new Constraint(Kind.SAFETY, spReset, count.getName() + ".reset", count.getResetPred().getTraceId());
+				Constraint resetConst = new Constraint(Kind.SAFETY, spReset, count.getName() + ".reset",
+						count.getResetPred().getTraceId());
 				input.getAux().addConstraint(resetConst);
 			}
 
-			// create constraint for not changing counter value while its predicates are false.
-			// (not (incPred) and not (resetPred) and not (decPred)) ==> myCounter=next(myCounter)
+			// create constraint for not changing counter value while its predicates are
+			// false.
+			// (not (incPred) and not (resetPred) and not (decPred)) ==>
+			// myCounter=next(myCounter)
 			Spec alwaysTrue = new PrimitiveValue("true");
 			Spec notInc = alwaysTrue;
 			if (count.getIncPred() != null) {
@@ -321,7 +334,8 @@ public class CounterTranslator implements Translator {
 			Spec unmodifyExp = new SpecExp(Operator.EQUALS, nextCounterVarRef, counterVarRef);
 			Spec spIFF = new SpecExp(Operator.IMPLIES, notAll, unmodifyExp);
 
-			Constraint unmodifyConst = new Constraint(Kind.SAFETY, spIFF, count.getName() + ".noChange", count.getTraceId());
+			Constraint unmodifyConst = new Constraint(Kind.SAFETY, spIFF, count.getName() + ".noChange",
+					count.getTraceId());
 			input.getAux().addConstraint(unmodifyConst);
 		}
 
@@ -339,7 +353,7 @@ public class CounterTranslator implements Translator {
 	public List<String> getCountersNames() {
 		return counterNameList;
 	}
-	
+
 	private DefineArray replaceCounterInDefineArrays(Map<String, Variable> counterVars, DefineArray defArray) {
 
 		List<Spec> newSpec = null;
@@ -349,7 +363,7 @@ public class CounterTranslator implements Translator {
 				newSpec.add(replaceCounterRefs(counterVars, exp));
 			}
 		}
-		
+
 		List<DefineArray> newDefArray = null;
 		if (defArray.getDefineArray() != null) {
 			newDefArray = new ArrayList<>();
@@ -357,23 +371,24 @@ public class CounterTranslator implements Translator {
 				newDefArray.add(replaceCounterInDefineArrays(counterVars, innerArray));
 			}
 		}
-		
+
 		return new DefineArray(newSpec, newDefArray);
 	}
 
 	private boolean noWorkToDo(GameInput input) {
 		return input.getCounters() == null || input.getCounters().isEmpty();
 	}
-	
-	private void replaceCounterRefsInTriggers(Map<String, Variable> counterVars, List<TriggerConstraint> moduleTriggers) {
+
+	private void replaceCounterRefsInTriggers(Map<String, Variable> counterVars,
+			List<TriggerConstraint> moduleTriggers) {
 		SpecRegExp initSpecRegExp, effectSpecRegExp;
-		for(TriggerConstraint trigger : moduleTriggers) {
+		for (TriggerConstraint trigger : moduleTriggers) {
 			initSpecRegExp = trigger.getInitSpecRegExp();
-			for(SpecRegExp predRegExp : initSpecRegExp.getPredicateSubExps()) {
+			for (SpecRegExp predRegExp : initSpecRegExp.getPredicateSubExps()) {
 				predRegExp.setPredicate(replaceCounterRefs(counterVars, predRegExp.getPredicate()));
 			}
 			effectSpecRegExp = trigger.getEffectSpecRegExp();
-			for(SpecRegExp predRegExp : effectSpecRegExp.getPredicateSubExps()) {
+			for (SpecRegExp predRegExp : effectSpecRegExp.getPredicateSubExps()) {
 				predRegExp.setPredicate(replaceCounterRefs(counterVars, predRegExp.getPredicate()));
 			}
 		}

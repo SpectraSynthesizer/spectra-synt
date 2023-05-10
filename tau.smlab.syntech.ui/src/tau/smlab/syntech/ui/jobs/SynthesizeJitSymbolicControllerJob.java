@@ -32,7 +32,7 @@ import java.io.File;
 
 import net.sf.javabdd.BDD;
 import tau.smlab.syntech.bddgenerator.energy.BDDEnergyReduction;
-import tau.smlab.syntech.games.controller.symbolic.SymbolicControllerJitInfo;
+import tau.smlab.syntech.games.controller.jits.SymbolicControllerJitInfo;
 import tau.smlab.syntech.games.controller.symbolic.SymbolicControllerReaderWriter;
 import tau.smlab.syntech.games.gr1.GR1Game;
 import tau.smlab.syntech.games.gr1.GR1GameEnergyADD;
@@ -94,50 +94,59 @@ public class SynthesizeJitSymbolicControllerJob extends SyntechJob {
 			long time = System.currentTimeMillis() - start;
 			printToConsole("Realizability Check: " + time + "ms");
 			
-			this.isRealizable = true;
-			
-						
-			if (PreferencePage.getBDDPackageSelection().equals(BDDPackage.CUDD_ADD) &&
-					model.getWeights() != null) {
-				((GR1GameEnergyADD)gr1).flattenGameMemoryTerminalsToVariables();
-				((GR1GameEnergyADD)gr1).updateSysTransWithEnergyConstraints();
-				((GR1GameEnergyADD)gr1).setSysWinningStatesWithFlatCredits();
-			}
-			
-	        try {	
-	        	
-	            BDD minWinCred = Env.TRUE();
-				// if in Energy game then restrict initial states to minimum initial energy credit 
-				if (model.getWeights() != null) {
-					if (PreferencePage.getBDDPackageSelection().equals(BDDPackage.CUDD_ADD)) {
-						minWinCred = Env.getBDDValue("energyVal", (int)((GR1GameEnergyADD)gr1).getMinWinInitCred());
-					} else {
-						minWinCred = BDDEnergyReduction.getMinWinCred(model, gr1.sysWinningStates());					
-					}
+			if (gr1.getMem().isEmptyController()) {
+				
+				printToConsole("The controller to synthesize is invalid. Please make sure the specification is well-separated and satisfiable");
+				
+			} else {
+				
+				this.isRealizable = true;
+				
+				
+				if (PreferencePage.getBDDPackageSelection().equals(BDDPackage.CUDD_ADD) &&
+						model.getWeights() != null) {
+					((GR1GameEnergyADD)gr1).flattenGameMemoryTerminalsToVariables();
+					((GR1GameEnergyADD)gr1).updateSysTransWithEnergyConstraints();
+					((GR1GameEnergyADD)gr1).setSysWinningStatesWithFlatCredits();
 				}
 				
-				start = System.currentTimeMillis();
-				
-				SymbolicControllerJitInfoConstruction jitInfoConstruction = new SymbolicControllerJitInfoConstruction(gr1.getMem(), model, minWinCred);
-				SymbolicControllerJitInfo jitInfo = jitInfoConstruction.calculateJitSymbollicControllerInfo();
-				
-				time = System.currentTimeMillis() - start;
-				printToConsole("JITS BDDs Preparation: " + time + "ms");
-				
-				start = System.currentTimeMillis();
-				
-				String location = specFile.getParent().getLocation().toOSString();
-				String outLocation = location + File.separator + "out";
-				
-				SymbolicControllerReaderWriter.writeJitSymbolicController(jitInfo, model, outLocation, PreferencePage.isReorderBeforeSave());
-				jitInfo.free();
-				
-				time = System.currentTimeMillis() - start;
-				printToConsole("Controller save to disk: " + time + "ms");
-  
-	        } catch (Exception e) {
-            	e.printStackTrace();
-	        }
+		        try {	
+		        	
+		            BDD minWinCred = Env.TRUE();
+					// if in Energy game then restrict initial states to minimum initial energy credit 
+					if (model.getWeights() != null) {
+						if (PreferencePage.getBDDPackageSelection().equals(BDDPackage.CUDD_ADD)) {
+							minWinCred = Env.getBDDValue("energyVal", (int)((GR1GameEnergyADD)gr1).getMinWinInitCred());
+						} else {
+							minWinCred = BDDEnergyReduction.getMinWinCred(model, gr1.sysWinningStates());					
+						}
+					}
+					
+					start = System.currentTimeMillis();
+					
+					SymbolicControllerJitInfoConstruction jitInfoConstruction = new SymbolicControllerJitInfoConstruction(gr1.getMem(), model, minWinCred);
+					SymbolicControllerJitInfo jitInfo = jitInfoConstruction.calculateJitSymbollicControllerInfo();
+					
+					time = System.currentTimeMillis() - start;
+					printToConsole("JITS BDDs Preparation: " + time + "ms");
+					
+					start = System.currentTimeMillis();
+					
+					String location = specFile.getParent().getLocation().toOSString();
+					String outLocation = location + File.separator + "out" + File.separator + "jit";
+					
+					SymbolicControllerReaderWriter.writeJitSymbolicController(jitInfo, model, outLocation, gi.getName(), PreferencePage.isReorderBeforeSave());
+					jitInfo.free();
+					
+					time = System.currentTimeMillis() - start;
+					printToConsole("Controller save to disk: " + time + "ms");
+	  
+		        } catch (Exception e) {
+	            	e.printStackTrace();
+		        }
+			}
+			
+
 		} else {
 			
 			this.isRealizable = false;

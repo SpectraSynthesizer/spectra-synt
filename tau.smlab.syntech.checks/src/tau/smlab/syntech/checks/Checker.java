@@ -38,7 +38,6 @@ import java.util.stream.Collectors;
 
 import net.sf.javabdd.BDD;
 import net.sf.javabdd.BDDVarSet;
-import tau.smlab.syntech.bddgenerator.BDDGenerator;
 import tau.smlab.syntech.cores.domainagnostic.AbstractDdmin;
 import tau.smlab.syntech.gameinput.model.Constraint;
 import tau.smlab.syntech.gameinput.spec.Spec;
@@ -238,11 +237,7 @@ public class Checker {
 
     List<BehaviorInfo> trivial = new ArrayList<>();
     for (BehaviorInfo bi : infos) {
-      if (bi.isInitial() && (bi.initial.isZero() || bi.initial.isOne())) {
-        trivial.add(bi);
-      } else if (bi.isSafety() && (bi.safety.isZero() || bi.safety.isOne())) {
-        trivial.add(bi);
-      } else if (bi.isJustice() && (bi.justice.isZero() || bi.justice.isOne())) {
+      if (bi.getBdd().isZero() || bi.getBdd().isOne()) {
         trivial.add(bi);
       }
     }
@@ -258,7 +253,7 @@ public class Checker {
    */
   public List<BehaviorInfo> computeEnvBadPrimesSpecs(GameModel model) {
     List<BehaviorInfo> infos = new ArrayList<>();
-    infos.addAll(computeEnvBadIniPrimesSpecs(model));
+    infos.addAll(computeBadIniPrimesSpecs(model));
     infos.addAll(computeEnvBadIniSysSpec(model));
     infos.addAll(computeEnvBadSafetyPrimesSpecs(model));
     return infos;
@@ -300,7 +295,7 @@ public class Checker {
    * @param model
    * @return
    */
-  public List<BehaviorInfo> computeEnvBadIniPrimesSpecs(GameModel model) {
+  public List<BehaviorInfo> computeBadIniPrimesSpecs(GameModel model) {
     sys = model.getSys();
     env = model.getEnv();
     List<BehaviorInfo> infos = new ArrayList<>();
@@ -675,7 +670,7 @@ public class Checker {
     Map<Integer, Set<BehaviorInfo>> traceIdtoBI = computeTraceIdtoBIMap(gm);
 
     for (String counterName : counterTranslator.getCountersNames()) {
-      List<SpecTraceable> inconstentPredicates = getInconstentCounterPredicates(gm, counterName, counterTranslator);
+      List<SpecTraceable> inconstentPredicates = getInconstentCounterPredicates(gm, counterName, counterTranslator, traceIdtoBI);
       if (inconstentPredicates.size() > 0) {
         List<BehaviorInfo> result = new ArrayList<BehaviorInfo>();
         for (SpecTraceable pred : inconstentPredicates) {
@@ -691,7 +686,7 @@ public class Checker {
   }
 
   private List<SpecTraceable> getInconstentCounterPredicates(GameModel gm, String counterName,
-      CounterTranslator counterTranslator) {
+      CounterTranslator counterTranslator, Map<Integer, Set<BehaviorInfo>> traceIdtoBI) {
     List<SpecTraceable> predicates = counterTranslator.getCounterPredicates(counterName);
 
     PlayerModule env = gm.getEnv();
@@ -700,8 +695,9 @@ public class Checker {
 
     List<BDD> predicatesBdds = new ArrayList<BDD>();
     for (SpecTraceable pred : predicates) {
-      BDD bdd = BDDGenerator.createBdd(pred.getContent(), pred.getTraceId());
-      predicatesBdds.add(bdd);
+    	for (BehaviorInfo bi : traceIdtoBI.get(pred.getTraceId())) {
+    		predicatesBdds.add(bi.getBdd().id());
+    	}
     }
 
     try {

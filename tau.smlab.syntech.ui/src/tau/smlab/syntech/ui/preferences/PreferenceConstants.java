@@ -41,10 +41,15 @@ public class PreferenceConstants {
 	
 	public static final String REORDER_BEFORE_SAVE = "reorderBeforeSave";
 
+	public static final String IS_LOGGER_ACTIVE = "isLoggerActive";
+
 	public static final String BDD_ENGINE_CHOICE = "BDDEngine";
-	
-	public static final String WELL_SEP_SYS = "WellSep";
-	
+		
 	public static final String CONC_CONT_FORMAT = "ConcreteControllerFormat";
+	
+	public static final String SYNTHESIS_METHOD = "synthesisMethod";
+	public static final String SYNTHESIS_METHOD_GR1 = "synthesisGR1";
+	public static final String SYNTHESIS_METHOD_PITERMAN = "synthesisPiterman";
+	public static final String SYNTHESIS_METHOD_PITERMAN_REDUCTION = "synthesisPitermanReduction";
 
 }

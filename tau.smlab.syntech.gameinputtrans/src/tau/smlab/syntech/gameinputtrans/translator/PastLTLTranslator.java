@@ -46,6 +46,7 @@ import tau.smlab.syntech.gameinput.spec.PrimitiveValue;
 import tau.smlab.syntech.gameinput.spec.Spec;
 import tau.smlab.syntech.gameinput.spec.SpecExp;
 import tau.smlab.syntech.gameinput.spec.VariableReference;
+import tau.smlab.syntech.gameinputtrans.AuxVariableGenerator;
 import tau.smlab.syntech.gameinputtrans.TranslationException;
 
 /**
@@ -60,7 +61,6 @@ import tau.smlab.syntech.gameinputtrans.TranslationException;
  */
 public class PastLTLTranslator implements Translator {
 
-	private static int runningNumber = 0;
 	private Player auxPlayer;
 	private Map<Integer, VariableReference> pasLTLSpecsHashMap;
 	private List<Constraint> auxPastConstraints;
@@ -185,7 +185,7 @@ public class PastLTLTranslator implements Translator {
 					iniSpec = new SpecExp(Operator.IFF, new VariableReference(aux), se.getChildren()[0]);
 					auxPastConstraints.add(new Constraint(Kind.INI, iniSpec, null, traceId));
 
-					Spec auxAndPChild = new SpecExp(Operator.OR, new VariableReference(aux), new SpecExp(Operator.PRIME, se.getChildren()[0].clone()));
+					Spec auxAndPChild = new SpecExp(Operator.AND, new VariableReference(aux), new SpecExp(Operator.PRIME, se.getChildren()[0].clone()));
 					safetySpec = new SpecExp(Operator.IFF, p_aux, auxAndPChild);
 					auxPastConstraints.add(new Constraint(Kind.SAFETY, safetySpec, null, traceId));
 					break;          
@@ -256,7 +256,7 @@ public class PastLTLTranslator implements Translator {
 	}
 
 	private Variable addFreshAuxVariable(Operator operator, int traceId) {
-		String varName = operator.toString() + "_" + traceId + "_" + runningNumber++;
+		String varName = operator.toString() + "_aux_" + AuxVariableGenerator.useVar();
 		Variable aux = new Variable(varName, new TypeDef());
 		auxPlayer.addVar(aux);
 		return aux;

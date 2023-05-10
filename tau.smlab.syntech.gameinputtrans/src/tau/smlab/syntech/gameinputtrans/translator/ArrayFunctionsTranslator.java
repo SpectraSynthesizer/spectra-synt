@@ -28,23 +28,17 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package tau.smlab.syntech.gameinputtrans.translator;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import tau.smlab.syntech.gameinput.model.Constraint;
 import tau.smlab.syntech.gameinput.model.GameInput;
 import tau.smlab.syntech.gameinput.model.Variable;
 import tau.smlab.syntech.gameinput.spec.Operator;
-import tau.smlab.syntech.gameinput.spec.PrimitiveValue;
-import tau.smlab.syntech.gameinput.spec.QuantifiedSpec;
 import tau.smlab.syntech.gameinput.spec.Spec;
 import tau.smlab.syntech.gameinput.spec.SpecExp;
-import tau.smlab.syntech.gameinput.spec.SpecWrapper;
 import tau.smlab.syntech.gameinput.spec.VariableReference;
-import tau.smlab.syntech.gameinputtrans.TranslationException;
 
 public class ArrayFunctionsTranslator implements Translator {
 	

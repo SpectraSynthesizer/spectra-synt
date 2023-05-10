@@ -36,11 +36,13 @@ import java.util.Map;
 import java.util.Set;
 
 import tau.smlab.syntech.gameinput.model.Constraint;
+import tau.smlab.syntech.gameinput.model.Counter;
 import tau.smlab.syntech.gameinput.model.Define;
 import tau.smlab.syntech.gameinput.model.DefineArray;
 import tau.smlab.syntech.gameinput.model.ExistentialConstraint;
 import tau.smlab.syntech.gameinput.model.GameInput;
 import tau.smlab.syntech.gameinput.model.Monitor;
+import tau.smlab.syntech.gameinput.model.RegexpTestModel;
 import tau.smlab.syntech.gameinput.model.TriggerConstraint;
 import tau.smlab.syntech.gameinput.model.Variable;
 import tau.smlab.syntech.gameinput.model.WeightDefinition;
@@ -50,6 +52,19 @@ import tau.smlab.syntech.gameinput.spec.SpecExp;
 import tau.smlab.syntech.gameinput.spec.SpecRegExp;
 import tau.smlab.syntech.gameinput.spec.VariableReference;
 
+/**
+ * This translator removes monitors from GameInput in two steps:
+ * <ul>
+ * <li>Translates monitors to auxiliary variables and adds auxiliary
+ * constraints.</li>
+ * <li>Replaces references to monitors by references to the auxiliary
+ * variables.</li>
+ * </ul>
+ * 
+ * The replacement must happen in all places where monitors could be referenced,
+ * i.e., this code needs to know about other structures in the GameInput.
+ *
+ */
 public class MonitorTranslator implements Translator {
 
 	protected Map<String, List<Constraint>> monitorConstraints = new HashMap<>();;
@@ -73,28 +88,35 @@ public class MonitorTranslator implements Translator {
 
 		// sys existential constraints
 		for (ExistentialConstraint exC : input.getSys().getExistentialConstraints()) {
-			if(exC.isRegExp()) {
+			if (exC.isRegExp()) {
 				SpecRegExp regExp = exC.getRegExp();
-				for(SpecRegExp predRegExp : regExp.getPredicateSubExps()) {
+				for (SpecRegExp predRegExp : regExp.getPredicateSubExps()) {
 					predRegExp.setPredicate(replaceMonRefs(monVars, predRegExp.getPredicate()));
 				}
-			}
-			else {
-				for(int i = 0; i < exC.getSize() ; i++) {
+			} else {
+				for (int i = 0; i < exC.getSize(); i++) {
 					exC.replaceSpec(i, replaceMonRefs(monVars, exC.getSpec(i)));
 				}
 			}
 		}
-		
-		//sys triggers
+
+		// regexp test
+		for (RegexpTestModel reT : input.getRegtestExpressions()) {
+			SpecRegExp regExp = reT.getRegExp();
+			for (SpecRegExp predRegExp : regExp.getPredicateSubExps()) {
+				predRegExp.setPredicate(replaceMonRefs(monVars, predRegExp.getPredicate()));
+			}
+		}
+
+		// sys triggers
 		replaceMonRefsInTriggers(monVars, input.getSys().getTriggers());
 
 		// assumptions
 		for (Constraint c : input.getEnv().getConstraints()) {
 			c.setSpec(replaceMonRefs(monVars, c.getSpec()));
 		}
-		
-		//env triggers
+
+		// env triggers
 		replaceMonRefsInTriggers(monVars, input.getEnv().getTriggers());
 
 		// auxiliary constraints
@@ -117,11 +139,28 @@ public class MonitorTranslator implements Translator {
 			c.setSpec(replaceMonRefs(monVars, c.getSpec()));
 		}
 
+		// counters
+    for (Counter counter : input.getCounters()) {
+      if (counter.getDecPred() != null) {
+        counter.getDecPred().setContent(replaceMonRefs(monVars, counter.getDecPred().getContent()));
+      }
+      if (counter.getIncPred() != null) {
+        counter.getIncPred().setContent(replaceMonRefs(monVars, counter.getIncPred().getContent()));
+      }
+      if (counter.getIniPred() != null) {
+        counter.getIniPred().setContent(replaceMonRefs(monVars, counter.getIniPred().getContent()));
+      }
+      if (counter.getResetPred() != null) {
+        counter.getResetPred().setContent(replaceMonRefs(monVars, counter.getResetPred().getContent()));
+      }
+    }
+    
 		input.getMonitors().clear();
 	}
 
 	/**
 	 * replace the monitor references by references to the new variables
+	 * 
 	 * @param monVars
 	 * @param spec
 	 * @return
@@ -143,7 +182,8 @@ public class MonitorTranslator implements Translator {
 	}
 
 	/**
-	 * Translate all monitors by creating auxiliary variables and creating auxiliary constraints.
+	 * Translate all monitors by creating auxiliary variables and creating auxiliary
+	 * constraints.
 	 * 
 	 * @param input
 	 * @return
@@ -156,7 +196,7 @@ public class MonitorTranslator implements Translator {
 
 		for (Monitor mon : input.getMonitors()) {
 
-			//maintain a list of all monitor names
+			// maintain a list of all monitor names
 			monitorNameList.add(mon.getName());
 
 			// create auxiliary variable for monitor
@@ -164,7 +204,7 @@ public class MonitorTranslator implements Translator {
 			input.getAux().addVar(v);
 			monVars.put(mon.getName(), v);
 
-			//maintain a traceIds set of the monitor's constraints
+			// maintain a traceIds set of the monitor's constraints
 			traceIdsSet = new HashSet<>();
 			traceIdsByMonitor.put(mon.getName(), traceIdsSet);
 
@@ -176,7 +216,7 @@ public class MonitorTranslator implements Translator {
 				// add monitoring constraints to AUX player
 				input.getAux().addConstraint(c);
 
-				//add the current constraint c and its traceId
+				// add the current constraint c and its traceId
 				traceIdsSet.add(c.getTraceId());
 				monConstList.add(c);
 			}
@@ -195,7 +235,7 @@ public class MonitorTranslator implements Translator {
 	public List<String> getMonitorsNames() {
 		return monitorNameList;
 	}
-	
+
 	private DefineArray replaceMonitorInDefineArrays(Map<String, Variable> monVars, DefineArray defArray) {
 
 		List<Spec> newSpec = null;
@@ -205,7 +245,7 @@ public class MonitorTranslator implements Translator {
 				newSpec.add(replaceMonRefs(monVars, exp));
 			}
 		}
-		
+
 		List<DefineArray> newDefArray = null;
 		if (defArray.getDefineArray() != null) {
 			newDefArray = new ArrayList<>();
@@ -213,23 +253,23 @@ public class MonitorTranslator implements Translator {
 				newDefArray.add(replaceMonitorInDefineArrays(monVars, innerArray));
 			}
 		}
-		
+
 		return new DefineArray(newSpec, newDefArray);
 	}
 
 	private boolean noWorkToDo(GameInput input) {
 		return input.getMonitors() == null || input.getMonitors().isEmpty();
 	}
-	
+
 	private void replaceMonRefsInTriggers(Map<String, Variable> monVars, List<TriggerConstraint> moduleTriggers) {
 		SpecRegExp initSpecRegExp, effectSpecRegExp;
-		for(TriggerConstraint trigger : moduleTriggers) {
+		for (TriggerConstraint trigger : moduleTriggers) {
 			initSpecRegExp = trigger.getInitSpecRegExp();
-			for(SpecRegExp predRegExp : initSpecRegExp.getPredicateSubExps()) {
+			for (SpecRegExp predRegExp : initSpecRegExp.getPredicateSubExps()) {
 				predRegExp.setPredicate(replaceMonRefs(monVars, predRegExp.getPredicate()));
 			}
 			effectSpecRegExp = trigger.getEffectSpecRegExp();
-			for(SpecRegExp predRegExp : effectSpecRegExp.getPredicateSubExps()) {
+			for (SpecRegExp predRegExp : effectSpecRegExp.getPredicateSubExps()) {
 				predRegExp.setPredicate(replaceMonRefs(monVars, predRegExp.getPredicate()));
 			}
 		}

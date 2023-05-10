@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+<extension
+         point="org.eclipse.ui.console.consolePatternMatchListeners">
+      <consolePatternMatchListener
+            class="tau.smlab.syntech.ui.extension.console.ExplanationConsolePatternMatchListener"
+            id="Explanation.explanationConsolePatternMatchListener"
+            regex="line: [0-9]+">
+         <enablement></enablement>
+      </consolePatternMatchListener>
+   </extension>
+
+
+</plugin>

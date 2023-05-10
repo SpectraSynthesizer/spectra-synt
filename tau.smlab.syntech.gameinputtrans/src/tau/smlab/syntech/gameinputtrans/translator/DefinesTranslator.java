@@ -38,6 +38,7 @@ import tau.smlab.syntech.gameinput.model.ExistentialConstraint;
 import tau.smlab.syntech.gameinput.model.GameInput;
 import tau.smlab.syntech.gameinput.model.Pattern;
 import tau.smlab.syntech.gameinput.model.Predicate;
+import tau.smlab.syntech.gameinput.model.RegexpTestModel;
 import tau.smlab.syntech.gameinput.model.TriggerConstraint;
 import tau.smlab.syntech.gameinput.model.WeightDefinition;
 import tau.smlab.syntech.gameinput.spec.DefineReference;
@@ -84,6 +85,14 @@ public class DefinesTranslator implements Translator {
 				for(int i = 0; i < exC.getSize() ; i++) {
 					exC.replaceSpec(i, replaceDefines(exC.getSpec(i), exC.getTraceId()));
 				}
+			}
+		}
+		
+		// regexp tests
+		for (RegexpTestModel reT : input.getRegtestExpressions()) {
+			SpecRegExp regExp = reT.getRegExp();
+			for(SpecRegExp predRegExp : regExp.getPredicateSubExps()) {
+				predRegExp.setPredicate(replaceDefines(predRegExp.getPredicate(), 0));
 			}
 		}
 		
