@@ -102,10 +102,10 @@ public class GR1GameReachable extends GR1Game {
 				cy = 0;
 				y = Env.FALSE();
 
-				BDD yieldZandJj = yield(z, forceTrue, forceFalse).andWith(sys.justiceAt(j).id());
+				BDD yieldZandJj = this.yield(z, forceTrue, forceFalse).andWith(sys.justiceAt(j).id());
 
 				for (iterY = new FixPoint(false); iterY.advance(y);) {
-					BDD yieldY = yield(y, forceTrue, forceFalse);
+					BDD yieldY = this.yield(y, forceTrue, forceFalse);
 					BDD start = yieldZandJj.or(yieldY);
 					yieldY.free();
 					yCount++;
@@ -129,7 +129,7 @@ public class GR1GameReachable extends GR1Game {
 
 							xCount++;
 
-							BDD sysCtrl = yield(x, forceTrue, forceFalse);
+							BDD sysCtrl = this.yield(x, forceTrue, forceFalse);
 							BDD sysCtrlAndNotJustice = sysCtrl.and(negp);
 							sysCtrl.free();
 							x = sysCtrlAndNotJustice.or(start);

@@ -131,6 +131,10 @@ public class SymbolicController {
 	public BDD succ(BDD from) {
 		return Env.succ(from, trans);
 	}
+	
+	public BDD pred(BDD to) {
+		return Env.pred(trans, to);
+	}
 
 	@Override
 	public String toString() {

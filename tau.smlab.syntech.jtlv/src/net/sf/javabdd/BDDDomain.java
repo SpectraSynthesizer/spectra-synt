@@ -105,6 +105,18 @@ public abstract class BDDDomain {
     }
     
     /**
+     * @return The name of the domain with Next(name) instead of '
+     */
+    public String getNameWithNextPrint()
+    {
+        if (name.endsWith("'"))
+        {
+        	return "next(" + name.substring(0, name.length()-1) + ")";
+        }
+        return name;
+    }
+        
+    /**
      * Returns the index of this domain.
      */ 
     public int getIndex() {

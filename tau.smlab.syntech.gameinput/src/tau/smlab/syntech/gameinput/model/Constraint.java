@@ -99,7 +99,6 @@ public class Constraint implements Serializable {
 
 	public boolean isJustice() {
 		return Kind.JUSTICE.equals(this.kind);
-
 	}
 
 }

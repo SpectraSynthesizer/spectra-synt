@@ -2512,6 +2512,19 @@ public abstract class BDDFactory {
 		System.out.println("gr1 game not implemented");
 		return false;
 	}
+	
+	public boolean gr1SeparatedGame(BDD[] sysJ, BDD[] envJ, BDD sysIni, BDD envIni, BDD sysTrans, BDD envTrans,
+			BDDVarSet sysUnprimeVars, BDDVarSet envUnprimeVars, BDDVarSet sysPrimeVars, BDDVarSet envPrimeVars,
+			BDDPairing pairs, BDD[] sysTransList, BDD[] envTransList, BDDVarSet[] sysQuantSets,
+			BDDVarSet[] envQuantSets, boolean efp, boolean eun, boolean fpr, boolean sca) {
+		System.out.println("gr1 game not implemented");
+		return false;
+	}
+	
+	public boolean vacuityC(BDD[] justices, BDD ini, BDD trans, BDDVarSet primeVars, BDDPairing pairs, BDD targetJustice) {
+		System.out.println("vacuity in c not implemented");
+		return false;
+	}
 
 	public boolean gr1GameWithIncData(BDD[] sysJ, BDD[] envJ, BDD sysIni, BDD envIni, BDD sysTrans, BDD envTrans,
 			BDDVarSet sysUnprimeVars, BDDVarSet envUnprimeVars, BDDVarSet sysPrimeVars, BDDVarSet envPrimeVars,

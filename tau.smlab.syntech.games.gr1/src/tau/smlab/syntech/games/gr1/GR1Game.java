@@ -28,6 +28,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package tau.smlab.syntech.games.gr1;
 
+import java.util.ArrayList;
+
 import net.sf.javabdd.BDD;
 import tau.smlab.syntech.gamemodel.GameModel;
 import tau.smlab.syntech.games.GameSolver;
@@ -55,24 +57,26 @@ public class GR1Game extends GameSolver {
 
 	@Override
 	public boolean checkRealizability() {
+		//System.out.println("-----------------------------------------------------------------------");
 		mem.x_mem = new BDD[sys.justiceNum()][env.justiceNum()][50];
 		mem.y_mem = new BDD[sys.justiceNum()][50];
 		mem.z_mem = new BDD[sys.justiceNum()];
+		
+		mem.z_fixpoints = new ArrayList<>();
 
 		BDD x = null, y, z;
 		FixPoint iterZ, iterY, iterX;
 		int cy = 0;
 
 		z = Env.TRUE();
-
 		for (iterZ = new FixPoint(false); iterZ.advance(z);) {
 
 			for (int j = 0; j < sys.justiceNum(); j++) {
+				
 				cy = 0;
 				y = Env.FALSE();
 				for (iterY = new FixPoint(false); iterY.advance(y);) {
 					BDD start = sys.justiceAt(j).id().andWith(env.yieldStates(sys, z)).orWith(env.yieldStates(sys, y));
-
 					y = Env.FALSE();
 					for (int i = 0; i < env.justiceNum(); i++) {
 						BDD negp = env.justiceAt(i).not();
@@ -103,6 +107,8 @@ public class GR1Game extends GameSolver {
 				z = y.id();
 				mem.z_mem[j] = z.id();
 			}
+			
+			mem.z_fixpoints.add(z.id());
 		}
 		mem.x_mem = mem.extend_size(mem.x_mem, 0);
 		mem.y_mem = mem.extend_size(mem.y_mem, 0);
@@ -164,5 +170,4 @@ public class GR1Game extends GameSolver {
 	public BDD sysWinningStates() {
 		return mem.getWin();
 	}
-
 }

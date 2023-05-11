@@ -50,9 +50,10 @@ public class PreferenceInitializer extends AbstractPreferenceInitializer {
 		store.setDefault(PreferenceConstants.OPT_CHOICE, "all");
 		store.setDefault(PreferenceConstants.DETERMINIZE, false);
 		store.setDefault(PreferenceConstants.REORDER_BEFORE_SAVE, false);
+		store.setDefault(PreferenceConstants.IS_LOGGER_ACTIVE, true);
 		store.setDefault(PreferenceConstants.BDD_ENGINE_CHOICE, "CUDD");
-		store.setDefault(PreferenceConstants.WELL_SEP_SYS, "NONE");
-		store.setDefault(PreferenceConstants.CONC_CONT_FORMAT, "CMP");		
+		store.setDefault(PreferenceConstants.CONC_CONT_FORMAT, "CMP");	
+		store.setDefault(PreferenceConstants.SYNTHESIS_METHOD, PreferenceConstants.SYNTHESIS_METHOD_GR1);
 	}
 
 }

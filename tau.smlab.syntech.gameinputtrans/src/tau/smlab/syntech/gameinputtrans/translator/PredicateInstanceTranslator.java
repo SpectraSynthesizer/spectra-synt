@@ -39,6 +39,7 @@ import tau.smlab.syntech.gameinput.model.ExistentialConstraint;
 import tau.smlab.syntech.gameinput.model.GameInput;
 import tau.smlab.syntech.gameinput.model.Monitor;
 import tau.smlab.syntech.gameinput.model.PatternConstraint;
+import tau.smlab.syntech.gameinput.model.RegexpTestModel;
 import tau.smlab.syntech.gameinput.model.TriggerConstraint;
 import tau.smlab.syntech.gameinput.model.Variable;
 import tau.smlab.syntech.gameinput.model.WeightDefinition;
@@ -91,16 +92,24 @@ public class PredicateInstanceTranslator implements Translator {
 				}
 			}
 		}
-		
-		//sys triggers
+
+		// regexp tests
+		for (RegexpTestModel reT : input.getRegtestExpressions()) {
+			SpecRegExp regExp = reT.getRegExp();
+			for (SpecRegExp predRegExp : regExp.getPredicateSubExps()) {
+				predRegExp.setPredicate(replacePredicateInstances(predRegExp.getPredicate()));
+			}
+		}
+
+		// sys triggers
 		replacePredicateInstancesInTriggers(input.getSys().getTriggers());
 
 		// assumptions
 		for (Constraint c : input.getEnv().getConstraints()) {
 			c.setSpec(replacePredicateInstances(c.getSpec()));
 		}
-		
-		//env triggers
+
+		// env triggers
 		replacePredicateInstancesInTriggers(input.getEnv().getTriggers());
 
 		// auxiliary constraints
@@ -122,7 +131,7 @@ public class PredicateInstanceTranslator implements Translator {
 				def.setDefineArray(replacePredicateInDefineArrays(def.getDefineArray()));
 			}
 		}
-		
+
 		for (Counter counter : input.getCounters()) {
 			if (counter.getDecPred() != null) {
 				counter.getDecPred().setContent(replacePredicateInstances(counter.getDecPred().getContent()));
@@ -162,7 +171,7 @@ public class PredicateInstanceTranslator implements Translator {
 		// clear all predicates
 		input.getPredicates().clear();
 	}
-	
+
 	private DefineArray replacePredicateInDefineArrays(DefineArray defArray) {
 
 		List<Spec> newSpec = null;
@@ -172,7 +181,7 @@ public class PredicateInstanceTranslator implements Translator {
 				newSpec.add(replacePredicateInstances(exp));
 			}
 		}
-		
+
 		List<DefineArray> newDefArray = null;
 		if (defArray.getDefineArray() != null) {
 			newDefArray = new ArrayList<>();
@@ -180,7 +189,7 @@ public class PredicateInstanceTranslator implements Translator {
 				newDefArray.add(replacePredicateInDefineArrays(innerArray));
 			}
 		}
-		
+
 		return new DefineArray(newSpec, newDefArray);
 	}
 
@@ -237,13 +246,13 @@ public class PredicateInstanceTranslator implements Translator {
 					newIndexSpec.add(indexSpec);
 				}
 				varRef.setIndexSpecs(newIndexSpec);
-				
+
 				for (Variable var : formalParams) {
 					if (varRef.getIndexVars().containsValue(var)) {
 						varRef.getIndexVars().remove(var.getName());
 					}
 				}
-				
+
 				try {
 					SpecHelper.updateRefName(varRef);
 				} catch (Exception e) {
@@ -305,16 +314,16 @@ public class PredicateInstanceTranslator implements Translator {
 		}
 		return predicateSpec;
 	}
-	
+
 	private void replacePredicateInstancesInTriggers(List<TriggerConstraint> moduleTriggers) {
 		SpecRegExp initSpecRegExp, effectSpecRegExp;
-		for(TriggerConstraint trigger : moduleTriggers) {
+		for (TriggerConstraint trigger : moduleTriggers) {
 			initSpecRegExp = trigger.getInitSpecRegExp();
-			for(SpecRegExp predRegExp : initSpecRegExp.getPredicateSubExps()) {
+			for (SpecRegExp predRegExp : initSpecRegExp.getPredicateSubExps()) {
 				predRegExp.setPredicate(replacePredicateInstances(predRegExp.getPredicate()));
 			}
 			effectSpecRegExp = trigger.getEffectSpecRegExp();
-			for(SpecRegExp predRegExp : effectSpecRegExp.getPredicateSubExps()) {
+			for (SpecRegExp predRegExp : effectSpecRegExp.getPredicateSubExps()) {
 				predRegExp.setPredicate(replacePredicateInstances(predRegExp.getPredicate()));
 			}
 		}

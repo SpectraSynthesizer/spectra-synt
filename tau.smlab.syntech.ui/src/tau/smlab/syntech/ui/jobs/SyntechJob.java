@@ -54,6 +54,7 @@ import org.eclipse.xtext.nodemodel.INode;
 import org.eclipse.xtext.nodemodel.util.NodeModelUtils;
 
 import net.sf.javabdd.BDD;
+import net.sf.javabdd.BDDFactory;
 import net.sf.javabdd.BDDVarSet;
 import tau.smlab.syntech.bddgenerator.BDDGenerator;
 import tau.smlab.syntech.bddgenerator.BDDGenerator.TraceInfo;
@@ -63,9 +64,11 @@ import tau.smlab.syntech.gameinputtrans.translator.Translator;
 import tau.smlab.syntech.gamemodel.BehaviorInfo;
 import tau.smlab.syntech.gamemodel.GameModel;
 import tau.smlab.syntech.gamemodel.PlayerModule.TransFuncType;
+import tau.smlab.syntech.jtlv.BDDPackage;
 import tau.smlab.syntech.jtlv.Env;
 import tau.smlab.syntech.jtlv.env.module.ModuleBDDField;
 import tau.smlab.syntech.spectragameinput.translator.Tracer;
+import tau.smlab.syntech.ui.logger.SpectraLogger;
 import tau.smlab.syntech.ui.preferences.PreferencePage;
 
 public abstract class SyntechJob extends Job {
@@ -112,6 +115,14 @@ public abstract class SyntechJob extends Job {
 
 		long jobTime = System.currentTimeMillis();
 
+		BDDPackage.setCurrPackage(PreferencePage.getBDDPackageSelection(), PreferencePage.getBDDPackageVersionSelection());
+		if (PreferencePage.isReorderEnabled()) {
+			Env.enableReorder();
+			Env.TRUE().getFactory().autoReorder(BDDFactory.REORDER_SIFT);
+		} else {
+			Env.disableReorder();
+		}
+		
 		Thread t = new Thread(() -> translateAnddoWork());
 		t.start();
 		while (t.isAlive()) {
@@ -130,6 +141,8 @@ public abstract class SyntechJob extends Job {
 		}
 		computationTime = System.currentTimeMillis() - jobTime;
 		printToConsole("Computation time: " + computationTime + "ms");
+		SpectraLogger.logOperationDone(specFile, this.getName(), computationTime, isRealizable);
+
 		return Status.OK_STATUS;
 	}
 	

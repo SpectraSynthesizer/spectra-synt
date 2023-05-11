@@ -56,15 +56,13 @@ import org.eclipse.ui.console.IConsoleView;
 import org.eclipse.ui.console.MessageConsole;
 import org.eclipse.ui.part.FileEditorInput;
 
-import net.sf.javabdd.BDDFactory;
 import tau.smlab.syntech.bddgenerator.BDDGenerator.TraceInfo;
 import tau.smlab.syntech.gameinput.model.GameInput;
 import tau.smlab.syntech.gameinputtrans.TranslationException;
 import tau.smlab.syntech.gameinputtrans.TranslationProvider;
 import tau.smlab.syntech.gameinputtrans.translator.DefaultTranslators;
 import tau.smlab.syntech.gameinputtrans.translator.Translator;
-import tau.smlab.syntech.jtlv.BDDPackage;
-import tau.smlab.syntech.jtlv.Env;
+import tau.smlab.syntech.games.gr1.wellseparation.GR1PitermanReduction;
 import tau.smlab.syntech.spectragameinput.ErrorsInSpectraException;
 import tau.smlab.syntech.spectragameinput.SpectraInputProvider;
 import tau.smlab.syntech.spectragameinput.SpectraTranslationException;
@@ -72,12 +70,15 @@ import tau.smlab.syntech.ui.jobs.CheckRealizabilityJob;
 import tau.smlab.syntech.ui.jobs.ChecksJob;
 import tau.smlab.syntech.ui.jobs.CounterStrategyJob;
 import tau.smlab.syntech.ui.jobs.MarkerKind;
+import tau.smlab.syntech.ui.jobs.SyntechBDDEngineExclusiveRule;
 import tau.smlab.syntech.ui.jobs.SyntechJob;
 import tau.smlab.syntech.ui.jobs.SynthesizeSharedControllerJob;
 import tau.smlab.syntech.ui.jobs.SynthesizeConcreteControllerJob;
 import tau.smlab.syntech.ui.jobs.SynthesizeJitSymbolicControllerJob;
 import tau.smlab.syntech.ui.jobs.SynthesizeSymbolicControllerJob;
+import tau.smlab.syntech.ui.logger.SpectraLogger;
 import tau.smlab.syntech.ui.preferences.PreferencePage;
+import tau.smlab.syntech.ui.preferences.PreferenceConstants;
 
 public class SynthesisAction implements IObjectActionDelegate, IEditorActionDelegate {
 
@@ -93,7 +94,7 @@ public class SynthesisAction implements IObjectActionDelegate, IEditorActionDele
 		if (!savePage()) {
 			return;
 		}
-		
+
 		SyntechJob job = null;
 		closeOldProblemView();
 		switch (action.getId()) {
@@ -111,6 +112,7 @@ public class SynthesisAction implements IObjectActionDelegate, IEditorActionDele
 			break;
 		case "tau.smlab.syntech.checkRealAction":
 			job = new CheckRealizabilityJob();
+//			job.setTrace(TraceInfo.ALL);
 			break;
 		case "tau.smlab.syntech.checksAction":
 			job = new ChecksJob();
@@ -146,16 +148,9 @@ public class SynthesisAction implements IObjectActionDelegate, IEditorActionDele
 		MessageConsole console = getConsole();
 		console.clearConsole();
 		showConsole();
-		
+
 		long setupTime = 0, parsingTime, simplificationTime;
 		long start = System.currentTimeMillis();
-		BDDPackage.setCurrPackage(PreferencePage.getBDDPackageSelection(), PreferencePage.getBDDPackageVersionSelection());
-		if (PreferencePage.isReorderEnabled()) {
-			Env.enableReorder();
-			Env.TRUE().getFactory().autoReorder(BDDFactory.REORDER_SIFT);
-		} else {
-			Env.disableReorder();
-		}
 
 		job.setSpecFile(specFile);
 		job.setConsole(console);
@@ -172,36 +167,39 @@ public class SynthesisAction implements IObjectActionDelegate, IEditorActionDele
 			job.printToConsole("Setup time: " + setupTime + "ms");
 			return;
 		} catch (SpectraTranslationException e) {
-      job.printToConsole("Problems encountered in input file:");
-      job.printToConsole(e.getMessage());
-      setupTime = System.currentTimeMillis() - start;
-      job.printToConsole("Setup time: " + setupTime + "ms");
-      job.createMarker(e.getTraceId(), e.getMessage(), MarkerKind.CUSTOM_TEXT_ERROR);
-      return;
-    }
+			job.printToConsole("Problems encountered in input file:");
+			job.printToConsole(e.getMessage());
+			setupTime = System.currentTimeMillis() - start;
+			job.printToConsole("Setup time: " + setupTime + "ms");
+			job.createMarker(e.getTraceId(), e.getMessage(), MarkerKind.CUSTOM_TEXT_ERROR);
+			return;
+		}
 		parsingTime = System.currentTimeMillis() - start;
 		job.printToConsole("Parsing: " + parsingTime + "ms");
+		if (PreferencePage.getSynthesisMethod().equals(PreferenceConstants.SYNTHESIS_METHOD_PITERMAN_REDUCTION))
+			GR1PitermanReduction.doReduction(gi);
 		
 		if (job.needsBound() && !gi.getWeightDefs().isEmpty()) {
-		  InputDialog d = new InputDialog(shell, "Specify Energy Bound", "Please specify a suitable bound for the Energy Game:", "20", new IInputValidator() {        
-        @Override
-        public String isValid(String newText) {
-          try {
-            Integer.parseInt(newText);
-          } catch(Exception e) {
-            return "Unable to parse integer!";
-          }
-          return null;
-        }
-      });
-		  if (d.open() == Window.OK) {
-		    gi.setEnergyBound(Integer.parseInt(d.getValue()));
-		  } else {		    
-			gi.setEnergyBound(20);
-		  }
-		  job.printToConsole("Bound set to: " + gi.getEnergyBound());
+			InputDialog d = new InputDialog(shell, "Specify Energy Bound",
+					"Please specify a suitable bound for the Energy Game:", "20", new IInputValidator() {
+						@Override
+						public String isValid(String newText) {
+							try {
+								Integer.parseInt(newText);
+							} catch (Exception e) {
+								return "Unable to parse integer!";
+							}
+							return null;
+						}
+					});
+			if (d.open() == Window.OK) {
+				gi.setEnergyBound(Integer.parseInt(d.getValue()));
+			} else {
+				gi.setEnergyBound(20);
+			}
+			job.printToConsole("Bound set to: " + gi.getEnergyBound());
 		}
-		
+
 		start = System.currentTimeMillis();
 		try {
 			List<Translator> transList = DefaultTranslators.getDefaultTranslators();
@@ -219,7 +217,10 @@ public class SynthesisAction implements IObjectActionDelegate, IEditorActionDele
 
 		job.setGameInput(gi);
 
+		job.setRule(new SyntechBDDEngineExclusiveRule());
 		job.schedule();
+		
+		SpectraLogger.logOperationStart(specFile, action.getId());
 	}
 
 	/**
@@ -276,6 +277,7 @@ public class SynthesisAction implements IObjectActionDelegate, IEditorActionDele
 
 	/**
 	 * If the page is unsaved, ask user if he wants to save it first
+	 * 
 	 * @return false if the user has chosen to abort
 	 */
 	private boolean savePage() {

@@ -141,13 +141,13 @@
                menubarPath="tau.smlab.syntech.ui.syntechmenu/group2"
                class="tau.smlab.syntech.ui.action.SynthesisAction"> 
           </action>
-          <!--<action
+         <!-- <action
                id="tau.smlab.syntech.syntSharedSymbAction" 
                label="Synthesize Shared Static/JIT Controller"
                icon="icons/controller.gif"
                menubarPath="tau.smlab.syntech.ui.syntechmenu/group2"
                class="tau.smlab.syntech.ui.action.SynthesisAction"> 
-          </action>    --> 
+          </action> -->
          <action
                id="tau.smlab.syntech.syntSymbAction" 
                label="Synthesize Static Symbolic Controller"
@@ -276,6 +276,22 @@
     <persistent value="false">
     </persistent>
   </extension>
+  <extension
+      id="tau.smlab.syntech.ui.explanation_marker_dark"
+      name="Spectra Marker"
+      point="org.eclipse.core.resources.markers">
+    <super type="tau.smlab.syntech.Spectra.ui.spectra.check.fast"></super>
+    <persistent value="false">
+    </persistent>
+  </extension>
+  <extension
+      id="tau.smlab.syntech.ui.explanation_marker_light"
+      name="Spectra Marker"
+      point="org.eclipse.core.resources.markers">
+    <super type="tau.smlab.syntech.Spectra.ui.spectra.check.fast"></super>
+    <persistent value="false">
+    </persistent>
+  </extension>
   
 <!-- Annotations for markers  -->
   <extension
@@ -290,6 +306,20 @@
     <type
       markerType="tau.smlab.syntech.ui.error"
       name="tau.smlab.syntech.ui.error.annotation">
+    </type>
+  </extension>
+  <extension
+    point="org.eclipse.ui.editors.annotationTypes">
+    <type
+      markerType="tau.smlab.syntech.ui.explanation_marker_dark"
+      name="tau.smlab.syntech.ui.explanation_marker_dark.annotation">
+    </type>
+  </extension>
+  <extension
+    point="org.eclipse.ui.editors.annotationTypes">
+    <type
+      markerType="tau.smlab.syntech.ui.explanation_marker_light"
+      name="tau.smlab.syntech.ui.explanation_marker_light.annotation">
     </type>
   </extension>
   
@@ -336,5 +366,56 @@
       verticalRulerPreferenceValue="true">
     </specification>
   </extension>
+  <extension
+    point="org.eclipse.ui.editors.markerAnnotationSpecification">
+    <specification
+      annotationType="tau.smlab.syntech.ui.explanation_marker_light.annotation"
+      colorPreferenceKey="tau.smlab.syntech.ui.explanation_marker_light.color"
+      colorPreferenceValue="220, 220, 220"
+      contributesToHeader="false"
+      highlightPreferenceKey="tau.smlab.syntech.ui.explanation_marker_light.highlight"
+      highlightPreferenceValue="true"
+      includeOnPreferencePage="true"
+      label="Spectra Explanation Marker Light"
+      overviewRulerPreferenceKey="tau.smlab.syntech.ui.explanation_marker_light.overview"
+      overviewRulerPreferenceValue="true"
+      presentationLayer="0"
+      textPreferenceKey="tau.smlab.syntech.ui.explanation_marker_light.text"
+      textPreferenceValue="false"
+      textStylePreferenceValue="BOX"
+      verticalRulerPreferenceKey="tau.smlab.syntech.ui.explanation_marker_light.ruler"
+      verticalRulerPreferenceValue="true">
+    </specification>
+  </extension>
+  <extension
+    point="org.eclipse.ui.editors.markerAnnotationSpecification">
+    <specification
+      annotationType="tau.smlab.syntech.ui.explanation_marker_dark.annotation"
+      colorPreferenceKey="tau.smlab.syntech.ui.explanation_marker_dark.color"
+      colorPreferenceValue="15, 15, 15"
+      contributesToHeader="false"
+      highlightPreferenceKey="tau.smlab.syntech.ui.explanation_marker_dark.highlight"
+      highlightPreferenceValue="true"
+      includeOnPreferencePage="true"
+      label="Spectra Explanation Marker Dark"
+      overviewRulerPreferenceKey="tau.smlab.syntech.ui.explanation_marker_dark.overview"
+      overviewRulerPreferenceValue="true"
+      presentationLayer="0"
+      textPreferenceKey="tau.smlab.syntech.ui.explanation_marker_dark.text"
+      textPreferenceValue="false"
+      textStylePreferenceValue="BOX"
+      verticalRulerPreferenceKey="tau.smlab.syntech.ui.explanation_marker_dark.ruler"
+      verticalRulerPreferenceValue="true">
+    </specification>
+  </extension>
+  <extension
+        point="org.eclipse.e4.ui.css.swt.theme">
+    <stylesheet
+            uri="css/dark.css">
+        <themeid
+            refid="org.eclipse.e4.ui.css.theme.e4_dark">
+        </themeid>
+    </stylesheet>
+   </extension>
 
 </plugin>

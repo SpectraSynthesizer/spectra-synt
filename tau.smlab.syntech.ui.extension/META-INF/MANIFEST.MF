@@ -1,7 +1,7 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Generic UI Extension
-Bundle-SymbolicName: tau.smlab.syntech.ui.extension
+Bundle-SymbolicName: tau.smlab.syntech.ui.extension; singleton:=true
 Bundle-Version: 1.0.0.qualifier
 Bundle-Activator: tau.smlab.syntech.ui.extension.Activator
 Require-Bundle: org.eclipse.ui,
@@ -10,8 +10,12 @@ Require-Bundle: org.eclipse.ui,
  org.eclipse.core.resources,
  org.eclipse.jface.text;bundle-version="3.12.0",
  org.eclipse.ui.ide;bundle-version="3.13.1",
- org.eclipse.ui.console
+ org.eclipse.ui.console,
+ org.eclipse.core.jobs,
+ tau.smlab.syntech.jtlv,
+ org.eclipse.debug.ui,
+ tau.smlab.syntech.ui
 Bundle-ActivationPolicy: lazy
-Export-Package: tau.smlab.syntech.ui.console,
- tau.smlab.syntech.ui.extension
+Export-Package: tau.smlab.syntech.ui.extension,
+ tau.smlab.syntech.ui.extension.console
 Automatic-Module-Name: tau.smlab.syntech.ui.extension

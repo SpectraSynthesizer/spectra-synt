@@ -52,6 +52,7 @@ import net.sf.javabdd.BDDException;
 import net.sf.javabdd.BDDFactory;
 import net.sf.javabdd.BDDPairing;
 import net.sf.javabdd.BDDVarSet;
+import tau.smlab.syntech.gameinputtrans.AuxVariableGenerator;
 import tau.smlab.syntech.jtlv.env.module.ModuleBDDField;
 
 /**
@@ -79,6 +80,7 @@ public final class Env {
 	private Env() {
 	}
 
+	
 	/**
 	 * <p>
 	 * JTLV version count.
@@ -171,6 +173,7 @@ public final class Env {
 	 */
 	public static void resetEnv() {
 		Env.reset_pool_and_managers();
+		AuxVariableGenerator.resetVar();
 	}
 
 	/**
@@ -182,6 +185,7 @@ public final class Env {
 	 */
 	public static void resetEnv(BDDFactory f) {
 		Env.reset_pool_and_managers(f);
+		AuxVariableGenerator.resetVar();
 	}
 
 	// ////////////////////////////////////////////////////////////////////////
@@ -909,7 +913,6 @@ public final class Env {
 		
 		BDD res = prime_to.exist(primeVars);
 		prime_to.free();
-		
 		return res;
 	}
 
@@ -968,11 +971,18 @@ public final class Env {
 	 * @see edu.wis.jtlv.env.Env#kDeltaSucc(BDD, BDD, int)
 	 */
 	private static BDD succ(BDD from, BDD trans, BDDVarSet unprimeVars) {
+		//System.out.println("########################## succ start ##########################");
+		//System.out.println("from: " + from);
+		//System.out.println("trans: " + trans);
 		BDD tmp = from.and(trans);
+		//System.out.println("from and trans = " + tmp);
 		BDD prime_to = tmp.exist(unprimeVars);
+		//System.out.println("prime to = " + prime_to);
 		tmp.free();
 		tmp = Env.unprime(prime_to);
 		prime_to.free();
+		//System.out.println("result: " + tmp);
+		//System.out.println("########################## succ  end ##########################");
 		return tmp;
 	}
 
@@ -1294,7 +1304,7 @@ public final class Env {
 	 * @throws ArrayIndexOutOfBoundsException If addressed a non existing factory.
 	 * 
 	 */
-	private static BDDPairing makePair() {
+	public static BDDPairing makePair() {
 		return bdd_manager.makePair();
 	}
 

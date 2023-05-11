@@ -28,8 +28,6 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package tau.smlab.syntech.gameinputtrans.translator;
 
-import java.util.ArrayList;
-import java.util.List;
 
 import tau.smlab.syntech.gameinput.model.Constraint;
 import tau.smlab.syntech.gameinput.model.GameInput;

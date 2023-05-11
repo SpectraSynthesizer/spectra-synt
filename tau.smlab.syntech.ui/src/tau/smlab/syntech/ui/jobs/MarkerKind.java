@@ -36,7 +36,9 @@ public enum MarkerKind {
   MON_NOT_COMP("Constraint in a non complete monitor. Each monitor must be defined for all possible values the specification variables can get", "tau.smlab.syntech.ui.marker"),
   COUNTER_NOT_CONS("Constraint in a non consistent counter. Each counter must be uniquely defined for all possible values the specification variables can get", "tau.smlab.syntech.ui.marker"),
   CUSTOM_TEXT_MARKER("Info, see console...", "tau.smlab.syntech.ui.marker"),
-  CUSTOM_TEXT_ERROR("Error, see console...", "tau.smlab.syntech.ui.error");
+  CUSTOM_TEXT_ERROR("Error, see console...", "tau.smlab.syntech.ui.error"),
+  TRIVIALLY_TRUE("Generated constraint is trivially TRUE.", "tau.smlab.syntech.ui.marker"),
+  TRIVIALLY_FALSE("Generated constraint is trivially FALSE.", "tau.smlab.syntech.ui.error");
 
   private final String message;
 

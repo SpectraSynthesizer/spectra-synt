@@ -36,7 +36,6 @@ import java.util.Map;
 
 import tau.smlab.syntech.gameinput.model.Define;
 import tau.smlab.syntech.gameinput.model.Predicate;
-import tau.smlab.syntech.gameinput.model.TypeDef;
 import tau.smlab.syntech.gameinput.model.Variable;
 import tau.smlab.syntech.gameinput.spec.CounterReference;
 import tau.smlab.syntech.gameinput.spec.DefineReference;
@@ -162,7 +161,7 @@ public class SpectraASTToSpecGenerator {
 	static SpecWrapper getConstraintSpec(QuantifierExpr exp, EntitiesMapper entitiesMapper, Tracer tracer,
 			List<Variable> predicateParamsList, List<Variable> patternVarsAndParams,
 			Map<String, PrimitiveValue> constraintParamsValues) throws SpectraTranslationException {
-
+		
 		// get the spec of exp's temporal expression
 		SpecWrapper spec = getConstraintSpec(exp.getTemporalExpr(), entitiesMapper, tracer, predicateParamsList,
 				patternVarsAndParams, constraintParamsValues);

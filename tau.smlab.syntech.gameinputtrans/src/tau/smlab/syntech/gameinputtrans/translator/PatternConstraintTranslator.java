@@ -41,6 +41,7 @@ import tau.smlab.syntech.gameinput.model.Variable;
 import tau.smlab.syntech.gameinput.spec.Spec;
 import tau.smlab.syntech.gameinput.spec.SpecExp;
 import tau.smlab.syntech.gameinput.spec.VariableReference;
+import tau.smlab.syntech.gameinputtrans.AuxVariableGenerator;
 
 /**
  * iterate over all PatternConstraints of sys and env
@@ -57,7 +58,7 @@ import tau.smlab.syntech.gameinput.spec.VariableReference;
  *
  */
 public class PatternConstraintTranslator implements Translator {
-
+	
 	enum PlayerType {
 		SYS, ENV
 	};
@@ -113,7 +114,8 @@ public class PatternConstraintTranslator implements Translator {
 	private void handlePatternVars(Player auxPlayer, PlayerType playerType,
 			Map<Variable, Variable> originalPatVarToUniqueAuxVar, PatternConstraint patternConstraint) {
 		for (Variable pattVar : patternConstraint.getPattern().getVarsList()) {
-			String uniqueAuxVarName = playerType + "_CONSTRAINT." + Integer.toString(patternConstraint.getTraceId())
+			
+			String uniqueAuxVarName = playerType + "_CONSTRAINT." + Integer.toString(AuxVariableGenerator.useVar())
 					+ "." + patternConstraint.getPattern().getPatternName() + "." + pattVar.getName();
 			Variable auxVar = new Variable(uniqueAuxVarName, pattVar.getType());
 			originalPatVarToUniqueAuxVar.put(pattVar, auxVar);

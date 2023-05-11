@@ -1,0 +1,10 @@
+IEclipsePreferences#org-eclipse-ui-editors { 
+preferences:
+     'tau.smlab.syntech.ui.marker.color=0,85,125'
+     'tau.smlab.syntech.ui.error.color=128,0,64'
+}
+
+IEclipsePreferences#tau-smlab-syntech-spectra { 
+preferences:
+     'syntaxColorer.tokenStyles.typeConstant.color=255,128,255'
+}

@@ -31,8 +31,8 @@ package tau.smlab.syntech.games.gr1.jit;
 import net.sf.javabdd.BDD;
 import tau.smlab.syntech.gamemodel.GameModel;
 import tau.smlab.syntech.gamemodel.PlayerModule;
-import tau.smlab.syntech.games.controller.symbolic.SymbolicControllerExistentialJitInfo;
-import tau.smlab.syntech.games.controller.symbolic.SymbolicControllerJitInfo;
+import tau.smlab.syntech.games.controller.jits.SymbolicControllerExistentialJitInfo;
+import tau.smlab.syntech.games.controller.jits.SymbolicControllerJitInfo;
 import tau.smlab.syntech.games.gr1.GR1Memory;
 import tau.smlab.syntech.jtlv.Env;
 import tau.smlab.syntech.jtlv.env.module.ModuleBDDField;
@@ -93,6 +93,8 @@ public class SymbolicControllerJitInfoConstruction {
 		ModuleBDDField Rn = null;
 		ModuleBDDField util = null;
 		
+		ModuleBDDField Zn = null;
+		
 		ModuleBDDField exJn = null; // Existential guarantees
 		ModuleBDDField Fn = null; // Fulfill ranks
 		ModuleBDDField Tn = null; // Towards ranks
@@ -108,6 +110,9 @@ public class SymbolicControllerJitInfoConstruction {
 			Rn = sys.addVar("util_Rn", 0, Math.max(maxRank, 1), true);
 			util = sys.addVar("util_0", true);
 			
+			int upper = Math.max(this.sys.justiceNum() - 1, 1);
+			Zn = sys.addVar("Zn", 0, upper, true);
+			
 			if (sys.hasExistReqs()) {
 				exJn = sys.addVar("util_exJn", 0, Math.max(sys.existReqNum() - 1, 1), true);
 				Fn = sys.addVar("util_Fn", 0, Math.max(maxFulfillRank, 1), true);
@@ -122,30 +127,17 @@ public class SymbolicControllerJitInfoConstruction {
 		
 		if (sys.hasExistReqs()) {
 			
-//			BDD fixpoints = (Env.TRUE().getFactory()).getFixpointsStarBDD(Jn.getDomain().vars(), In.getDomain().vars(),
-//					Rn.getDomain().vars());
-			
 			BDD fixpoints = getFixpointsBDD(Jn, In, Rn);
 			
 			System.out.println("GR(1)* Calculated fixpoints BDD");
 			
-//			BDD safeties = (Env.TRUE().getFactory()).getTransBDD(sys.initial().and(minWinCred), env.initial(), sys.trans(), env.trans(),
-//					Jn.getDomain().vars(), In.getDomain().vars(), util.getDomain().vars()[0]);
-			
-			BDD safeties = getTransBDD(util, Jn, In);
+			BDD safeties = getTransBDD(util, Jn, In, Zn);
 			
 			System.out.println("GR(1)* Calculated trans BDD");
-			
-//			BDD justices = (Env.TRUE().getFactory()).getJusticesStarBDD(sys.getJustices(), env.getJustices(),
-//					Jn.getDomain().vars(), In.getDomain().vars(), util.getDomain().vars()[0]);
 			
 			BDD justices = getJusticesBDD(util, Jn, In);
 			
 			System.out.println("GR(1)* Calculated justices BDD");
-			
-//			BDD fulfill = (Env.TRUE().getFactory()).getFulfillBDD(exJn.getDomain().vars(), Fn.getDomain().vars());
-//			BDD towards = (Env.TRUE().getFactory()).getTowardsBDD(exJn.getDomain().vars(), Tn.getDomain().vars());
-//			BDD envViolation = (Env.TRUE().getFactory()).getEnvViolationBDD(vIn.getDomain().vars(), vRn.getDomain().vars());
 			
 			BDD fulfill = getFulfillBDD(exJn, Fn);
 			BDD towards = getTowardsBDD(exJn, Tn);
@@ -156,22 +148,13 @@ public class SymbolicControllerJitInfoConstruction {
 			return new SymbolicControllerExistentialJitInfo(fixpoints, safeties, justices, ranks, fulfill, towards, envViolation, fulfillRanks, towardsRanks, this.mem.getEnvViolationRank());
 		} else {
 			
-//			BDD fixpoints = (Env.TRUE().getFactory()).getFixpointsBDD(Jn.getDomain().vars(), In.getDomain().vars(),
-//					Rn.getDomain().vars());
-			
 			BDD fixpoints = getFixpointsBDD(Jn, In, Rn);
 
 			System.out.println("GR(1) Calculated fixpoints BDD");
 			
-//			BDD safeties = (Env.TRUE().getFactory()).getTransBDD(sys.initial().and(minWinCred), env.initial(), sys.trans(), env.trans(),
-//					Jn.getDomain().vars(), In.getDomain().vars(), util.getDomain().vars()[0]);
-			
-			BDD safeties = getTransBDD(util, Jn, In);
+			BDD safeties = getTransBDD(util, Jn, In, Zn);
 			
 			System.out.println("GR(1) Calculated trans BDD");
-			
-//			BDD justices = (Env.TRUE().getFactory()).getJusticesBDD(sys.getJustices(), env.getJustices(),
-//					Jn.getDomain().vars(), In.getDomain().vars(), util.getDomain().vars()[0]);
 			
 			BDD justices = getJusticesBDD(util, Jn, In);
 			
@@ -286,13 +269,13 @@ public class SymbolicControllerJitInfoConstruction {
         return fixpoints;
 	}
 	
-	private BDD getTransBDD(ModuleBDDField util, ModuleBDDField Jn, ModuleBDDField In) {
+	private BDD getTransBDD(ModuleBDDField util, ModuleBDDField Jn, ModuleBDDField In, ModuleBDDField Zn) {
 		
 		// Save safeties of controller
 
         BDD safeties = Env.TRUE();
 
-        BDD sysIni = util.getDomain().ithVar(0).and(Jn.getDomain().ithVar(0)).impWith(sys.initial().and(minWinCred).id());
+        BDD sysIni = util.getDomain().ithVar(0).and(Jn.getDomain().ithVar(0)).impWith(sys.initial().and(minWinCred).id().and(Zn.getDomain().ithVar(0)));
         safeties.andWith(sysIni.id());
         sysIni.free();
 

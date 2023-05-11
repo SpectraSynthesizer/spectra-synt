@@ -9,5 +9,6 @@ Export-Package: net.sf.javabdd,
  tau.smlab.syntech.jtlv.env.module,
  tau.smlab.syntech.jtlv.lib
 Import-Package: org.eclipse.core.internal.resources,
- org.eclipse.core.resources
+ org.eclipse.core.resources,
+ tau.smlab.syntech.gameinputtrans
 Automatic-Module-Name: tau.smlab.syntech.jtlv

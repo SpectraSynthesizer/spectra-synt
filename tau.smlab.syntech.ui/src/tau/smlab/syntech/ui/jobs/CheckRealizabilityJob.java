@@ -34,9 +34,12 @@ import tau.smlab.syntech.games.gr1.GR1GameEnergyADD;
 import tau.smlab.syntech.games.gr1.GR1GameExperiments;
 import tau.smlab.syntech.games.gr1.GR1GameImplC;
 import tau.smlab.syntech.games.gr1.GR1GameMemoryless;
+import tau.smlab.syntech.games.gr1.GR1SeparatedGame;
+import tau.smlab.syntech.games.gr1.GR1SeparatedGameImplC;
 import tau.smlab.syntech.games.gr1.GR1StarGameMemoryless;
 import tau.smlab.syntech.jtlv.BDDPackage;
 import tau.smlab.syntech.jtlv.Env;
+import tau.smlab.syntech.ui.preferences.PreferenceConstants;
 import tau.smlab.syntech.ui.preferences.PreferencePage;
 public class CheckRealizabilityJob extends SyntechJob {
 
@@ -59,8 +62,20 @@ public class CheckRealizabilityJob extends SyntechJob {
 			Env.TRUE().getFactory().reorder(BDDFactory.REORDER_SIFTITE);*/
 		} else {
 			PreferencePage.setOptSelection();
-//			resetSingleTrans(); //if decomposed transitions are used, then free the single transitions
-			if (PreferencePage.getBDDPackageSelection().equals(BDDPackage.CUDD)) {
+			
+			if (PreferencePage.getSynthesisMethod().equals(PreferenceConstants.SYNTHESIS_METHOD_PITERMAN) ||
+					PreferencePage.getSynthesisMethod().equals(PreferenceConstants.SYNTHESIS_METHOD_PITERMAN_REDUCTION)) {
+				if (PreferencePage.getBDDPackageSelection().equals(BDDPackage.CUDD)) {
+					printToConsole("GR1SeparatedGameImplC with memory");
+					gr1 = new GR1SeparatedGameImplC(model);
+				}  else {
+					printToConsole("GR1SeparatedGame");
+					gr1 = new GR1SeparatedGame(model);
+				}
+			} else if (PreferencePage.hasSymmetryDetection()) {
+				printToConsole("GR1Game");
+				gr1 = new GR1Game(model);
+			} else if (PreferencePage.getBDDPackageSelection().equals(BDDPackage.CUDD)) {
 				printToConsole("GR1GameImplC with memory");
 				gr1 = new GR1GameImplC(model);
 			} else if (PreferencePage.hasOptSelection()) {
@@ -72,10 +87,10 @@ public class CheckRealizabilityJob extends SyntechJob {
 			}
 		}
 		
+		
 		this.isRealizable = false;
 		String message = "Specification is unrealizable.";
-
-		if (gr1.checkRealizability()) {
+		if (gr1.checkRealizability()) {	
 			this.isRealizable = true;
 			message = "Specification is realizable.";
 			if (model.getWeights() != null) {
@@ -91,6 +106,7 @@ public class CheckRealizabilityJob extends SyntechJob {
 		printToConsole(message);
 		Env.resetEnv();
 	}
+	
 
 	@Override
 	public boolean needsBound() {

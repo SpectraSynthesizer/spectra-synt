@@ -30,11 +30,12 @@ package tau.smlab.syntech.games.controller.enumerate.printers;
 
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-
+import java.util.Stack;
 import dk.brics.automaton.Automaton;
 import dk.brics.automaton.State;
 import dk.brics.automaton.Transition;
@@ -63,6 +64,45 @@ public class MAAMinimizeAutomatonPrinter implements EnumStrategyPrinter {
 		this.env = m.getEnv();
 		this.sys = m.getSys();
 	}
+	
+		
+	private static void sortStatesRecursively(State current, Map<State, Boolean> visited, Stack<State> stack)
+	{
+		visited.put(current, true);
+	
+		for (Transition t : current.getTransitions()) {
+			if(!visited.get(t.getDest())) //!stack.contains(t.getDest()) && !visited.get(t.getDest()))
+			{
+				sortStatesRecursively(t.getDest(), visited, stack);
+			}
+		}
+		stack.push(current);
+	}
+	
+	/**
+	 * sorts the states of automaton a. state s1 is before s2 if there is a path between s1 to s2.
+	 * The order of states in the cycle is not deterministic.
+	 * 
+	 * @param a        an Automaton
+	 * @return         a sorted list of the states of a
+	 */
+    private static List<State> sortStates(Automaton a)
+    {
+        Stack<State> stack = new Stack<State>();
+ 
+        Map<State, Boolean> visited = new HashMap<State, Boolean>();
+        for (State s : a.getStates())
+        {
+            visited.put(s, false);
+        }
+ 
+        sortStatesRecursively(a.getInitialState(),visited, stack);
+ 
+        List<State> sorted_states = new ArrayList(stack);
+        Collections.reverse(sorted_states);
+        return sorted_states;
+    }
+
 
 	@Override
 	public void printController(PrintStream out, EnumStrategyI c) {
@@ -147,11 +187,13 @@ public class MAAMinimizeAutomatonPrinter implements EnumStrategyPrinter {
 		if (REMOVE_DEAD_STATES) {
 			out.println("// removed " + deadStates + " states without successors before minimization");
 		}
-
+		
+		List<State> sortedStates = sortStates(a);
+					
 		out.print("state INI[initial]");
 		int i = 0;
 		Map<State, String> miniStates = new HashMap<State, String>();
-		for (State s : a.getStates()) {
+		for (State s : sortedStates) {
 			String name = null;
 			if (s.equals(a.getInitialState())) {
 				// already printed
@@ -172,8 +214,8 @@ public class MAAMinimizeAutomatonPrinter implements EnumStrategyPrinter {
 		out.print(";");
 		out.println();
 		out.println();
-
-		for (State s : a.getStates()) {
+		
+		for (State s : sortedStates) {
 			for (Transition t : s.getTransitions()) {
 				String transitionLabel = "";
 				for (char trigger = t.getMin(); trigger <= t.getMax(); trigger++) {

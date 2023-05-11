@@ -42,10 +42,13 @@ import org.eclipse.xtext.validation.CheckMode;
 import org.eclipse.xtext.validation.IResourceValidator;
 import org.eclipse.xtext.validation.Issue;
 
+import com.google.common.collect.Iterators;
 import com.google.inject.Injector;
 
 import tau.smlab.syntech.SpectraStandaloneSetup;
 import tau.smlab.syntech.gameinput.model.GameInput;
+//import tau.smlab.syntech.gamemodel.GameModel;
+import tau.smlab.syntech.spectra.LTLAsm;
 import tau.smlab.syntech.spectra.Model;
 import tau.smlab.syntech.spectragameinput.translator.Spectra2GameInputTranslator;
 
@@ -110,6 +113,7 @@ public class SpectraInputProviderNoIDE {
 
     return gi;
   }
+  
   
   /**
    * Loads a spectra model from a file and returns its representation as GameInput

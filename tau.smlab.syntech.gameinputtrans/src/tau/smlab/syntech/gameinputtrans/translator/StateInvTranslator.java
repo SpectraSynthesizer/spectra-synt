@@ -112,24 +112,27 @@ public class StateInvTranslator implements Translator {
       } else if (!before && Kind.SAFETY.equals(c.getKind())) {
         // after most other translators check for primes and translate true state
         // invariants
-        if (!(assumption && containsSysVarRef(c.getSpec()))) {
-          if (potentialStateInvIDs.contains(c.getTraceId()) && !containsNextOrPrime(c.getSpec())) {
-            stateInvs.add(c);
-            Constraint ini = new Constraint(Kind.INI, c.getSpec(), c.getName(), c.getTraceId());
-            translated.add(ini);
-            Spec clone = null;
-            try {
-              clone = c.getSpec().clone();
-            } catch (CloneNotSupportedException e) {
-              throw new RuntimeException(e);
-            }
-            Constraint safety = null;
-            if ((assumption && containsSysVarRef(c.getSpec()) || (!assumption && containsEnvVarRef(c.getSpec())))){
-              safety = new Constraint(Kind.SAFETY, clone, c.getName(), c.getTraceId());
+    	
+        // first check: don't translate stuff without alw or primes -- leave as is
+    	if (potentialStateInvIDs.contains(c.getTraceId())){
+    	  if (!containsNextOrPrime(c.getSpec())) {
+            if (assumption && containsSysVarRef(c.getSpec())) {
+        	  // second check: never prime assumptions with system variables (invalid) -- leave as is
             } else {
-              safety = new Constraint(Kind.SAFETY, new SpecExp(Operator.PRIME, clone), c.getName(), c.getTraceId());
+	        	// mark original for removal
+	            stateInvs.add(c);
+	            Constraint ini = new Constraint(Kind.INI, c.getSpec(), c.getName(), c.getTraceId());
+	            translated.add(ini);
+	            Spec clone = null;
+	            try {
+	              clone = c.getSpec().clone();
+	            } catch (CloneNotSupportedException e) {
+	              throw new RuntimeException(e);
+	            }
+	            Constraint safety = null;
+	            safety = new Constraint(Kind.SAFETY, new SpecExp(Operator.PRIME, clone), c.getName(), c.getTraceId());
+	            translated.add(safety);
             }
-            translated.add(safety);
           }
         }
       }

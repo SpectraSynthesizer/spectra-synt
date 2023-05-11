@@ -28,14 +28,23 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package tau.smlab.syntech.spectragameinput.translator;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.eclipse.emf.common.notify.Adapter;
+import org.eclipse.emf.common.notify.Notification;
 import org.eclipse.emf.common.util.EList;
+import org.eclipse.emf.common.util.TreeIterator;
+import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
+import org.eclipse.emf.ecore.EOperation;
+import org.eclipse.emf.ecore.EReference;
+import org.eclipse.emf.ecore.EStructuralFeature;
+import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.xtext.EcoreUtil2;
 
 import com.google.common.collect.Iterators;
@@ -49,6 +58,7 @@ import tau.smlab.syntech.gameinput.model.ExistentialConstraint;
 import tau.smlab.syntech.gameinput.model.GameInput;
 import tau.smlab.syntech.gameinput.model.PatternConstraint;
 import tau.smlab.syntech.gameinput.model.Player;
+import tau.smlab.syntech.gameinput.model.RegexpTestModel;
 import tau.smlab.syntech.gameinput.model.TriggerConstraint;
 import tau.smlab.syntech.gameinput.model.TypeDef;
 import tau.smlab.syntech.gameinput.model.Variable;
@@ -67,6 +77,7 @@ import tau.smlab.syntech.spectra.Pattern;
 import tau.smlab.syntech.spectra.PatternParam;
 import tau.smlab.syntech.spectra.Predicate;
 import tau.smlab.syntech.spectra.RegExp;
+import tau.smlab.syntech.spectra.RegexpTest;
 import tau.smlab.syntech.spectra.Subrange;
 import tau.smlab.syntech.spectra.TemporalExpression;
 import tau.smlab.syntech.spectra.Trigger;
@@ -80,6 +91,8 @@ import tau.smlab.syntech.spectragameinput.SpectraTranslationException;
 import tau.smlab.syntech.typesystem.TypeSystemUtils;
 
 public class Spectra2GameInputTranslator {
+	
+	
 
 	public static GameInput translate(Model model) throws SpectraTranslationException {
 
@@ -113,6 +126,11 @@ public class Spectra2GameInputTranslator {
 		// Existential Gars
 		Iterators.filter(model.getElements().iterator(), EXGar.class)
 				.forEachRemaining(exGar -> addExGar(entitiesMapper, tracer, sysPlayer, exGar));
+		
+		// RegExp Tests
+		List<RegexpTestModel> regtestExpressions = new ArrayList<>();
+		Iterators.filter(model.getElements().iterator(), RegexpTest.class)
+				.forEachRemaining(regexpTest -> addRegexpTest(entitiesMapper, tracer, regtestExpressions, regexpTest));
 
 		GameInput gi = new GameInput(model.getName(), sysPlayer, envPlayer, auxPlayer);
 		gi.setDefines(entitiesMapper.getDefineNameToDefineMapping().getAllDefines());
@@ -121,6 +139,7 @@ public class Spectra2GameInputTranslator {
 		gi.setMonitors(entitiesMapper.getMonitorNameToMonitorMapping().getAllMonitors());
 		gi.setCounters(entitiesMapper.getCounterNameToCounterMapping().getAllCounters());
 		gi.setWeightDefs(giWeightDefsList);
+		gi.setRegtestExpressions(regtestExpressions);
 		return gi;
 	}
 
@@ -220,7 +239,7 @@ public class Spectra2GameInputTranslator {
 
 			// Need to add the constraint several times to the tracer, to get a unique trace id each time
 			// the constraint is duplicated
-			tracer.addTrace(constraint);
+//			tracer.addTrace(constraint);
 			addSingleConstraint(entitiesMapper, tracer, player, constraint, name + valuesCounter, variables);
 			valuesCounter++;
 		}
@@ -273,6 +292,28 @@ public class Spectra2GameInputTranslator {
 			sysPlayer.addExistentialConstraint(exConstraint);
 		} catch (SpectraTranslationException e) {
 			e.setTraceId(tracer.getTrace(exGar));
+			throw new RuntimeException(e);
+		}
+	}
+	
+	private static void addRegexpTest(EntitiesMapper entitiesMapper, Tracer tracer, List<RegexpTestModel> tests, RegexpTest regexpTest) {
+		tracer.addTrace(regexpTest);
+		try {
+			if (regexpTest.getRegExpPointer() != null) {
+				// TODO check if the regexp has already been mapped using the tracer
+				tests.add(new RegexpTestModel(
+						regexpTest.getName(),
+						SpectraASTToSpecGenerator.getConstraintSpecRegExp(entitiesMapper, tracer, regexpTest.getRegExpPointer()
+						.getExp()),
+						tracer.getTrace(regexpTest)));;
+			} else { // regexpTest.getRegExp() != null
+				tests.add(new RegexpTestModel(
+						regexpTest.getName(),
+						SpectraASTToSpecGenerator.getConstraintSpecRegExp(entitiesMapper, tracer, regexpTest.getRegExp()),
+						tracer.getTrace(regexpTest)));;				
+			}
+		} catch (SpectraTranslationException e) {
+			e.setTraceId(tracer.getTrace(regexpTest));
 			throw new RuntimeException(e);
 		}
 	}

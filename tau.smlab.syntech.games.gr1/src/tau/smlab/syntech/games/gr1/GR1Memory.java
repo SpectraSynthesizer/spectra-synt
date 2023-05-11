@@ -28,6 +28,9 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package tau.smlab.syntech.games.gr1;
 
+import java.util.Arrays;
+import java.util.List;
+
 import net.sf.javabdd.BDD;
 import tau.smlab.syntech.games.GameMemory;
 import tau.smlab.syntech.jtlv.Env;
@@ -37,6 +40,13 @@ public class GR1Memory extends GameMemory {
 	protected BDD[][][] x_mem;
 	protected BDD[][] y_mem;
 	protected BDD[] z_mem;
+	
+	
+	protected List<BDD> z_fixpoints;
+	
+	public List<BDD> getZFixpoints() {
+		return z_fixpoints;
+	}
 	
 	//Memory vectors used for GR(1)*
 	
@@ -96,6 +106,10 @@ public class GR1Memory extends GameMemory {
 	
 	public int getEnvViolationRank() {
 		return envJusticeViolation_mem[0].length;
+	}
+	
+	public boolean isEmptyController() {
+		return Arrays.stream(z_mem).anyMatch(b -> b.isZero());
 	}
 
 	// extended_size<=0 will tight the arrays to be the exact sizes.

@@ -139,8 +139,10 @@ public class SpecExp implements Spec {
 	public boolean isPropSpec() {
 		// checking that all children are prop.
 		for (Spec s : this.getChildren())
-			if (!s.isPropSpec())
+			if (!s.isPropSpec()) {
+				System.out.println("I am operator " + getOperator().name() + " and child " + s.toString() + " returned false");
 				return false;
+			}
 		// checking that I'm prop
 		return this.getOperator().isProp();
 	}

@@ -6,6 +6,5 @@ Bundle-Version: 1.0.0.qualifier
 Export-Package: tau.smlab.syntech.gameinput.model,
  tau.smlab.syntech.gameinput.spec,
  tau.smlab.syntech.gameinput.triggers
-Import-Package: net.sf.javabdd,
- tau.smlab.syntech.spectra
+Import-Package: tau.smlab.syntech.spectra
 Automatic-Module-Name: tau.smlab.syntech.gameinput

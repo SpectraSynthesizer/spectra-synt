@@ -30,8 +30,6 @@ package tau.smlab.syntech.gameinput.spec;
 
 import java.util.List;
 
-import tau.smlab.syntech.gameinput.model.Variable;
-
 public class InExpSpec implements Spec {
 	/**
 	 * 
