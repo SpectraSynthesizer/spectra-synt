@@ -40,6 +40,4 @@ Import-Package: org.eclipse.jface.text,
  org.eclipse.ui.texteditor,
  tau.smlab.syntech.cores.domainagnostic,
  tau.smlab.syntech.cores.util,
- tau.smlab.syntech.repair.chatterjee,
- tau.smlab.syntech.sfa,
- tau.smlab.syntech.vacuity
+ tau.smlab.syntech.sfa
