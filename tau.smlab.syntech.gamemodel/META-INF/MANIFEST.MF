@@ -1,0 +1,13 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Gamemodel
+Bundle-SymbolicName: tau.smlab.syntech.gamemodel
+Bundle-Version: 1.0.0.qualifier
+Export-Package: tau.smlab.syntech.gamemodel,
+ tau.smlab.syntech.gamemodel.util
+Require-Bundle: tau.smlab.syntech.jtlv,
+ tau.smlab.syntech.sfa;bundle-version="1.0.0",
+ org.eclipse.xtext
+Import-Package: tau.smlab.syntech.gameinputtrans,
+ tau.smlab.syntech.spectragameinput.translator
+Automatic-Module-Name: tau.smlab.syntech.gamemodel

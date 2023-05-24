@@ -57,12 +57,12 @@ import org.eclipse.ui.console.MessageConsole;
 import org.eclipse.ui.part.FileEditorInput;
 
 import tau.smlab.syntech.bddgenerator.BDDGenerator.TraceInfo;
+import tau.smlab.syntech.gameinput.kind.PitermanSyntacticReduction;
 import tau.smlab.syntech.gameinput.model.GameInput;
 import tau.smlab.syntech.gameinputtrans.TranslationException;
 import tau.smlab.syntech.gameinputtrans.TranslationProvider;
 import tau.smlab.syntech.gameinputtrans.translator.DefaultTranslators;
 import tau.smlab.syntech.gameinputtrans.translator.Translator;
-import tau.smlab.syntech.games.gr1.wellseparation.GR1PitermanReduction;
 import tau.smlab.syntech.spectragameinput.ErrorsInSpectraException;
 import tau.smlab.syntech.spectragameinput.SpectraInputProvider;
 import tau.smlab.syntech.spectragameinput.SpectraTranslationException;
@@ -177,7 +177,7 @@ public class SynthesisAction implements IObjectActionDelegate, IEditorActionDele
 		parsingTime = System.currentTimeMillis() - start;
 		job.printToConsole("Parsing: " + parsingTime + "ms");
 		if (PreferencePage.getSynthesisMethod().equals(PreferenceConstants.SYNTHESIS_METHOD_PITERMAN_REDUCTION))
-			GR1PitermanReduction.doReduction(gi);
+			PitermanSyntacticReduction.doReduction(gi);
 		
 		if (job.needsBound() && !gi.getWeightDefs().isEmpty()) {
 			InputDialog d = new InputDialog(shell, "Specify Energy Bound",
