@@ -3,7 +3,8 @@ Bundle-ManifestVersion: 2
 Bundle-Name: GameInput
 Bundle-SymbolicName: tau.smlab.syntech.gameinput
 Bundle-Version: 1.0.0.qualifier
-Export-Package: tau.smlab.syntech.gameinput.model,
+Export-Package: tau.smlab.syntech.gameinput.kind,
+ tau.smlab.syntech.gameinput.model,
  tau.smlab.syntech.gameinput.spec,
  tau.smlab.syntech.gameinput.triggers
 Import-Package: tau.smlab.syntech.spectra
