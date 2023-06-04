@@ -121,25 +121,7 @@ public class SynthesisAction implements IObjectActionDelegate, IEditorActionDele
 		case "tau.smlab.syntech.debugCmpAction":
 			job = new CounterStrategyJob();
 			break;
-//		case "tau.smlab.syntech.coreUnrealizable":
-//			job = new UnrealizableCoreJob();
-//			job.setTrace(TraceInfo.SYS_AUX);
-//			break;
-//		case "tau.smlab.syntech.checkWellSeparation":
-//			job = new CheckWellSeparationJob();
-//			job.setTrace(TraceInfo.ALL);
-//			break;
-//		case "tau.smlab.syntech.coreWellSeparation":
-//			job = new NonWellSeparationCoreJob();
-//			job.setTrace(TraceInfo.ALL);
-//			break;
-//    case "tau.smlab.syntech.strategyWellSeparation":
-//      job = new NonWellSeparationStrategyJob();
-//      job.setTrace(TraceInfo.ALL);
-//      break;
-//		case "tau.smlab.syntech.couldAsmHelp":
-//      job = new CheckCouldAsmHelpJob();
-//      break;
+
 		default:
 			System.err.println("Unhandled action id: " + action.getId());
 			break;
