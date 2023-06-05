@@ -38,7 +38,8 @@ import java.util.stream.Collectors;
 
 import net.sf.javabdd.BDD;
 import net.sf.javabdd.BDDVarSet;
-import tau.smlab.syntech.cores.domainagnostic.AbstractDdmin;
+import tau.smlab.syntech.checks.ddmin.AbstractDdmin;
+import tau.smlab.syntech.checks.ddmin.DdminUNSAT;
 import tau.smlab.syntech.gameinput.model.Constraint;
 import tau.smlab.syntech.gameinput.spec.Spec;
 import tau.smlab.syntech.gameinput.spec.SpecExp;
