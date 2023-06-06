@@ -9,9 +9,9 @@ We provide also an update site to install occasional updates in the following li
 The synthesizer and its tools are developed over the Eclipse framework, therefore a working installation of Eclipse IDE for Java and DSL Developers (preferably version above or equals 2022-09) is a prerequisite.
 
 In order to compile Spectra synthesizer from source code:
-- As a prerequisite, `git clone` the repository of `spectra-lang` and follow the instructions in the README.
+- As a prerequisite, follow the instructions in the `spectra-lang` repository.
 - `git clone` this repository into your computer.
-- Import all existing projects from both repositories into an Eclipse workspace. After the clone you should have two folders, `spectra-lang` and `spectra-synt`, containing many Java projects. Import all these projects by 'Import -> Projects from Folder or Archive', then choosing once `spectra-lang` directory, selecting all the projects from there, and later `spectra-synt` directory, also selecting all the projects from there.
+- Import all existing projects from both repositories into an Eclipse workspace. After the clone you should have two folders, `spectra-lang` and `spectra-synt`, containing many Java projects. `spectra-lang` projects should be already imported into your workspace. Import the projects of this repository by 'Import -> Projects from Folder or Archive', choosing the `spectra-synt` directory and selecting all the projects from there.
 - Run project by creating a new `Eclipse Application` configuration in `Run Configurations` window.
 
 ## Documentation
