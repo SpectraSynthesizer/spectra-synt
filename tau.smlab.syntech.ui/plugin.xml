@@ -134,6 +134,13 @@
                menubarPath="tau.smlab.syntech.ui.syntechmenu/group1" 
                class="tau.smlab.syntech.ui.action.SynthesisAction"> 
           </action>
+          <action
+               id="tau.smlab.syntech.statsAction" 
+               label="Read Specification Statistics"
+               icon="icons/analyze-wheel.gif"        
+               menubarPath="tau.smlab.syntech.ui.syntechmenu/group1" 
+               class="tau.smlab.syntech.ui.action.SynthesisAction"> 
+          </action>
            <action
                id="tau.smlab.syntech.syntCmpAction" 
                label="Synthesize Concrete Controller"
@@ -192,6 +199,13 @@
          <action
                id="tau.smlab.syntech.checksAction" 
                label="Analyze specification"
+               icon="icons/analyze_blue.gif"        
+               menubarPath="tau.smlab.syntech.ui.syntechmenu/group1" 
+               class="tau.smlab.syntech.ui.action.SynthesisAction"> 
+          </action>
+          <action
+               id="tau.smlab.syntech.statsAction" 
+               label="Specification Statistics"
                icon="icons/analyze_blue.gif"        
                menubarPath="tau.smlab.syntech.ui.syntechmenu/group1" 
                class="tau.smlab.syntech.ui.action.SynthesisAction"> 

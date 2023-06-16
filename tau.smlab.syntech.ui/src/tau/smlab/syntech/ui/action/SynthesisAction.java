@@ -70,6 +70,7 @@ import tau.smlab.syntech.ui.jobs.CheckRealizabilityJob;
 import tau.smlab.syntech.ui.jobs.ChecksJob;
 import tau.smlab.syntech.ui.jobs.CounterStrategyJob;
 import tau.smlab.syntech.ui.jobs.MarkerKind;
+import tau.smlab.syntech.ui.jobs.StatsJob;
 import tau.smlab.syntech.ui.jobs.SyntechBDDEngineExclusiveRule;
 import tau.smlab.syntech.ui.jobs.SyntechJob;
 import tau.smlab.syntech.ui.jobs.SynthesizeSharedControllerJob;
@@ -116,6 +117,10 @@ public class SynthesisAction implements IObjectActionDelegate, IEditorActionDele
 			break;
 		case "tau.smlab.syntech.checksAction":
 			job = new ChecksJob();
+			job.setTrace(TraceInfo.ALL);
+			break;
+		case "tau.smlab.syntech.statsAction":
+			job = new StatsJob();
 			job.setTrace(TraceInfo.ALL);
 			break;
 		case "tau.smlab.syntech.debugCmpAction":
