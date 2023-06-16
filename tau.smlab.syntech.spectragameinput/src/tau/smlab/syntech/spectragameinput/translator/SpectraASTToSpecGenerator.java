@@ -39,6 +39,7 @@ import tau.smlab.syntech.gameinput.model.Predicate;
 import tau.smlab.syntech.gameinput.model.Variable;
 import tau.smlab.syntech.gameinput.spec.CounterReference;
 import tau.smlab.syntech.gameinput.spec.DefineReference;
+import tau.smlab.syntech.gameinput.spec.IfThenElseInstance;
 import tau.smlab.syntech.gameinput.spec.InExpSpec;
 import tau.smlab.syntech.gameinput.spec.MonitorReference;
 import tau.smlab.syntech.gameinput.spec.Operator;
@@ -399,6 +400,15 @@ public class SpectraASTToSpecGenerator {
 			Tracer tracer, List<Variable> predicateParamsList, List<Variable> patternVarsAndParams,
 			Map<String, PrimitiveValue> constraintParamsValues) throws SpectraTranslationException {
 		SpecWrapper spec = null;
+		
+		if (temporalPrimaryExpr.getIfPart() != null) {
+			
+			return new SpecWrapper(new IfThenElseInstance(
+				getConstraintSpec(temporalPrimaryExpr.getIfPart(), entitiesMapper, tracer, predicateParamsList, patternVarsAndParams, constraintParamsValues).getSpec(), 
+				getConstraintSpec(temporalPrimaryExpr.getThenPart(), entitiesMapper, tracer, predicateParamsList, patternVarsAndParams, constraintParamsValues).getSpec(), 
+				getConstraintSpec(temporalPrimaryExpr.getElsePart(), entitiesMapper, tracer, predicateParamsList, patternVarsAndParams, constraintParamsValues).getSpec()));
+		}
+		
 		if (temporalPrimaryExpr.getPredPatt() != null) {
 
 			if (temporalPrimaryExpr.getPredPatt() instanceof tau.smlab.syntech.spectra.Predicate) {

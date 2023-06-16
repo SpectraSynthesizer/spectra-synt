@@ -26,32 +26,75 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
 */
 
-package tau.smlab.syntech.gameinputtrans.translator;
+package tau.smlab.syntech.gameinput.spec;
 
-import java.util.ArrayList;
-import java.util.List;
+public class IfThenElseInstance implements Spec {
+	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 165285782221463029L;
+	
+	private Spec ifPart;
+	private Spec thenPart;
+	private Spec elsePart;
 
-public class DefaultTranslators {
-  public static List<Translator> getDefaultTranslators() {
-    List<Translator> ts = new ArrayList<Translator>();
-    ts.add(new MinMaxFunctionsTranslator());
-    ts.add(new TemporalInTranslator());
-    ts.add(new ArrayFunctionsTranslator());
-    ts.add(new TemporalRegexpTranslator());
-    ts.add(new QuantifierTranslator()); //The translator of QuantifiedSpecs
-    ts.add(new StateInvTranslator(true));
-    ts.add(new IfThenElseInstanceTranslator());
-    ts.add(new PredicateInstanceTranslator());
-    ts.add(new PatternConstraintTranslator());
-    ts.add(new MonitorTranslator());
-    ts.add(new CounterTranslator());
-    ts.add(new VarIndexesTranslator()); //The translator of all the complex indexes in arrays
-    ts.add(new DefinesTranslator());
-    ts.add(new PastLTLTranslator());
-    ts.add(new StateInvTranslator(false)); // second part of translator to be aware of unfolded primes
-    ts.add(new PrimesTranslator());
-    ts.add(new PrimesInJusticeTranslator());
-    return ts;
-  }
-  
+	public IfThenElseInstance(Spec ifPart, Spec thenPart, Spec elsePart)
+	{
+		this.ifPart = ifPart;
+		this.thenPart = thenPart;
+		this.elsePart = elsePart;
+	}
+
+	public String toString()
+	{
+		return "<IfThenElseInstance>";
+	}
+
+	public Spec getIfPart() {
+		return ifPart;
+	}
+
+	public void setIfPart(Spec ifPart) {
+		this.ifPart = ifPart;
+	}
+
+	public Spec getThenPart() {
+		return thenPart;
+	}
+
+	public void setThenPart(Spec thenPart) {
+		this.thenPart = thenPart;
+	}
+
+	public Spec getElsePart() {
+		return elsePart;
+	}
+
+	public void setElsePart(Spec elsePart) {
+		this.elsePart = elsePart;
+	}
+
+	@Override
+	public boolean isPastLTLSpec() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean isPropSpec() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean hasTemporalOperators() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+	
+	@Override
+	public Spec clone() throws CloneNotSupportedException {
+		return new IfThenElseInstance(ifPart.clone(), thenPart.clone(), elsePart.clone());
+	}
 }
