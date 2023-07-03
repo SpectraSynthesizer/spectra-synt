@@ -136,7 +136,7 @@
           </action>
           <action
                id="tau.smlab.syntech.statsAction" 
-               label="Read Specification Statistics"
+               label="Specification Statistics"
                icon="icons/analyze-wheel.gif"        
                menubarPath="tau.smlab.syntech.ui.syntechmenu/group1" 
                class="tau.smlab.syntech.ui.action.SynthesisAction"> 
