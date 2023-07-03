@@ -145,8 +145,9 @@ public class IfThenElseInstanceTranslator implements Translator {
 			IfThenElseInstance pi = (IfThenElseInstance) spec;
 
 			spec = translateIfThenElse(pi);
-			// check if there are more instances of predicates after instantiation (nested predicates)
+			
 			spec = replaceIfThenElseInstances(spec);
+			
 		} else if (spec instanceof SpecExp) {
 			SpecExp se = (SpecExp) spec;
 			for (int i = 0; i < se.getChildren().length; i++) {
