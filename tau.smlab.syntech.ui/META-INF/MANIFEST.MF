@@ -37,6 +37,4 @@ Export-Package: .,
 Automatic-Module-Name: tau.smlab.syntech.ui
 Import-Package: org.eclipse.jface.text,
  org.eclipse.ui.texteditor,
- tau.smlab.syntech.cores.domainagnostic,
- tau.smlab.syntech.cores.util,
  tau.smlab.syntech.sfa
