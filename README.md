@@ -11,8 +11,8 @@ The synthesizer and its tools are developed over the Eclipse framework, therefor
 In order to compile Spectra synthesizer from source code:
 - As a prerequisite, follow the instructions in the `spectra-lang` repository.
 - `git clone` this repository into your computer.
-- Import all existing projects from both repositories into an Eclipse workspace. After the clone you should have two folders, `spectra-lang` and `spectra-synt`, containing many Java projects. `spectra-lang` projects should be already imported into your workspace. Import the projects of this repository by 'Import -> Projects from Folder or Archive', choosing the `spectra-synt` directory and selecting all the projects from there.
-- Run project by creating a new `Eclipse Application` configuration in `Run Configurations` window.
+- Import all existing projects from both repositories into an Eclipse workspace. After the clone you should have two folders called `spectra-lang` and `spectra-synt` in your file system, containing many Java projects. `spectra-lang` projects should be already imported into your workspace. Import the projects of this repository by 'Import -> Projects from Folder or Archive', the choosing `spectra-synt` directory, and selecting all the projects from there *except* the spectra-synt folder itself (it is not a real project and it might cause problems if imported together with the other real projects).
+- Run an Eclipse instance by creating a new `Eclipse Application` configuration in the `Run Configurations` window.
 
 ## Documentation
 Information about Spectra language and tools can be found here: http://smlab.cs.tau.ac.il/syntech/.
