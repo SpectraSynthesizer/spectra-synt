@@ -25,7 +25,7 @@ public class FeatureConstraintTranslator {
 			
 			return parseConstraint((FeatureIffExpr) exp, tracer);
 			
-		} else if (exp instanceof tau.smlab.syntech.spectra.FeatureOrExpr) {
+		} else if (exp instanceof FeatureOrExpr) {
 			
 			return parseConstraint((FeatureOrExpr) exp, tracer);
 			

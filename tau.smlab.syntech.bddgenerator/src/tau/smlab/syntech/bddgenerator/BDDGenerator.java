@@ -54,6 +54,7 @@ import tau.smlab.syntech.gameinput.model.TriggerConstraint;
 import tau.smlab.syntech.gameinput.model.TypeDef;
 import tau.smlab.syntech.gameinput.model.Variable;
 import tau.smlab.syntech.gameinput.model.WeightDefinition;
+import tau.smlab.syntech.gameinput.pl.Feature;
 import tau.smlab.syntech.gameinput.spec.Operator;
 import tau.smlab.syntech.gameinput.spec.PrimitiveValue;
 import tau.smlab.syntech.gameinput.spec.Spec;
@@ -65,6 +66,7 @@ import tau.smlab.syntech.gamemodel.PlayerModule;
 import tau.smlab.syntech.gamemodel.SFAModuleConstraint;
 import tau.smlab.syntech.gamemodel.PlayerModule.TransFuncType;
 import tau.smlab.syntech.jtlv.Env;
+import tau.smlab.syntech.jtlv.ModuleVariableException;
 import tau.smlab.syntech.jtlv.env.module.ModuleBDDField;
 import tau.smlab.syntech.sfa.SFA;
 
@@ -153,6 +155,19 @@ public class BDDGenerator {
 			Env.disableReorder();
 		}
 
+		
+		// Handle the product line features
+		try {
+			for (Feature f : input.getFeatures()) {
+				Env.newVar(FeatureModelBDDGenerator.getFeatureVarName(f));
+			}
+		} catch (ModuleVariableException e) {
+			e.printStackTrace();
+		}
+		
+		
+		
+		
 		// first create all variables (might be used in expressions)
 		createModuleVars(envMod, env, false, debugLog);
 		createModuleVars(sysMod, sys, false, debugLog);
