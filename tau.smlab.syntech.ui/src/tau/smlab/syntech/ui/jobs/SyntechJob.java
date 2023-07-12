@@ -59,6 +59,7 @@ import net.sf.javabdd.BDDVarSet;
 import tau.smlab.syntech.bddgenerator.BDDGenerator;
 import tau.smlab.syntech.bddgenerator.BDDGenerator.TraceInfo;
 import tau.smlab.syntech.bddgenerator.BDDTranslationException;
+import tau.smlab.syntech.bddgenerator.ProductLineBDDGenerator;
 import tau.smlab.syntech.gameinput.model.GameInput;
 import tau.smlab.syntech.gameinputtrans.translator.Translator;
 import tau.smlab.syntech.gamemodel.BehaviorInfo;
@@ -248,6 +249,9 @@ public abstract class SyntechJob extends Job {
 	private void translateAnddoWork() {
 		long start = System.currentTimeMillis();
 		try {
+			
+			gi.setProducts(ProductLineBDDGenerator.createProducts(gi));
+			
 			this.model = BDDGenerator.generateGameModel(gi, trace, PreferencePage.isGroupVarSelection(),
 					PreferencePage.getTransFuncSelection(false));
 			bddTranslationTime = System.currentTimeMillis() - start;

@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.Set;
 
 import net.sf.javabdd.BDD;
+import net.sf.javabdd.BDD.BDDIterator;
 import net.sf.javabdd.BDDBitVector;
 import net.sf.javabdd.BDDDomain;
 import net.sf.javabdd.BDDException;
@@ -55,6 +56,7 @@ import tau.smlab.syntech.gameinput.model.TypeDef;
 import tau.smlab.syntech.gameinput.model.Variable;
 import tau.smlab.syntech.gameinput.model.WeightDefinition;
 import tau.smlab.syntech.gameinput.pl.Feature;
+import tau.smlab.syntech.gameinput.pl.Product;
 import tau.smlab.syntech.gameinput.spec.Operator;
 import tau.smlab.syntech.gameinput.spec.PrimitiveValue;
 import tau.smlab.syntech.gameinput.spec.Spec;
@@ -154,19 +156,6 @@ public class BDDGenerator {
 		if (groupVars) {
 			Env.disableReorder();
 		}
-
-		
-		// Handle the product line features
-		try {
-			for (Feature f : input.getFeatures()) {
-				Env.newVar(FeatureModelBDDGenerator.getFeatureVarName(f));
-			}
-		} catch (ModuleVariableException e) {
-			e.printStackTrace();
-		}
-		
-		
-		
 		
 		// first create all variables (might be used in expressions)
 		createModuleVars(envMod, env, false, debugLog);

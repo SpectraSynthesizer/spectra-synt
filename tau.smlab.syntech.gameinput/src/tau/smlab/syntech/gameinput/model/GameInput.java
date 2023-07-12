@@ -34,6 +34,7 @@ import java.util.List;
 
 import tau.smlab.syntech.gameinput.pl.Feature;
 import tau.smlab.syntech.gameinput.pl.FeatureConstraint;
+import tau.smlab.syntech.gameinput.pl.Product;
 
 /**
  * represents the input for a specification
@@ -65,10 +66,7 @@ public class GameInput implements Serializable {
 	
 	private List<Feature> features = new ArrayList<>();
 	private FeatureConstraint featureModel;
-
-	public List<Feature> getFeatures() {
-		return features;
-	}
+	private List<Product> products = new ArrayList<>();
 
 	public GameInput(String name)
 	{
@@ -227,5 +225,17 @@ public class GameInput implements Serializable {
 
 	public void setFeatureModel(FeatureConstraint featureModel) {
 		this.featureModel = featureModel;
+	}
+	
+	public List<Product> getProducts() {
+		return products;
+	}
+
+	public void setProducts(List<Product> products) {
+		this.products = products;
+	}
+
+	public List<Feature> getFeatures() {
+		return features;
 	}
 }
