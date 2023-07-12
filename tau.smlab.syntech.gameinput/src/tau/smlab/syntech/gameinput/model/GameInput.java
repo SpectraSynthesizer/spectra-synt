@@ -32,6 +32,9 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+import tau.smlab.syntech.gameinput.pl.Feature;
+import tau.smlab.syntech.gameinput.pl.FeatureConstraint;
+
 /**
  * represents the input for a specification
  *
@@ -58,6 +61,14 @@ public class GameInput implements Serializable {
 	private List<Variable> domainVars = new ArrayList<>();
 	private List<RegexpTestModel> regtestExpressions = new ArrayList<>();
 	private int bound;
+	
+	
+	private List<Feature> features = new ArrayList<>();
+	private FeatureConstraint featureModel;
+
+	public List<Feature> getFeatures() {
+		return features;
+	}
 
 	public GameInput(String name)
 	{
@@ -202,8 +213,19 @@ public class GameInput implements Serializable {
 		return regtestExpressions;
 	}
 	
-	public void addregtestExperssion(RegexpTestModel regtestExpression)
-	{
+	public void addregtestExperssion(RegexpTestModel regtestExpression) {
 		this.regtestExpressions.add(regtestExpression);
+	}
+	
+	public void setFeatures(List<Feature> features) {
+		this.features = features;
+	}
+
+	public FeatureConstraint getFeatureModel() {
+		return featureModel;
+	}
+
+	public void setFeatureModel(FeatureConstraint featureModel) {
+		this.featureModel = featureModel;
 	}
 }

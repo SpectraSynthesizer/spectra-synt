@@ -28,23 +28,15 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package tau.smlab.syntech.spectragameinput.translator;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
-import org.eclipse.emf.common.notify.Adapter;
-import org.eclipse.emf.common.notify.Notification;
 import org.eclipse.emf.common.util.EList;
-import org.eclipse.emf.common.util.TreeIterator;
-import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
-import org.eclipse.emf.ecore.EOperation;
-import org.eclipse.emf.ecore.EReference;
-import org.eclipse.emf.ecore.EStructuralFeature;
-import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.xtext.EcoreUtil2;
 
 import com.google.common.collect.Iterators;
@@ -63,6 +55,8 @@ import tau.smlab.syntech.gameinput.model.TriggerConstraint;
 import tau.smlab.syntech.gameinput.model.TypeDef;
 import tau.smlab.syntech.gameinput.model.Variable;
 import tau.smlab.syntech.gameinput.model.WeightDefinition;
+import tau.smlab.syntech.gameinput.pl.Feature;
+import tau.smlab.syntech.gameinput.pl.FeatureConstraint;
 import tau.smlab.syntech.gameinput.spec.PrimitiveValue;
 import tau.smlab.syntech.gameinput.spec.Spec;
 import tau.smlab.syntech.gameinput.spec.SpecRegExp;
@@ -132,6 +126,11 @@ public class Spectra2GameInputTranslator {
 		Iterators.filter(model.getElements().iterator(), RegexpTest.class)
 				.forEachRemaining(regexpTest -> addRegexpTest(entitiesMapper, tracer, regtestExpressions, regexpTest));
 
+		// Features
+		List<Feature> features = new ArrayList<>();
+		Iterators.filter(model.getElements().iterator(), tau.smlab.syntech.spectra.Feature.class)
+				.forEachRemaining(feature -> addFeature(sysPlayer, envPlayer, feature, features, tracer));
+				
 		GameInput gi = new GameInput(model.getName(), sysPlayer, envPlayer, auxPlayer);
 		gi.setDefines(entitiesMapper.getDefineNameToDefineMapping().getAllDefines());
 		gi.setPredicates(entitiesMapper.getPredicateNameToPredicateMapping().getAllPredicates());
@@ -140,6 +139,15 @@ public class Spectra2GameInputTranslator {
 		gi.setCounters(entitiesMapper.getCounterNameToCounterMapping().getAllCounters());
 		gi.setWeightDefs(giWeightDefsList);
 		gi.setRegtestExpressions(regtestExpressions);
+		
+		gi.setFeatures(features);
+		
+		Optional<tau.smlab.syntech.spectra.FeatureConstraint> featureModel = Lists.newArrayList(
+				Iterators.filter(model.getElements().iterator(), tau.smlab.syntech.spectra.FeatureConstraint.class)).stream().findFirst();
+		if (featureModel.get() != null) {
+			gi.setFeatureModel(FeatureConstraintTranslator.parseConstraint(featureModel.get().getExpr(), tracer));
+		}
+		
 		return gi;
 	}
 
@@ -317,6 +325,32 @@ public class Spectra2GameInputTranslator {
 			throw new RuntimeException(e);
 		}
 	}
+	
+	
+	
+	private static void addFeature(Player sys, Player env, 
+			tau.smlab.syntech.spectra.Feature feature, List<Feature> allFeatures, Tracer tracer) {
+		
+		tracer.addTrace(feature);
+		
+		List<Constraint> gars = new ArrayList<>();
+		for (LTLGar gar : feature.getGars()) {
+			gars.add(sys.getConstraints().stream().filter(c -> c.getName().equals(gar.getName())).findFirst().orElseThrow());
+		}
+		List<Constraint> asms = new ArrayList<>();
+		for (LTLAsm asm : feature.getAsms()) {
+			asms.add(env.getConstraints().stream().filter(c -> c.getName().equals(asm.getName())).findFirst().orElseThrow());
+		}
+		
+		Feature f = new Feature(feature.getName(), gars, asms, tracer.getTrace(feature));
+		FeatureConstraintTranslator.featureMap.put(feature.getName(), f);
+		allFeatures.add(f);
+	}
+	
+	
+
+	
+	
 
 	public static tau.smlab.syntech.gameinput.model.Pattern computePattern(EntitiesMapper entitiesMapper, Tracer tracer,
 			Pattern pattern) throws SpectraTranslationException {
