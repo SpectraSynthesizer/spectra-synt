@@ -4,13 +4,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import net.sf.javabdd.BDD;
-import net.sf.javabdd.BDDVarSet;
 import net.sf.javabdd.BDD.BDDIterator;
-import tau.smlab.syntech.gameinput.model.GameInput;
+import net.sf.javabdd.BDDVarSet;
 import tau.smlab.syntech.gameinput.pl.Feature;
 import tau.smlab.syntech.gameinput.pl.FeatureConstraint;
 import tau.smlab.syntech.gameinput.pl.Product;
@@ -25,10 +22,10 @@ public class ProductLineBDDGenerator {
 		return String.format("feature_%s", feature.getName());
 	}
 	
-	public static BDD createBdd(FeatureConstraint constraint) {
+	private static BDD createBdd(FeatureConstraint constraint) {
 		
 		if (constraint.getFeature() != null) {
-			return Env.getBDDValue(getFeatureVarName(constraint.getFeature()), "true").id();
+			return Env.getVar(getFeatureVarName(constraint.getFeature())).support().toBDD();
 		} else {
 			
 			Operator op = constraint.getTheOp();
@@ -60,14 +57,14 @@ public class ProductLineBDDGenerator {
 		}
 	}
 	
-	public static List<Product> createProducts(GameInput input) {
+	public static List<Product> createProducts(List<Feature> features, FeatureConstraint featureModel) {
 		
 		// Handle the product line features
 		BDDVarSet featureVarSet = Env.getEmptySet();
 		Map<ModuleBDDField, Feature> featureFields = new HashMap<>();
 		try {
-			for (Feature f : input.getFeatures()) {
-				ModuleBDDField featureField = Env.newVar(ProductLineBDDGenerator.getFeatureVarName(f));
+			for (Feature f : features) {
+				ModuleBDDField featureField = Env.newVar(getFeatureVarName(f));
 				featureFields.put(featureField, f);
 				featureVarSet.unionWith(featureField.support());
 			}
@@ -75,7 +72,7 @@ public class ProductLineBDDGenerator {
 			e.printStackTrace();
 		}
 		
-		BDD featureModelBDD = ProductLineBDDGenerator.createBdd(input.getFeatureModel());
+		BDD featureModelBDD = ProductLineBDDGenerator.createBdd(featureModel);
 		BDDIterator productsIterator = featureModelBDD.iterator(featureVarSet);
 		List<Product> products = new ArrayList<>();
 		
@@ -102,35 +99,6 @@ public class ProductLineBDDGenerator {
 		}
 		
 		return products;
-	}
-	
-	
-	public static Map<Product, List<Product>> createProductLattice(List<Product> products) {
-		
-		Map<Product, List<Product>> lattice = new HashMap<>();
-		
-		for (Product p0 : products) {
-			for (Product p1 : products) {
-				
-				if (p0.subsumes(p1)) {
-					
-					if (products.stream().noneMatch(p -> !p.equals(p0) && !p.equals(p1) && p0.subsumes(p) && p.subsumes(p1))) {
-						if (!lattice.containsKey(p0)) {
-							lattice.put(p0, new ArrayList<>());
-						}
-						lattice.get(p0).add(p1);
-					}
-				}
-				
-			}
-		}
-		
-		return lattice;
-	}
-	
-	public static List<Product> getRoots(Map<Product, List<Product>> lattice) {
-		Set<Product> allSubsumed = lattice.values().stream().flatMap(List<Product>::stream).collect(Collectors.toSet());
-		return lattice.keySet().stream().filter(p -> !allSubsumed.contains(p)).collect(Collectors.toList());
 	}
 
 }

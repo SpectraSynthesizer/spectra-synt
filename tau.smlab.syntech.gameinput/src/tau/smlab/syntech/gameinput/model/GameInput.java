@@ -34,7 +34,6 @@ import java.util.List;
 
 import tau.smlab.syntech.gameinput.pl.Feature;
 import tau.smlab.syntech.gameinput.pl.FeatureConstraint;
-import tau.smlab.syntech.gameinput.pl.Product;
 
 /**
  * represents the input for a specification

@@ -31,10 +31,8 @@ package tau.smlab.syntech.ui.jobs;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Queue;
 import java.util.stream.Collectors;
 
@@ -66,6 +64,7 @@ import tau.smlab.syntech.bddgenerator.BDDTranslationException;
 import tau.smlab.syntech.bddgenerator.ProductLineBDDGenerator;
 import tau.smlab.syntech.gameinput.model.GameInput;
 import tau.smlab.syntech.gameinput.pl.Product;
+import tau.smlab.syntech.gameinput.pl.ProductLattice;
 import tau.smlab.syntech.gameinputtrans.translator.Translator;
 import tau.smlab.syntech.gamemodel.BehaviorInfo;
 import tau.smlab.syntech.gamemodel.GameModel;
@@ -129,7 +128,7 @@ public abstract class SyntechJob extends Job {
 			Env.disableReorder();
 		}
 		
-		Thread t = new Thread(() -> translateAnddoWork());
+		Thread t = new Thread(() -> translateAndDoWork());
 		t.start();
 		while (t.isAlive()) {
 			if (monitor.isCanceled()) {
@@ -251,58 +250,14 @@ public abstract class SyntechJob extends Job {
 	 * first translate GameInput into GameModel (this can already be expensive due
 	 * to BDD creation)
 	 */
-	private void translateAnddoWork() {
-		long start = System.currentTimeMillis();
+	private void translateAndDoWork() {
+		
 		try {
 			
-			List<Product> products = ProductLineBDDGenerator.createProducts(gi);
-			
-			Map<Product, List<Product>> lattice = ProductLineBDDGenerator.createProductLattice(products);
-			
-			List<Product> roots = ProductLineBDDGenerator.getRoots(lattice);
-			
-			
-			Queue<Product> queue = new LinkedList<>();
-			
-			queue.addAll(roots);
-			
-			while (!queue.isEmpty()) {
-				
-				
-				Product toProcess = queue.poll();
-				
-				if (toProcess.isProcessed()) continue;
-				
-				printToConsole(String.format("Processing product %s", toProcess));
-				
-				gi.getSys().setConstraints(new ArrayList<>(toProcess.getGars()));
-				gi.getEnv().setConstraints(new ArrayList<>(toProcess.getAsms()));
-				
-				
-				// Original flow
-				
-				this.model = BDDGenerator.generateGameModel(gi, trace, PreferencePage.isGroupVarSelection(),
-						PreferencePage.getTransFuncSelection(false));
-				bddTranslationTime = System.currentTimeMillis() - start;
-				printToConsole("BDD translation: " + bddTranslationTime + "ms (" + Env.getBDDPackageInfo() + ")");
-				int sysNonAux = getVarNum(model.getSys().getNonAuxFields());
-				int sysAux = getVarNum(model.getSys().getAuxFields());
-				printToConsole("Statespace env: " + getVarNum(model.getEnv().getAllFields()) + ", sys: " + sysNonAux
-						+ ", aux: " + sysAux);
-				doWork();
-				
-				toProcess.setProcessed(true);
-				
-				// If realizable we can skip the rest of the lattice for this product
-				if (this instanceof CheckRealizabilityJob) {
-					if (((CheckRealizabilityJob) this).isRealizable) {
-						lattice.get(toProcess).forEach(p -> p.setProcessed(true));
-					} else {
-						queue.addAll(lattice.get(toProcess));
-					}
-				}
-				
-				
+			if (gi.getFeatures() == null || gi.getFeatures().isEmpty()) {
+				generateAndDoWork();
+			} else {
+				generateAndDoWorkForProductLines();
 			}
 			
 			Env.resetEnv();
@@ -317,6 +272,61 @@ public abstract class SyntechJob extends Job {
 			printToConsole(e.getMessage());
 			e.printStackTrace();
 		}
+	}
+	
+	private void generateAndDoWorkForProductLines() {
+	
+		List<Product> products = ProductLineBDDGenerator.createProducts(gi.getFeatures(), gi.getFeatureModel());
+		ProductLattice lattice = new ProductLattice(products);
+		List<Product> roots = lattice.getBottom();
+		
+		Queue<Product> queue = new LinkedList<>();
+		
+		queue.addAll(roots);
+		
+		while (!queue.isEmpty()) {
+			
+			
+			Product toProcess = queue.poll();
+			
+			if (toProcess.isProcessed()) continue;
+			
+			printToConsole(String.format("Processing product %s", toProcess));
+			
+			gi.getSys().setConstraints(new ArrayList<>(toProcess.getGars()));
+			gi.getEnv().setConstraints(new ArrayList<>(toProcess.getAsms()));
+			
+			
+			// Original flow
+			generateAndDoWork();
+			
+			toProcess.setProcessed(true);
+			
+			// If realizable we can skip the rest of the lattice for this product
+			if (this instanceof CheckRealizabilityJob) {
+				if (((CheckRealizabilityJob) this).isRealizable) {
+					lattice.getSubsumed(toProcess).forEach(p -> p.setProcessed(true));
+				} else {
+					queue.addAll(lattice.getSubsumed(toProcess));
+				}
+			}
+			
+			
+		}
+	}
+	
+	private void generateAndDoWork() {
+		
+		long start = System.currentTimeMillis();
+		this.model = BDDGenerator.generateGameModel(gi, trace, PreferencePage.isGroupVarSelection(),
+				PreferencePage.getTransFuncSelection(false));
+		bddTranslationTime = System.currentTimeMillis() - start;
+		printToConsole("BDD translation: " + bddTranslationTime + "ms (" + Env.getBDDPackageInfo() + ")");
+		int sysNonAux = getVarNum(model.getSys().getNonAuxFields());
+		int sysAux = getVarNum(model.getSys().getAuxFields());
+		printToConsole("Statespace env: " + getVarNum(model.getEnv().getAllFields()) + ", sys: " + sysNonAux
+				+ ", aux: " + sysAux);
+		doWork();
 	}
 
 	/**
