@@ -279,7 +279,13 @@ public abstract class SyntechJob extends Job {
 		List<Product> products = ProductLineBDDGenerator.createProducts(
 				gi.getFeatures(), gi.getFeatureModel(), gi.getSys(), gi.getEnv());
 		ProductLattice lattice = new ProductLattice(products);
-		List<Product> roots = lattice.getBottom();
+		
+		List<Product> roots;
+		if (PreferencePage.isProductLineApproachBottomUp()) {
+			roots = lattice.getBottom();
+		} else {
+			roots = lattice.getTop();
+		}
 		
 		Queue<Product> queue = new LinkedList<>();
 		
@@ -305,14 +311,34 @@ public abstract class SyntechJob extends Job {
 			
 			// If realizable we can skip the rest of the lattice for this product
 			if (this instanceof CheckRealizabilityJob) {
-				if (((CheckRealizabilityJob) this).isRealizable) {
-					printToConsole(String.format("Flagging product %s as %s", toProcess, Product.Status.REALIZABLE));
-					toProcess.setStatus(Product.Status.REALIZABLE);
-					flagDescendants(lattice, toProcess, Product.Status.REALIZABLE);
+				
+				Product.Status status = ((CheckRealizabilityJob) this).isRealizable ? Product.Status.REALIZABLE : Product.Status.UNREALIZABLE;
+				printToConsole(String.format("Flagging product %s as %s", toProcess, status));
+				toProcess.setStatus(status);
+				
+				if (PreferencePage.isProductLineApproachBottomUp()) {
+					
+					if (Product.Status.REALIZABLE.equals(status)) {
+						flagDescendants(lattice, toProcess, status);
+					} else {
+						if (lattice.getSubsumed(toProcess) != null) {
+							queue.addAll(lattice.getSubsumed(toProcess));
+						}
+					}
+					
 				} else {
-					printToConsole(String.format("Flagging product %s as %s", toProcess, Product.Status.UNREALIZABLE));
-					queue.addAll(lattice.getSubsumed(toProcess));
+					
+					if (Product.Status.UNREALIZABLE.equals(status)) {
+						flagDescendants(lattice, toProcess, status);
+					} else {
+						if (lattice.getSubsuming(toProcess) != null) {
+							queue.addAll(lattice.getSubsuming(toProcess));
+						}
+					}
+					
 				}
+				
+
 			}
 			
 			
@@ -321,9 +347,16 @@ public abstract class SyntechJob extends Job {
 	
 	private void flagDescendants(ProductLattice lattice, Product product, Product.Status status) {
 		
-		if (lattice.getSubsumed(product) == null) return;
+		List<Product> descendants;
+		if (PreferencePage.isProductLineApproachBottomUp()) {
+			descendants = lattice.getSubsumed(product);
+		} else {
+			descendants = lattice.getSubsuming(product);
+		}
 		
-		for (Product descendant : lattice.getSubsumed(product)) {
+		if (descendants == null) return;
+		
+		for (Product descendant : descendants) {
 			if (Product.Status.UNKNOWN.equals(descendant.getStatus())) {
 				printToConsole(String.format("Flagging product %s as %s (infering from lattice)", descendant, status));
 				descendant.setStatus(status);

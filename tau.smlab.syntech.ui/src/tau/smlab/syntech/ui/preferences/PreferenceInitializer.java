@@ -54,6 +54,7 @@ public class PreferenceInitializer extends AbstractPreferenceInitializer {
 		store.setDefault(PreferenceConstants.BDD_ENGINE_CHOICE, "CUDD");
 		store.setDefault(PreferenceConstants.CONC_CONT_FORMAT, "CMP");	
 		store.setDefault(PreferenceConstants.SYNTHESIS_METHOD, PreferenceConstants.SYNTHESIS_METHOD_GR1);
+		store.setDefault(PreferenceConstants.PRODUCT_LINE_APPROACH, "bottomUp");
 	}
 
 }

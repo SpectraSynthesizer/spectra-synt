@@ -51,5 +51,7 @@ public class PreferenceConstants {
 	public static final String SYNTHESIS_METHOD_GR1 = "synthesisGR1";
 	public static final String SYNTHESIS_METHOD_PITERMAN = "synthesisPiterman";
 	public static final String SYNTHESIS_METHOD_PITERMAN_REDUCTION = "synthesisPitermanReduction";
+	
+	public static final String PRODUCT_LINE_APPROACH = "productLineApproach";
 
 }
