@@ -295,7 +295,9 @@ public abstract class SyntechJob extends Job {
 				
 				// If realizable we can skip the rest of the lattice for this product
 				if (this instanceof CheckRealizabilityJob) {
-					if (!((CheckRealizabilityJob) this).isRealizable) {
+					if (((CheckRealizabilityJob) this).isRealizable) {
+						lattice.get(toProcess).forEach(p -> p.setProcessed(true));
+					} else {
 						queue.addAll(lattice.get(toProcess));
 					}
 				}
