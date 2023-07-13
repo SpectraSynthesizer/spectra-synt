@@ -2438,6 +2438,20 @@ public final class Env {
 	}
 
 	/**
+	 * Compute the sat count of the the bdd, taking into account only the usedVars.
+	 * @param bdd
+	 * @param usedVars
+	 * @return
+	 */
+	public static double getSatCount(BDD bdd, BDDVarSet usedVars) {
+		BDDVarSet unusedVars = globalVarsMinus(usedVars);
+		BDD quantified = bdd.exist(unusedVars);
+		double result = quantified.satCount(usedVars);
+		quantified.free();
+		return result;
+	}
+
+	/**
 	 * compute a union of the varsets of the unprimed fields
 	 * 
 	 * @param fields
