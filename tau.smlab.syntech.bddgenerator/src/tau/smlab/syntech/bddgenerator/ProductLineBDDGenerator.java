@@ -4,10 +4,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import net.sf.javabdd.BDD;
 import net.sf.javabdd.BDD.BDDIterator;
 import net.sf.javabdd.BDDVarSet;
+import tau.smlab.syntech.gameinput.model.Player;
 import tau.smlab.syntech.gameinput.pl.Feature;
 import tau.smlab.syntech.gameinput.pl.FeatureConstraint;
 import tau.smlab.syntech.gameinput.pl.Product;
@@ -57,7 +59,8 @@ public class ProductLineBDDGenerator {
 		}
 	}
 	
-	public static List<Product> createProducts(List<Feature> features, FeatureConstraint featureModel) {
+	public static List<Product> createProducts(List<Feature> features, FeatureConstraint featureModel,
+			Player sys, Player env) {
 		
 		// Handle the product line features
 		BDDVarSet featureVarSet = Env.getEmptySet();
@@ -85,8 +88,8 @@ public class ProductLineBDDGenerator {
 				if ("true".equals(val)) {
 					Feature f = featureFields.get(field);
 					p.getFeatures().add(f);
-					p.getGars().addAll(f.getGars());
-					p.getAsms().addAll(f.getAsms());
+					p.getGars().addAll(sys.getConstraints().stream().filter(c -> f.getGars().contains(c.getName())).collect(Collectors.toList()));
+					p.getAsms().addAll(env.getConstraints().stream().filter(c -> f.getAsms().contains(c.getName())).collect(Collectors.toList()));
 				}
 			}
 			products.add(p);

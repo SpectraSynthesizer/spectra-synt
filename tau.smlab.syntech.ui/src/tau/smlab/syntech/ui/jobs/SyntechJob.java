@@ -276,7 +276,8 @@ public abstract class SyntechJob extends Job {
 	
 	private void generateAndDoWorkForProductLines() {
 	
-		List<Product> products = ProductLineBDDGenerator.createProducts(gi.getFeatures(), gi.getFeatureModel());
+		List<Product> products = ProductLineBDDGenerator.createProducts(
+				gi.getFeatures(), gi.getFeatureModel(), gi.getSys(), gi.getEnv());
 		ProductLattice lattice = new ProductLattice(products);
 		List<Product> roots = lattice.getBottom();
 		

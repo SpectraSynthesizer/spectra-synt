@@ -56,7 +56,6 @@ import tau.smlab.syntech.gameinput.model.TypeDef;
 import tau.smlab.syntech.gameinput.model.Variable;
 import tau.smlab.syntech.gameinput.model.WeightDefinition;
 import tau.smlab.syntech.gameinput.pl.Feature;
-import tau.smlab.syntech.gameinput.pl.FeatureConstraint;
 import tau.smlab.syntech.gameinput.spec.PrimitiveValue;
 import tau.smlab.syntech.gameinput.spec.Spec;
 import tau.smlab.syntech.gameinput.spec.SpecRegExp;
@@ -144,7 +143,7 @@ public class Spectra2GameInputTranslator {
 		
 		Optional<tau.smlab.syntech.spectra.FeatureConstraint> featureModel = Lists.newArrayList(
 				Iterators.filter(model.getElements().iterator(), tau.smlab.syntech.spectra.FeatureConstraint.class)).stream().findFirst();
-		if (featureModel.get() != null) {
+		if (featureModel.isPresent()) {
 			gi.setFeatureModel(FeatureConstraintTranslator.parseConstraint(featureModel.get().getExpr(), tracer));
 		}
 		
@@ -333,13 +332,13 @@ public class Spectra2GameInputTranslator {
 		
 		tracer.addTrace(feature);
 		
-		List<Constraint> gars = new ArrayList<>();
+		List<String> gars = new ArrayList<>();
 		for (LTLGar gar : feature.getGars()) {
-			gars.add(sys.getConstraints().stream().filter(c -> c.getName().equals(gar.getName())).findFirst().orElseThrow());
+			gars.add(sys.getConstraints().stream().filter(c -> c.getName().equals(gar.getName())).findFirst().orElseThrow().getName());
 		}
-		List<Constraint> asms = new ArrayList<>();
+		List<String> asms = new ArrayList<>();
 		for (LTLAsm asm : feature.getAsms()) {
-			asms.add(env.getConstraints().stream().filter(c -> c.getName().equals(asm.getName())).findFirst().orElseThrow());
+			asms.add(env.getConstraints().stream().filter(c -> c.getName().equals(asm.getName())).findFirst().orElseThrow().getName());
 		}
 		
 		Feature f = new Feature(feature.getName(), gars, asms, tracer.getTrace(feature));
