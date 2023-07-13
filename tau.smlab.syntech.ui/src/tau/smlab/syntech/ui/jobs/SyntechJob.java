@@ -31,7 +31,11 @@ package tau.smlab.syntech.ui.jobs;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Queue;
 import java.util.stream.Collectors;
 
 import org.eclipse.core.resources.IFile;
@@ -61,6 +65,7 @@ import tau.smlab.syntech.bddgenerator.BDDGenerator.TraceInfo;
 import tau.smlab.syntech.bddgenerator.BDDTranslationException;
 import tau.smlab.syntech.bddgenerator.ProductLineBDDGenerator;
 import tau.smlab.syntech.gameinput.model.GameInput;
+import tau.smlab.syntech.gameinput.pl.Product;
 import tau.smlab.syntech.gameinputtrans.translator.Translator;
 import tau.smlab.syntech.gamemodel.BehaviorInfo;
 import tau.smlab.syntech.gamemodel.GameModel;
@@ -250,17 +255,57 @@ public abstract class SyntechJob extends Job {
 		long start = System.currentTimeMillis();
 		try {
 			
-			gi.setProducts(ProductLineBDDGenerator.createProducts(gi));
+			List<Product> products = ProductLineBDDGenerator.createProducts(gi);
 			
-			this.model = BDDGenerator.generateGameModel(gi, trace, PreferencePage.isGroupVarSelection(),
-					PreferencePage.getTransFuncSelection(false));
-			bddTranslationTime = System.currentTimeMillis() - start;
-			printToConsole("BDD translation: " + bddTranslationTime + "ms (" + Env.getBDDPackageInfo() + ")");
-			int sysNonAux = getVarNum(model.getSys().getNonAuxFields());
-			int sysAux = getVarNum(model.getSys().getAuxFields());
-			printToConsole("Statespace env: " + getVarNum(model.getEnv().getAllFields()) + ", sys: " + sysNonAux
-					+ ", aux: " + sysAux);
-			doWork();
+			Map<Product, List<Product>> lattice = ProductLineBDDGenerator.createProductLattice(products);
+			
+			List<Product> roots = ProductLineBDDGenerator.getRoots(lattice);
+			
+			
+			Queue<Product> queue = new LinkedList<>();
+			
+			queue.addAll(roots);
+			
+			while (!queue.isEmpty()) {
+				
+				
+				Product toProcess = queue.poll();
+				
+				if (toProcess.isProcessed()) continue;
+				
+				printToConsole(String.format("Processing product %s", toProcess));
+				
+				gi.getSys().setConstraints(new ArrayList<>(toProcess.getGars()));
+				gi.getEnv().setConstraints(new ArrayList<>(toProcess.getAsms()));
+				
+				
+				// Original flow
+				
+				this.model = BDDGenerator.generateGameModel(gi, trace, PreferencePage.isGroupVarSelection(),
+						PreferencePage.getTransFuncSelection(false));
+				bddTranslationTime = System.currentTimeMillis() - start;
+				printToConsole("BDD translation: " + bddTranslationTime + "ms (" + Env.getBDDPackageInfo() + ")");
+				int sysNonAux = getVarNum(model.getSys().getNonAuxFields());
+				int sysAux = getVarNum(model.getSys().getAuxFields());
+				printToConsole("Statespace env: " + getVarNum(model.getEnv().getAllFields()) + ", sys: " + sysNonAux
+						+ ", aux: " + sysAux);
+				doWork();
+				
+				toProcess.setProcessed(true);
+				
+				// If realizable we can skip the rest of the lattice for this product
+				if (this instanceof CheckRealizabilityJob) {
+					if (!((CheckRealizabilityJob) this).isRealizable) {
+						queue.addAll(lattice.get(toProcess));
+					}
+				}
+				
+				
+			}
+			
+			Env.resetEnv();
+
+
 		} catch (BDDTranslationException e) {
 			if (e.getTraceId() >= 0) {
 				createMarker(e.getTraceId(), e.getMessage(), MarkerKind.CUSTOM_TEXT_ERROR);

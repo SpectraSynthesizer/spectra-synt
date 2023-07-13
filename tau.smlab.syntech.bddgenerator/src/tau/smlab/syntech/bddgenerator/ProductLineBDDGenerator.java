@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import net.sf.javabdd.BDD;
 import net.sf.javabdd.BDDVarSet;
@@ -103,9 +105,8 @@ public class ProductLineBDDGenerator {
 	}
 	
 	
-	public static Map<Product, List<Product>> createProductLattice(GameInput gi) {
+	public static Map<Product, List<Product>> createProductLattice(List<Product> products) {
 		
-		List<Product> products = gi.getProducts();
 		Map<Product, List<Product>> lattice = new HashMap<>();
 		
 		for (Product p0 : products) {
@@ -125,6 +126,11 @@ public class ProductLineBDDGenerator {
 		}
 		
 		return lattice;
+	}
+	
+	public static List<Product> getRoots(Map<Product, List<Product>> lattice) {
+		Set<Product> allSubsumed = lattice.values().stream().flatMap(List<Product>::stream).collect(Collectors.toSet());
+		return lattice.keySet().stream().filter(p -> !allSubsumed.contains(p)).collect(Collectors.toList());
 	}
 
 }

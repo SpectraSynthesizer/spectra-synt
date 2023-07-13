@@ -66,7 +66,6 @@ public class GameInput implements Serializable {
 	
 	private List<Feature> features = new ArrayList<>();
 	private FeatureConstraint featureModel;
-	private List<Product> products = new ArrayList<>();
 
 	public GameInput(String name)
 	{
@@ -225,14 +224,6 @@ public class GameInput implements Serializable {
 
 	public void setFeatureModel(FeatureConstraint featureModel) {
 		this.featureModel = featureModel;
-	}
-	
-	public List<Product> getProducts() {
-		return products;
-	}
-
-	public void setProducts(List<Product> products) {
-		this.products = products;
 	}
 
 	public List<Feature> getFeatures() {

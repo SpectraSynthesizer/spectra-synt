@@ -47,4 +47,7 @@ public class Feature implements Serializable {
 		this.traceId = traceId;
 	}
 
+	public String toString() {
+		return this.name;
+	}
 }

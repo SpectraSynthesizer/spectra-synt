@@ -13,6 +13,14 @@ public class Product {
 	private Set<Constraint> gars = new HashSet<>();
 	private Set<Constraint> asms = new HashSet<>();
 	
+	private boolean processed = false;
+	
+	public boolean isProcessed() {
+		return processed;
+	}
+	public void setProcessed(boolean processed) {
+		this.processed = processed;
+	}
 	public List<Feature> getFeatures() {
 		return features;
 	}
@@ -25,5 +33,9 @@ public class Product {
 	
 	public boolean subsumes(Product other) {
 		return gars.containsAll(other.gars) && other.asms.containsAll(asms);
+	}
+	
+	public String toString() {
+		return features.toString();
 	}
 }
