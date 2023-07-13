@@ -290,7 +290,9 @@ public abstract class SyntechJob extends Job {
 			
 			Product toProcess = queue.poll();
 			
-			if (toProcess.isProcessed()) continue;
+			if (!Product.Status.UNKNOWN.equals(toProcess.getStatus())) {
+				continue;
+			}
 			
 			printToConsole(String.format("Processing product %s", toProcess));
 			
@@ -301,18 +303,32 @@ public abstract class SyntechJob extends Job {
 			// Original flow
 			generateAndDoWork();
 			
-			toProcess.setProcessed(true);
-			
 			// If realizable we can skip the rest of the lattice for this product
 			if (this instanceof CheckRealizabilityJob) {
 				if (((CheckRealizabilityJob) this).isRealizable) {
-					lattice.getSubsumed(toProcess).forEach(p -> p.setProcessed(true));
+					printToConsole(String.format("Flagging product %s as %s", toProcess, Product.Status.REALIZABLE));
+					toProcess.setStatus(Product.Status.REALIZABLE);
+					flagDescendants(lattice, toProcess, Product.Status.REALIZABLE);
 				} else {
+					printToConsole(String.format("Flagging product %s as %s", toProcess, Product.Status.UNREALIZABLE));
 					queue.addAll(lattice.getSubsumed(toProcess));
 				}
 			}
 			
 			
+		}
+	}
+	
+	private void flagDescendants(ProductLattice lattice, Product product, Product.Status status) {
+		
+		if (lattice.getSubsumed(product) == null) return;
+		
+		for (Product descendant : lattice.getSubsumed(product)) {
+			if (Product.Status.UNKNOWN.equals(descendant.getStatus())) {
+				printToConsole(String.format("Flagging product %s as %s (infering from lattice)", descendant, status));
+				descendant.setStatus(status);
+				flagDescendants(lattice, descendant, status);
+			}
 		}
 	}
 	

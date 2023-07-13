@@ -8,19 +8,15 @@ import java.util.Set;
 import tau.smlab.syntech.gameinput.model.Constraint;
 
 public class Product {
+	
+	public static enum Status { REALIZABLE, UNREALIZABLE, UNKNOWN }
 
 	private List<Feature> features = new ArrayList<>();
 	private Set<Constraint> gars = new HashSet<>();
 	private Set<Constraint> asms = new HashSet<>();
 	
-	private boolean processed = false;
+	private Status status = Status.UNKNOWN;
 	
-	public boolean isProcessed() {
-		return processed;
-	}
-	public void setProcessed(boolean processed) {
-		this.processed = processed;
-	}
 	public List<Feature> getFeatures() {
 		return features;
 	}
@@ -37,5 +33,11 @@ public class Product {
 	
 	public String toString() {
 		return features.toString();
+	}
+	public Status getStatus() {
+		return status;
+	}
+	public void setStatus(Status status) {
+		this.status = status;
 	}
 }
