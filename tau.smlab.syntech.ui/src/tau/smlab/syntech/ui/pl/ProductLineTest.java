@@ -50,7 +50,7 @@ class ProductLineTest {
 
 		for (int i = 0; i < 10; i++) {
 			long start = System.currentTimeMillis();
-			variabilityAwareRealizability("pl/WashPL_unreal.spectra");
+			variabilityAwareRealizability("pl/WashPL.spectra");
 			long run = System.currentTimeMillis() - start;
 			total += run;
 		}
