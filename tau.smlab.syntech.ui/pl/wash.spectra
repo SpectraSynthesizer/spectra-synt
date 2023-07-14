@@ -1,0 +1,49 @@
+spec MovingObstacle
+
+define NUM_MODES := 5;
+
+env boolean startWash; // Wash 
+env boolean startDry; // Dry
+env boolean setHot; // Heat
+env boolean setDelay; // Delay
+
+sys boolean atTemp; // Heat
+sys boolean locked; // True
+sys boolean[NUM_MODES] modes; // Domain-Knowledge
+	define idle := modes[0];
+	define washing := modes[1];
+	define drying := modes[2];
+	define heating := modes[3];
+	define waiting := modes[4];
+
+-- Universal Assumptions 
+
+-- Feature-level Assumptions
+asm WashPressedLive: alwEv(startWash); // Wash
+asm WashNotPressedLive: alwEv(!startWash);  // Wash 
+
+-- Universal Guarantees
+ 
+gar modes_mutex:
+	alw(forall i in Int(0..(NUM_MODES-1)) . forall j in Int(0..(NUM_MODES-1)) . (i!=j) -> !(modes[i] & modes[j]));
+
+-- fix unused variables
+//asm alw(!startDry);
+//asm alw(!setHot);
+//asm alw(!setDelay);
+//gar alw(!drying);
+//gar alw(!heating);
+//gar alw(!waiting);
+//gar alw(!atTemp);
+
+
+gar WashButtonSafety: alw(startWash and idle implies next(washing));  // Wash
+gar WashOffLive: alwEv(!washing); // Wash
+gar WashLockSafety: alw(washing implies locked);  // Wash
+
+ 
+//// TODO : Mutex Assumptions
+//@feature Wash {
+//	guarantees: WashButtonSafety, WashOffLive, WashLockSafety
+//	assumptions: WashPressedLive, WashNotPressedLive
+//}

@@ -31,9 +31,7 @@ package tau.smlab.syntech.ui.jobs;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Queue;
 import java.util.stream.Collectors;
 
 import org.eclipse.core.resources.IFile;
@@ -61,10 +59,7 @@ import net.sf.javabdd.BDDVarSet;
 import tau.smlab.syntech.bddgenerator.BDDGenerator;
 import tau.smlab.syntech.bddgenerator.BDDGenerator.TraceInfo;
 import tau.smlab.syntech.bddgenerator.BDDTranslationException;
-import tau.smlab.syntech.bddgenerator.ProductLineBDDGenerator;
 import tau.smlab.syntech.gameinput.model.GameInput;
-import tau.smlab.syntech.gameinput.pl.Product;
-import tau.smlab.syntech.gameinput.pl.ProductLattice;
 import tau.smlab.syntech.gameinputtrans.translator.Translator;
 import tau.smlab.syntech.gamemodel.BehaviorInfo;
 import tau.smlab.syntech.gamemodel.GameModel;
@@ -74,6 +69,7 @@ import tau.smlab.syntech.jtlv.Env;
 import tau.smlab.syntech.jtlv.env.module.ModuleBDDField;
 import tau.smlab.syntech.spectragameinput.translator.Tracer;
 import tau.smlab.syntech.ui.logger.SpectraLogger;
+import tau.smlab.syntech.ui.pl.VariabilityAwareRealizability;
 import tau.smlab.syntech.ui.preferences.PreferencePage;
 
 public abstract class SyntechJob extends Job {
@@ -257,7 +253,13 @@ public abstract class SyntechJob extends Job {
 			if (gi.getFeatures() == null || gi.getFeatures().isEmpty()) {
 				generateAndDoWork();
 			} else {
-				generateAndDoWorkForProductLines();
+				VariabilityAwareRealizability var = new VariabilityAwareRealizability(
+						PreferencePage.isProductLineApproachBottomUp(), 
+						(gi) -> {generateAndDoWork(); return isRealizable;},
+						(str) -> printToConsole(str),
+						gi);
+				
+				var.doWork();
 			}
 			
 			Env.resetEnv();
@@ -274,98 +276,7 @@ public abstract class SyntechJob extends Job {
 		}
 	}
 	
-	private void generateAndDoWorkForProductLines() {
-	
-		List<Product> products = ProductLineBDDGenerator.createProducts(
-				gi.getFeatures(), gi.getFeatureModel(), gi.getSys(), gi.getEnv());
-		ProductLattice lattice = new ProductLattice(products);
-		
-		List<Product> roots;
-		if (PreferencePage.isProductLineApproachBottomUp()) {
-			roots = lattice.getBottom();
-		} else {
-			roots = lattice.getTop();
-		}
-		
-		Queue<Product> queue = new LinkedList<>();
-		
-		queue.addAll(roots);
-		
-		while (!queue.isEmpty()) {
-			
-			
-			Product toProcess = queue.poll();
-			
-			if (!Product.Status.UNKNOWN.equals(toProcess.getStatus())) {
-				continue;
-			}
-			
-			printToConsole(String.format("Processing product %s", toProcess));
-			
-			gi.getSys().setConstraints(new ArrayList<>(toProcess.getGars()));
-			gi.getEnv().setConstraints(new ArrayList<>(toProcess.getAsms()));
-			
-			
-			// Original flow
-			generateAndDoWork();
-			
-			// If realizable we can skip the rest of the lattice for this product
-			if (this instanceof CheckRealizabilityJob) {
-				
-				Product.Status status = ((CheckRealizabilityJob) this).isRealizable ? Product.Status.REALIZABLE : Product.Status.UNREALIZABLE;
-				printToConsole(String.format("Flagging product %s as %s", toProcess, status));
-				toProcess.setStatus(status);
-				
-				if (PreferencePage.isProductLineApproachBottomUp()) {
-					
-					if (Product.Status.REALIZABLE.equals(status)) {
-						flagDescendants(lattice, toProcess, status);
-					} else {
-						if (lattice.getSubsumed(toProcess) != null) {
-							queue.addAll(lattice.getSubsumed(toProcess));
-						}
-					}
-					
-				} else {
-					
-					if (Product.Status.UNREALIZABLE.equals(status)) {
-						flagDescendants(lattice, toProcess, status);
-					} else {
-						if (lattice.getSubsuming(toProcess) != null) {
-							queue.addAll(lattice.getSubsuming(toProcess));
-						}
-					}
-					
-				}
-				
-
-			}
-			
-			
-		}
-	}
-	
-	private void flagDescendants(ProductLattice lattice, Product product, Product.Status status) {
-		
-		List<Product> descendants;
-		if (PreferencePage.isProductLineApproachBottomUp()) {
-			descendants = lattice.getSubsumed(product);
-		} else {
-			descendants = lattice.getSubsuming(product);
-		}
-		
-		if (descendants == null) return;
-		
-		for (Product descendant : descendants) {
-			if (Product.Status.UNKNOWN.equals(descendant.getStatus())) {
-				printToConsole(String.format("Flagging product %s as %s (infering from lattice)", descendant, status));
-				descendant.setStatus(status);
-				flagDescendants(lattice, descendant, status);
-			}
-		}
-	}
-	
-	private void generateAndDoWork() {
+	public void generateAndDoWork() {
 		
 		long start = System.currentTimeMillis();
 		this.model = BDDGenerator.generateGameModel(gi, trace, PreferencePage.isGroupVarSelection(),
