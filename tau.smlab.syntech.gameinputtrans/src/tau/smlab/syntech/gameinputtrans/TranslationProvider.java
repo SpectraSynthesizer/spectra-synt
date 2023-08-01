@@ -49,6 +49,16 @@ public class TranslationProvider {
 	public static void translate(GameInput input) {
 		translate(input, DefaultTranslators.getDefaultTranslators());
 	}
+	
+	/**
+	 * translate the game input according to default translators and feature model approach
+	 * 
+	 * @param input
+	 * @param embeddedFeatureModel
+	 */
+	public static void translate(GameInput input, boolean embeddedFeatureModel) {
+		translate(input, DefaultTranslators.getDefaultTranslators(embeddedFeatureModel, true));
+	}
 
 	/**
 	 * translate game input based on supplied list of translators

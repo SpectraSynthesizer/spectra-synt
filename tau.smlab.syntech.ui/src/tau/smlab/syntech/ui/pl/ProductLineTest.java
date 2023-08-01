@@ -43,17 +43,31 @@ class ProductLineTest {
 	}
 	
 	@Test
-	void realizabilityPL() {
+	void realizabilityPLLattice() {
 		long total = 0;
 
 		for (int i = 0; i < 10; i++) {
 			long start = System.currentTimeMillis();
-			variabilityAwareRealizability("pl/WashPL.spectra");
+			variabilityAwareRealizabilityLattice("pl/WashPL.spectra");
 			long run = System.currentTimeMillis() - start;
 			total += run;
 		}
 		
-		System.out.println((double) total / 10000);
+		System.out.println((double) total / 1000);
+	}
+	
+	@Test
+	void realizabilityPLEmbedded() {
+		long total = 0;
+
+		for (int i = 0; i < 10; i++) {
+			long start = System.currentTimeMillis();
+			variabilityAwareRealizabilityEmbedded("pl/WashPL.spectra");
+			long run = System.currentTimeMillis() - start;
+			total += run;
+		}
+		
+		System.out.println((double) total / 1000);
 	}
 
 	@Test
@@ -73,7 +87,7 @@ class ProductLineTest {
 			total += run;
 		}
 		
-		System.out.println((double) total / 10000);
+		System.out.println((double) total / 1000);
 	}
 	
 	private boolean checkRealizability(GameInput gi) {
@@ -94,7 +108,7 @@ class ProductLineTest {
 		}
 	}
 	
-	private void variabilityAwareRealizability(String spec) {
+	private void variabilityAwareRealizabilityLattice(String spec) {
 		try {
 			GameInput gi = ip.getGameInput(spec);
 			TranslationProvider.translate(gi);
@@ -103,6 +117,18 @@ class ProductLineTest {
 					true, (input) -> checkRealizability(input), (str) -> System.out.println(str), gi);
 			var.doWork();
 			
+			AuxVariableGenerator.resetVar();
+			Env.resetEnv();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	private void variabilityAwareRealizabilityEmbedded(String spec) {
+		try {
+			GameInput gi = ip.getGameInput(spec);
+			TranslationProvider.translate(gi, true);
+			checkRealizability(gi);
 			AuxVariableGenerator.resetVar();
 			Env.resetEnv();
 		} catch (Exception e) {
