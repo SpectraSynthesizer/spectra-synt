@@ -10,6 +10,7 @@ public class Feature implements Serializable {
 	private String name;
 	private List<String> gars;
 	private List<String> asms;
+	private int traceId;
 	
 	public Feature(String name, List<String> gars, List<String> asms, int traceId) {
 		super();
@@ -18,7 +19,6 @@ public class Feature implements Serializable {
 		this.asms = asms;
 		this.traceId = traceId;
 	}
-	private int traceId;
 	
 	public String getName() {
 		return name;

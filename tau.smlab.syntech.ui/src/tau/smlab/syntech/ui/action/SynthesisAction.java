@@ -184,7 +184,10 @@ public class SynthesisAction implements IObjectActionDelegate, IEditorActionDele
 
 		start = System.currentTimeMillis();
 		try {
-			List<Translator> transList = DefaultTranslators.getDefaultTranslators();
+			// Embedded product line approach requires an additional translator to the spec
+			List<Translator> transList = DefaultTranslators.getDefaultTranslators(
+					PreferencePage.isProductLineApproachEmbedded(),
+					PreferencePage.isProductLineApproachExplicit());
 			TranslationProvider.translate(gi, transList);
 			job.setTranslators(transList);
 		} catch (TranslationException e) {

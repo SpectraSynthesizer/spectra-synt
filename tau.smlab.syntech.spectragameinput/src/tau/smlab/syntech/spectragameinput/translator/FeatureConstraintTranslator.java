@@ -37,11 +37,11 @@ public class FeatureConstraintTranslator {
 		
 			if (exp.getExpr() != null) {
 				
-				return new FeatureConstraint(Operator.NOT, parseConstraint(exp.getExpr(), tracer));
+				return new FeatureConstraint(Operator.NOT, parseConstraint(exp.getExpr(), tracer), tracer.getTrace(exp));
 				
 			} else if (exp.getFeature() != null) {
 				
-				return new FeatureConstraint(featureMap.get(exp.getFeature().getName()));
+				return new FeatureConstraint(featureMap.get(exp.getFeature().getName()), tracer.getTrace(exp));
 				
 			} else {
 				
@@ -56,14 +56,14 @@ public class FeatureConstraintTranslator {
 
 		return new FeatureConstraint(Operator.IMPLIES,
 				parseConstraint(exp.getLeft(), tracer),
-				parseConstraint(exp.getImplication(), tracer));
+				parseConstraint(exp.getImplication(), tracer), tracer.getTrace(exp));
 	}
 	
 	private static FeatureConstraint parseConstraint(FeatureIffExpr exp, Tracer tracer) throws SpectraTranslationException {
 
 		FeatureConstraint fc = parseConstraint(exp.getElements().get(0), tracer);
 		for (int i = 1; i < exp.getElements().size(); i++) {
-			fc = new FeatureConstraint(Operator.IFF, fc, parseConstraint(exp.getElements().get(i), tracer));
+			fc = new FeatureConstraint(Operator.IFF, fc, parseConstraint(exp.getElements().get(i), tracer), tracer.getTrace(exp));
 		}
 		return fc;
 	}
@@ -72,7 +72,7 @@ public class FeatureConstraintTranslator {
 
 		FeatureConstraint fc = parseConstraint(exp.getElements().get(0), tracer);
 		for (int i = 1; i < exp.getElements().size(); i++) {
-			fc = new FeatureConstraint(Operator.OR, fc, parseConstraint(exp.getElements().get(i), tracer));
+			fc = new FeatureConstraint(Operator.OR, fc, parseConstraint(exp.getElements().get(i), tracer), tracer.getTrace(exp));
 		}
 		return fc;
 	}
@@ -81,7 +81,7 @@ public class FeatureConstraintTranslator {
 
 		FeatureConstraint fc = parseConstraint(exp.getElements().get(0), tracer);
 		for (int i = 1; i < exp.getElements().size(); i++) {
-			fc = new FeatureConstraint(Operator.AND, fc, parseConstraint(exp.getElements().get(i), tracer));
+			fc = new FeatureConstraint(Operator.AND, fc, parseConstraint(exp.getElements().get(i), tracer), tracer.getTrace(exp));
 		}
 		return fc;
 	}

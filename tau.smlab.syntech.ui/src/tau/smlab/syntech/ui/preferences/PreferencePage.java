@@ -115,8 +115,9 @@ public class PreferencePage extends FieldEditorPreferencePage implements IWorkbe
 				new String[][] { { "CMP automaton (Mealy)", "CMP" }, { "JTLV text format", "JTLV" } },
 				getFieldEditorParent(), true);
 		
-		productLineApproach = new RadioGroupFieldEditor(PreferenceConstants.PRODUCT_LINE_APPROACH, "Product Line Process Direction", 1,
-				new String[][] { { "Bottom-Up", "bottomUp" }, { "Top-Down", "topDown" } },
+		productLineApproach = new RadioGroupFieldEditor(PreferenceConstants.PRODUCT_LINE_APPROACH, "Product Line Algorithm", 1,
+				new String[][] { { "Lattice Bottom-Up", "bottomUp" }, { "Lattice Top-Down", "topDown" }, 
+								 { "Embedded Explicit Feature Model", "embeddedExplicit" }, { "Embedded Synthesized Feature Model", "embeddedSynthesize" } },
 				getFieldEditorParent(), true);
 
 		addField(engine);
@@ -167,6 +168,14 @@ public class PreferencePage extends FieldEditorPreferencePage implements IWorkbe
 
 	public static boolean isLoggerActive() {
 		return Activator.getDefault().getPreferenceStore().getBoolean(PreferenceConstants.IS_LOGGER_ACTIVE);
+	}
+	
+	public static boolean isProductLineApproachEmbedded() {
+		return Activator.getDefault().getPreferenceStore().getString(PreferenceConstants.PRODUCT_LINE_APPROACH).contains("embedded");
+	}
+	
+	public static boolean isProductLineApproachExplicit() {
+		return Activator.getDefault().getPreferenceStore().getString(PreferenceConstants.PRODUCT_LINE_APPROACH).equals("embeddedExplicit");
 	}
 	
 	public static boolean isProductLineApproachBottomUp() {

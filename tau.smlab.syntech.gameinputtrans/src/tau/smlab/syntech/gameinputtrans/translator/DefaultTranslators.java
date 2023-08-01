@@ -31,28 +31,32 @@ package tau.smlab.syntech.gameinputtrans.translator;
 import java.util.ArrayList;
 import java.util.List;
 
-import tau.smlab.syntech.gameinput.model.GameInput;
-
 public class DefaultTranslators {
-  public static List<Translator> getDefaultTranslators() {
-    List<Translator> ts = new ArrayList<Translator>();
-    ts.add(new MinMaxFunctionsTranslator());
-    ts.add(new TemporalInTranslator());
-    ts.add(new ArrayFunctionsTranslator());
-    ts.add(new TemporalRegexpTranslator());
-    ts.add(new QuantifierTranslator()); //The translator of QuantifiedSpecs
-    ts.add(new StateInvTranslator(true));
-    ts.add(new PredicateInstanceTranslator());
-    ts.add(new PatternConstraintTranslator());
-    ts.add(new MonitorTranslator());
-    ts.add(new CounterTranslator());
-    ts.add(new VarIndexesTranslator()); //The translator of all the complex indexes in arrays
-    ts.add(new DefinesTranslator());
-    ts.add(new PastLTLTranslator());
-    ts.add(new StateInvTranslator(false)); // second part of translator to be aware of unfolded primes
-    ts.add(new PrimesTranslator());
-    ts.add(new PrimesInJusticeTranslator());
-    return ts;
-  }
-  
+	
+	public static List<Translator> getDefaultTranslators() {
+		return getDefaultTranslators(false, false);
+	}
+	
+	public static List<Translator> getDefaultTranslators(boolean featureModelEmbedded, boolean featureModelExplicit) {
+		List<Translator> ts = new ArrayList<Translator>();
+		if (featureModelEmbedded) ts.add(new FeatureTranslator(featureModelExplicit));
+		ts.add(new MinMaxFunctionsTranslator());
+		ts.add(new TemporalInTranslator());
+		ts.add(new ArrayFunctionsTranslator());
+		ts.add(new TemporalRegexpTranslator());
+		ts.add(new QuantifierTranslator()); // The translator of QuantifiedSpecs
+		ts.add(new StateInvTranslator(true));
+		ts.add(new PredicateInstanceTranslator());
+		ts.add(new PatternConstraintTranslator());
+		ts.add(new MonitorTranslator());
+		ts.add(new CounterTranslator());
+		ts.add(new VarIndexesTranslator()); // The translator of all the complex indexes in arrays
+		ts.add(new DefinesTranslator());
+		ts.add(new PastLTLTranslator());
+		ts.add(new StateInvTranslator(false)); // second part of translator to be aware of unfolded primes
+		ts.add(new PrimesTranslator());
+		ts.add(new PrimesInJusticeTranslator());
+		return ts;
+	}
+
 }

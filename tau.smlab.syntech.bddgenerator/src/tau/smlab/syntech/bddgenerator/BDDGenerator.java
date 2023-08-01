@@ -38,7 +38,6 @@ import java.util.Map;
 import java.util.Set;
 
 import net.sf.javabdd.BDD;
-import net.sf.javabdd.BDD.BDDIterator;
 import net.sf.javabdd.BDDBitVector;
 import net.sf.javabdd.BDDDomain;
 import net.sf.javabdd.BDDException;
@@ -55,8 +54,6 @@ import tau.smlab.syntech.gameinput.model.TriggerConstraint;
 import tau.smlab.syntech.gameinput.model.TypeDef;
 import tau.smlab.syntech.gameinput.model.Variable;
 import tau.smlab.syntech.gameinput.model.WeightDefinition;
-import tau.smlab.syntech.gameinput.pl.Feature;
-import tau.smlab.syntech.gameinput.pl.Product;
 import tau.smlab.syntech.gameinput.spec.Operator;
 import tau.smlab.syntech.gameinput.spec.PrimitiveValue;
 import tau.smlab.syntech.gameinput.spec.Spec;
@@ -68,7 +65,6 @@ import tau.smlab.syntech.gamemodel.PlayerModule;
 import tau.smlab.syntech.gamemodel.SFAModuleConstraint;
 import tau.smlab.syntech.gamemodel.PlayerModule.TransFuncType;
 import tau.smlab.syntech.jtlv.Env;
-import tau.smlab.syntech.jtlv.ModuleVariableException;
 import tau.smlab.syntech.jtlv.env.module.ModuleBDDField;
 import tau.smlab.syntech.sfa.SFA;
 

@@ -13,21 +13,26 @@ public class FeatureConstraint implements Serializable {
 	
 	private Feature feature;
 	
-	public FeatureConstraint(Operator theOp, FeatureConstraint element) {
+	private int traceId;
+
+	public FeatureConstraint(Operator theOp, FeatureConstraint element, int traceId) {
 		super();
 		this.theOp = theOp;
 		this.elements = new FeatureConstraint[] {element};
+		this.traceId = traceId;
 	}
 	
-	public FeatureConstraint(Operator theOp, FeatureConstraint element1, FeatureConstraint element2) {
+	public FeatureConstraint(Operator theOp, FeatureConstraint element1, FeatureConstraint element2, int traceId) {
 		super();
 		this.theOp = theOp;
 		this.elements = new FeatureConstraint[] {element1, element2};
+		this.traceId = traceId;
 	}
 	
-	public FeatureConstraint(Feature feature) {
+	public FeatureConstraint(Feature feature, int traceId) {
 		super();
 		this.feature = feature;
+		this.traceId = traceId;
 	}
 	
 	public Feature getFeature() {
@@ -49,5 +54,13 @@ public class FeatureConstraint implements Serializable {
 	}
 	public void setElements(FeatureConstraint[] elements) {
 		this.elements = elements;
+	}
+	
+	public int getTraceId() {
+		return traceId;
+	}
+
+	public void setTraceId(int traceId) {
+		this.traceId = traceId;
 	}
 }
