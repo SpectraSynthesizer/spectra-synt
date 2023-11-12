@@ -74,7 +74,6 @@ public class PreferencePage extends FieldEditorPreferencePage implements IWorkbe
 	private BooleanFieldEditor determinize;
 	private BooleanFieldEditor reorderBeforeSave;
 	private BooleanFieldEditor isLoggerActive;
-	private RadioGroupFieldEditor productLineApproach;
 
 	public void createFieldEditors() {
 		engine = new RadioGroupFieldEditor(PreferenceConstants.BDD_ENGINE_CHOICE, "BDD engine", 1,
@@ -114,10 +113,6 @@ public class PreferencePage extends FieldEditorPreferencePage implements IWorkbe
 		concCont = new RadioGroupFieldEditor(PreferenceConstants.CONC_CONT_FORMAT, "Concrete Controller Format", 1,
 				new String[][] { { "CMP automaton (Mealy)", "CMP" }, { "JTLV text format", "JTLV" } },
 				getFieldEditorParent(), true);
-		
-		productLineApproach = new RadioGroupFieldEditor(PreferenceConstants.PRODUCT_LINE_APPROACH, "Product Line Process Direction", 1,
-				new String[][] { { "Bottom-Up", "bottomUp" }, { "Top-Down", "topDown" } },
-				getFieldEditorParent(), true);
 
 		addField(engine);
 		addField(opts);
@@ -127,7 +122,6 @@ public class PreferencePage extends FieldEditorPreferencePage implements IWorkbe
 		addField(concCont);
 		addField(isLoggerActive);
 		addField(synthesisMethod);
-		addField(productLineApproach);
 
 		// String engineChoice =
 		// this.getPreferenceStore().getString(PreferenceConstants.BDD_ENGINE_CHOICE);
@@ -167,10 +161,6 @@ public class PreferencePage extends FieldEditorPreferencePage implements IWorkbe
 
 	public static boolean isLoggerActive() {
 		return Activator.getDefault().getPreferenceStore().getBoolean(PreferenceConstants.IS_LOGGER_ACTIVE);
-	}
-	
-	public static boolean isProductLineApproachBottomUp() {
-		return Activator.getDefault().getPreferenceStore().getString(PreferenceConstants.PRODUCT_LINE_APPROACH).equals("bottomUp");
 	}
 
 	public static BDDPackage getBDDPackageSelection() {

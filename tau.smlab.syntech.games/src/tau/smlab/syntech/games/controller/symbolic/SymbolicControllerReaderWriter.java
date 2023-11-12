@@ -34,6 +34,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 
+import net.sf.javabdd.BDD;
 import tau.smlab.syntech.gamemodel.GameModel;
 import tau.smlab.syntech.games.controller.jits.SymbolicControllerExistentialJitInfo;
 import tau.smlab.syntech.games.controller.jits.SymbolicControllerJitInfo;
@@ -51,6 +52,8 @@ public class SymbolicControllerReaderWriter {
 	protected final static String FIXPOINTS = "fixpoints.bdd";
 	protected final static String TRANS = "trans.bdd";
 	protected final static String JUSTICE = "justice.bdd";
+	protected final static String SWITCH = "switch.bdd";
+	protected final static String ENV_TRANS = "envTrans.bdd";
 	
 	protected final static String FULFILL = "fulfill.bdd";
 	protected final static String TOWARDS = "towards.bdd";
@@ -174,6 +177,12 @@ public class SymbolicControllerReaderWriter {
             Env.saveBDD(prefix + FULFILL, extJitInfo.fulfill(), reorderBeforeSave);
             Env.saveBDD(prefix + TOWARDS, extJitInfo.towards(), reorderBeforeSave);
             Env.saveBDD(prefix + ENV_VIOLATION, extJitInfo.envViolation(), reorderBeforeSave);
+        }
+
+        BDD switchBDD = model.getSwitchBDD();
+
+        if (!switchBDD.equals(Env.TRUE())) {
+            Env.saveBDD(prefix + File.separator + SWITCH, switchBDD, reorderBeforeSave);
         }
 
 	}

@@ -69,7 +69,6 @@ import tau.smlab.syntech.jtlv.Env;
 import tau.smlab.syntech.jtlv.env.module.ModuleBDDField;
 import tau.smlab.syntech.spectragameinput.translator.Tracer;
 import tau.smlab.syntech.ui.logger.SpectraLogger;
-import tau.smlab.syntech.ui.pl.VariabilityAwareRealizability;
 import tau.smlab.syntech.ui.preferences.PreferencePage;
 
 public abstract class SyntechJob extends Job {
@@ -124,7 +123,7 @@ public abstract class SyntechJob extends Job {
 			Env.disableReorder();
 		}
 		
-		Thread t = new Thread(() -> translateAndDoWork());
+		Thread t = new Thread(() -> translateAnddoWork());
 		t.start();
 		while (t.isAlive()) {
 			if (monitor.isCanceled()) {
@@ -246,25 +245,18 @@ public abstract class SyntechJob extends Job {
 	 * first translate GameInput into GameModel (this can already be expensive due
 	 * to BDD creation)
 	 */
-	private void translateAndDoWork() {
-		
+	private void translateAnddoWork() {
+		long start = System.currentTimeMillis();
 		try {
-			
-			if (gi.getFeatures() == null || gi.getFeatures().isEmpty()) {
-				generateAndDoWork();
-			} else {
-				VariabilityAwareRealizability var = new VariabilityAwareRealizability(
-						PreferencePage.isProductLineApproachBottomUp(), 
-						(gi) -> {generateAndDoWork(); return isRealizable;},
-						(str) -> printToConsole(str),
-						gi);
-				
-				var.doWork();
-			}
-			
-			Env.resetEnv();
-
-
+			this.model = BDDGenerator.generateGameModel(gi, trace, PreferencePage.isGroupVarSelection(),
+					PreferencePage.getTransFuncSelection(false));
+			bddTranslationTime = System.currentTimeMillis() - start;
+			printToConsole("BDD translation: " + bddTranslationTime + "ms (" + Env.getBDDPackageInfo() + ")");
+			int sysNonAux = getVarNum(model.getSys().getNonAuxFields());
+			int sysAux = getVarNum(model.getSys().getAuxFields());
+			printToConsole("Statespace env: " + getVarNum(model.getEnv().getAllFields()) + ", sys: " + sysNonAux
+					+ ", aux: " + sysAux);
+			doWork();
 		} catch (BDDTranslationException e) {
 			if (e.getTraceId() >= 0) {
 				createMarker(e.getTraceId(), e.getMessage(), MarkerKind.CUSTOM_TEXT_ERROR);
@@ -274,20 +266,6 @@ public abstract class SyntechJob extends Job {
 			printToConsole(e.getMessage());
 			e.printStackTrace();
 		}
-	}
-	
-	public void generateAndDoWork() {
-		
-		long start = System.currentTimeMillis();
-		this.model = BDDGenerator.generateGameModel(gi, trace, PreferencePage.isGroupVarSelection(),
-				PreferencePage.getTransFuncSelection(false));
-		bddTranslationTime = System.currentTimeMillis() - start;
-		printToConsole("BDD translation: " + bddTranslationTime + "ms (" + Env.getBDDPackageInfo() + ")");
-		int sysNonAux = getVarNum(model.getSys().getNonAuxFields());
-		int sysAux = getVarNum(model.getSys().getAuxFields());
-		printToConsole("Statespace env: " + getVarNum(model.getEnv().getAllFields()) + ", sys: " + sysNonAux
-				+ ", aux: " + sysAux);
-		doWork();
 	}
 
 	/**

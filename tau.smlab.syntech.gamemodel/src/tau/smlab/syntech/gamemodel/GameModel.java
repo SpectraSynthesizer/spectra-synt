@@ -46,6 +46,8 @@ public class GameModel {
 	private List<BehaviorInfo> sysBehaviorInfo = new ArrayList<BehaviorInfo>();
 	private List<BehaviorInfo> envBehaviorInfo = new ArrayList<BehaviorInfo>();
 
+	private BDD switchBDD = null;
+
 	public PlayerModule getSys() {
 		return sys;
 	}
@@ -104,6 +106,14 @@ public class GameModel {
 		env.resetSingleTrans();
 	}
 
+	public BDD getSwitchBDD() {
+		return switchBDD;
+	}
+
+	public void setSwitchBDD(BDD switchBDD) {
+		this.switchBDD = switchBDD;
+	}
+
 	public void free() {
 		Env.free(auxBehaviorInfo);
 		Env.free(sysBehaviorInfo);
@@ -113,6 +123,9 @@ public class GameModel {
 		}
 		sys.free();
 		env.free();
+		if (this.switchBDD != null) {
+			this.switchBDD.free();
+		}
 	}
 
 }

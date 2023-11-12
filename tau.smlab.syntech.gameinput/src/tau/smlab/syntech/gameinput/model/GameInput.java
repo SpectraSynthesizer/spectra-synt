@@ -32,9 +32,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-import tau.smlab.syntech.gameinput.pl.Feature;
-import tau.smlab.syntech.gameinput.pl.FeatureConstraint;
-
 /**
  * represents the input for a specification
  *
@@ -51,6 +48,8 @@ public class GameInput implements Serializable {
 	private Player env;
 	private Player aux;
 
+	private List<Constraint> switchConstraints;
+
 	private List<Define> defines = new ArrayList<>();
 	private List<Predicate> predicates = new ArrayList<>();
 	private List<Pattern> patterns = new ArrayList<>();
@@ -61,27 +60,24 @@ public class GameInput implements Serializable {
 	private List<Variable> domainVars = new ArrayList<>();
 	private List<RegexpTestModel> regtestExpressions = new ArrayList<>();
 	private int bound;
-	
-	
-	private List<Feature> features = new ArrayList<>();
-	private FeatureConstraint featureModel;
 
 	public GameInput(String name)
 	{
 		this.name = name;
 	}
 
-	public GameInput(String name, Player sysPlayer, Player envPlayer, Player auxPlayer)
+	public GameInput(String name, Player sysPlayer, Player envPlayer, Player auxPlayer, List<Constraint> switchConstraints)
 	{
 		this.name = name;
 		this.sys = sysPlayer;
 		this.env = envPlayer;
 		this.aux = auxPlayer;
+		this.switchConstraints = switchConstraints;
 	}
 
 	public String toString()
 	{
-		return "GameInput:[name: " + name + ", sys: " + sys + ", env: " + env + ", aux: " + aux + ", defines: " + defines + ", predicates: " + predicates + ", patterns: " + patterns +"]";
+		return "GameInput:[name: " + name + ", sys: " + sys + ", env: " + env + ", aux: " + aux + ", switch constraints: " + switchConstraints + ", defines: " + defines + ", predicates: " + predicates + ", patterns: " + patterns +"]";
 	}
 
 	public Player getSys() {
@@ -106,6 +102,14 @@ public class GameInput implements Serializable {
 
 	public void setAux(Player aux) {
 		this.aux = aux;
+	}
+
+	public List<Constraint> getSwitchConstraints() {
+		return switchConstraints;
+	}
+
+	public void setSwitchConstraints(List<Constraint> switchConstraints) {
+		this.switchConstraints = switchConstraints;
 	}
 
 	public List<Define> getDefines() {
@@ -209,23 +213,8 @@ public class GameInput implements Serializable {
 		return regtestExpressions;
 	}
 	
-	public void addregtestExperssion(RegexpTestModel regtestExpression) {
+	public void addregtestExperssion(RegexpTestModel regtestExpression)
+	{
 		this.regtestExpressions.add(regtestExpression);
-	}
-	
-	public void setFeatures(List<Feature> features) {
-		this.features = features;
-	}
-
-	public FeatureConstraint getFeatureModel() {
-		return featureModel;
-	}
-
-	public void setFeatureModel(FeatureConstraint featureModel) {
-		this.featureModel = featureModel;
-	}
-
-	public List<Feature> getFeatures() {
-		return features;
 	}
 }

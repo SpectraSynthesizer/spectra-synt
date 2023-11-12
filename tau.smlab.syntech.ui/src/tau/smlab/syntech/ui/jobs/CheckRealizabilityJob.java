@@ -104,6 +104,7 @@ public class CheckRealizabilityJob extends SyntechJob {
 			}
 		}
 		printToConsole(message);
+		Env.resetEnv();
 	}
 	
 

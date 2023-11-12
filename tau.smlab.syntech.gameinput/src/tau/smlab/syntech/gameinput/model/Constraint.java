@@ -43,7 +43,7 @@ public class Constraint implements Serializable {
 	private static final long serialVersionUID = -2937844082083661821L;
 
 	public enum Kind {
-		INI, SAFETY, STATE_INV, JUSTICE, PATTERN, WEIGHT, TRIGGER, EXISTS
+		INI, SAFETY, STATE_INV, JUSTICE, PATTERN, WEIGHT, TRIGGER, EXISTS, SWITCH
 	};
 
 	// INI = nothing , SAFETY = G, JUSTICE = GF 
